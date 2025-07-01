@@ -71,7 +71,8 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
     """The most important class in this project. It wraps the Stormpy simulator and provides the interface for the RL agent.
     """
 
-    def __init__(self, stormpy_model: storage.SparsePomdp, args: ArgsEmulator, num_envs: int = 1, enforce_compilation: bool = False):
+    def __init__(self, stormpy_model: storage.SparsePomdp, args: ArgsEmulator, num_envs: int = 1, enforce_compilation: bool = False,
+                 obs_evaluator=None, quotient_state_valuations=None, observation_to_actions=None):
         """Initializes the environment wrapper.
 
         Args:
@@ -81,7 +82,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
             num_envs: The number of environments for vectorization.
             state_based_oracle: The state-based oracle for the environment, expecting some memoryless MDP controller.
         """
-        # print(stormpy_model)
+        enforce_compilation = enforce_compilation or args.enforce_recompilation
         self.args = args
         super(EnvironmentWrapperVec, self).__init__()
         # self.batched = True
@@ -93,7 +94,9 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         # Special labels representing the typical labels of goal states. If the model has different label for goal state, we should add it here.
         # TODO: What if we want to minimize the probability of reaching some state or we want to maximize the probability of reaching some other state?
         self.special_labels = np.array(["(((sched = 0) & (t = (8 - 1))) & (k = (20 - 1)))", "goal", "done", "((x = 2) & (y = 0))",
-                                        "((x = (10 - 1)) & (y = (10 - 1)))"])
+                                        "((x = (10 - 1)) & (y = (10 - 1)))", "((x = 8) & (y = 8))",
+                                        "((x = (5 - 1)) & (y = (5 - 1)))", "(bat = 0)", "((x = 10) & (y = 10))",
+                                        "label_done", "label_goal"])
 
         # Initialization of the vectorized simulator.
         labeling = stormpy_model.labeling.get_labels()
@@ -103,8 +106,10 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
 
         self.vectorized_simulator = SimulatorInitializer.load_and_store_simulator(
             stormpy_model=stormpy_model, get_scalarized_reward=generate_reward_selection_function, num_envs=num_envs,
-            max_steps=args.max_steps, metalabels=metalabels, model_path=args.prism_model, enforce_recompilation=enforce_compilation)
-
+            max_steps=args.max_steps, metalabels=metalabels, model_path=args.prism_model, enforce_recompilation=enforce_compilation,
+            obs_evaluator=obs_evaluator, quotient_state_valuations=quotient_state_valuations, observation_to_actions=observation_to_actions,
+            batched_vec_storm=args.batched_vec_storm)
+        
         try:
             self.state_to_observation_map = tf.constant(
                 stormpy_model.observations)
@@ -124,8 +129,16 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         self.observations_to_states_map = np.zeros((stormpy_model.nr_observations),
                                                    dtype=np.int32)
         for observation in range(stormpy_model.nr_observations):
-            self.observations_to_states_map[observation] = np.where(
-                self.state_to_observation_map == observation)[0][0]
+            states = np.where(
+                self.state_to_observation_map == observation)[0]
+            if states.shape[0] == 0:
+                logger.error(
+                    "Observation {} not found in the state to observation map.".format(observation))
+            else:                
+                self.observations_to_states_map[observation] = np.where(
+                    self.state_to_observation_map == observation)[0][0]
+
+
         try:
             self.grid_like_renderer = GridLikeRenderer(
                 self.vectorized_simulator, self.get_model_name())
@@ -198,6 +211,13 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
 
         self.current_num_steps = tf.constant(
             [0] * self.num_envs, dtype=tf.float32)
+        
+    def add_new_pomdp(self, pomdp: storage.SparsePomdp):
+        """Adds a new POMDP to the environment. This is used with BatchedVecStorm to add new POMDPs to the batch of simulators.
+        Args:
+            pomdp (storage.SparsePomdp): The POMDP to be added to the environment.
+        """
+        self.vectorized_simulator.add_pomdp(pomdp)
 
     def initialize_step_types(self):
         """Initializes the step types for the environment."""
@@ -243,6 +263,8 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
     def set_basic_rewards(self):
         rew_list = list(self.stormpy_model.reward_models.keys())
         self.reward_multiplier = -1.0 if (len(rew_list) == 0  or not "rew" in rew_list[-1]) else 10.0
+        if "penalty" in rew_list[-1] or "time" in rew_list[-1]:
+            self.reward_multiplier = -1.0
         self.antigoal_values_vector = tf.constant(
             [self.args.evaluation_antigoal] * self.num_envs, dtype=tf.float32)
         self.goal_values_vector = tf.constant(
@@ -260,7 +282,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         self.antigoal_values_vector = tf.constant(
             [0.0] * self.num_envs, dtype=tf.float32)
         self.goal_values_vector = tf.constant(
-            [2.0] * self.num_envs, dtype=tf.float32)
+            [1.0] * self.num_envs, dtype=tf.float32)
 
     def set_minimizing_rewards(self):
         self.reward_multiplier = -10.0
@@ -268,20 +290,63 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
             [0.0] * self.num_envs, dtype=tf.float32)
         self.goal_values_vector = tf.constant(  # Decreasing the goal value to make the optimization more reasonable
             [2.0] * self.num_envs, dtype=tf.float32)
+        
+    def set_obstacle_rewards(self):
+        self.reward_multiplier = -1.0
+        self.antigoal_values_vector = tf.constant(
+            [self.args.evaluation_antigoal * 0] * self.num_envs, dtype=tf.float32)
+        self.goal_values_vector = tf.constant(
+            [self.args.evaluation_goal * 2] * self.num_envs, dtype=tf.float32)
+        
+    def set_rover_rewards(self):
+        self.reward_multiplier = -0.1
+        self.antigoal_values_vector = tf.constant(
+            [self.args.evaluation_antigoal * 4] * self.num_envs, dtype=tf.float32)
+        self.goal_values_vector = tf.constant(
+            [self.args.evaluation_goal * 4] * self.num_envs, dtype=tf.float32)
+        
+    def set_negative_goal_rewards(self):
+        """Sets the rewards for the negative goal states."""
+        self.reward_multiplier = 1.0
+        self.antigoal_values_vector = tf.constant(
+            [self.args.evaluation_goal] * self.num_envs, dtype=tf.float32)
+        self.goal_values_vector = tf.constant(
+            [self.args.evaluation_antigoal] * self.num_envs, dtype=tf.float32)
+        
+    def set_avoid_rewards(self):
+        """Sets the rewards for the avoid states."""
+        self.reward_multiplier = -0.1
+        self.antigoal_values_vector = tf.constant(
+            [self.args.evaluation_antigoal * 2] * self.num_envs, dtype=tf.float32)
+        self.goal_values_vector = tf.constant(
+            [self.args.evaluation_goal * 2] * self.num_envs, dtype=tf.float32)
+        
+    def set_dpm_rewards(self):
+        """Sets the rewards for the DPM states."""
+        self.reward_multiplier = 1.0
+        self.antigoal_values_vector = tf.constant(
+            [self.args.evaluation_antigoal * 2] * self.num_envs, dtype=tf.float32)
+        self.goal_values_vector = tf.constant(
+            [self.args.evaluation_goal * 2] * self.num_envs, dtype=tf.float32)
 
     def set_reward_model(self, model_name):
         self.reward_models = {
             "network": self.set_minimizing_rewards,
             "drone": self.set_reachability_rewards,
             "refuel": self.set_reachability_rewards,
-            "intercept": self.set_reachability_rewards,
+            "intercept": self.set_obstacle_rewards,
             "evade": self.set_reachability_rewards,
             "rocks": self.set_minimizing_rewards,
             "geo": self.set_reachability_rewards,
             "mba": self.set_minimizing_rewards,
             "maze": self.set_maxizing_rewards,
-            "avoid": self.set_reachability_rewards,
+            "avoid": self.set_obstacle_rewards,
             "grid": self.set_reachability_rewards,
+            "obstacle": self.set_obstacle_rewards,
+            "dpm": self.set_dpm_rewards,
+            "aco": self.set_obstacle_rewards,
+            "rover": self.set_reachability_rewards
+
 
         }
         key_found = False
@@ -292,9 +357,12 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
                 break
         if not key_found:
             self.set_basic_rewards()
+        if "packets_sent" in list(self.stormpy_model.reward_models.keys()):
+            self.reward_multiplier = 10.0
 
         self.reward_signum = tf.sign(
             self.reward_multiplier) if self.reward_multiplier != 0.0 else tf.constant(-1.0)
+       
 
         # Initialization of the discount factor for the environment.
         self.discount = tf.convert_to_tensor(
@@ -514,7 +582,6 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         self.goal_state_mask = labels_mask & self.dones
         self.anti_goal_state_mask = ~labels_mask & self.dones & ~self.truncated
         still_running_mask = ~self.dones
-
         self.reward = tf.where(
             self.goal_state_mask,
             goal_values_vector,
@@ -560,7 +627,6 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         if self.use_stacked_observations:
             self.stacked_observations = tf.where(
                 tf.reshape(self.prev_dones, (-1, 1)), tf.zeros_like(self.stacked_observations), self.stacked_observations)
-            # print(self.stacked_observations)
         self.current_num_steps = tf.where(
             self.prev_dones,
             tf.zeros_like(self.current_num_steps),

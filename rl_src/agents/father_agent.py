@@ -136,7 +136,7 @@ class FatherAgent(AbstractAgent):
         self.tf_environment = tf_py_environment.TFPyEnvironment(
             environment)
         self.init_replay_buffer()
-        self.init_collector_driver(self.tf_environment)
+        self.init_collector_driver(self.tf_environment, demasked=True)
         self.tf_env_eval = None
         self.vec_driver = None
 
@@ -264,6 +264,7 @@ class FatherAgent(AbstractAgent):
                 self.collect_policy_wrapper.set_policy_masker()
             else:
                 self.collect_policy_wrapper.unset_policy_masker()
+            self.collect_policy_wrapper.set_policy_masker()
             eager = py_tf_eager_policy.PyTFEagerPolicy(
                 self.collect_policy_wrapper, use_tf_function=True, batch_time_steps=False)
         else:
@@ -382,7 +383,7 @@ class FatherAgent(AbstractAgent):
         if train_iteration % 5 == 0:
             logger.info(
                 f"Step: {train_iteration}, Training loss: {train_loss}")
-        if train_iteration % 100 == 0:
+        if train_iteration % 100 == 0 and train_iteration > 0:
             self.environment.set_random_starts_simulation(False)
             self.evaluate_agent(vectorized=vectorized,
                                 max_steps=self.args.max_steps * 2)
@@ -615,16 +616,17 @@ class FatherAgent(AbstractAgent):
         """
         self.environment.set_random_starts_simulation(False)
         self.environment.temporarily_set_num_envs(512)
-        if not hasattr(self, "tf_env_eval"):
+        if not hasattr(self, "tf_env_eval") or self.tf_env_eval is None:
             self.tf_env_eval = tf_py_environment.TFPyEnvironment(
                 self.environment)
         if self.args.go_explore:
             self.environment.unset_go_explore()
-        if self.args.prefer_stochastic:
-            self.set_agent_stochastic()
-        else:
-            self.set_agent_greedy()
-            self.set_policy_masking()
+        # if self.args.prefer_stochastic:
+        self.set_agent_stochastic()
+        self.set_policy_masking()
+        # else:
+        #     self.set_agent_greedy()
+        #     self.set_policy_masking()
         if not vectorized:
             if last:
                 evaluation_episodes = self.evaluation_episodes * 2
@@ -633,7 +635,7 @@ class FatherAgent(AbstractAgent):
             compute_average_return(
                 self.get_evaluation_policy(), self.tf_environment, evaluation_episodes, self.environment, self.evaluation_result.update)
         else:
-            if not hasattr(self, "vec_driver"):
+            if not hasattr(self, "vec_driver") or self.vec_driver is None:
                 self.init_vec_evaluation_driver(
                     self.tf_env_eval, self.environment, num_steps=self.args.max_steps + 5)
             if self.args.replay_buffer_option == ReplayBufferOptions.ORIGINAL_OFF_POLICY:
@@ -705,13 +707,17 @@ class FatherAgent(AbstractAgent):
                 time_step, policy_state=policy_state)
         return self.agent.policy.action(time_step, policy_state=policy_state)
     
-    def get_policy(self, eager=True):
+    def get_policy(self, eager=True, collector=False):
         """Get the policy of the agent."""
         if self.wrapper is not None:
-            if eager:
-                return PyTFEagerPolicy(self.wrapper, use_tf_function=True, batch_time_steps=False)
+            if collector:
+                wrapper = self.collect_policy_wrapper
             else:
-                return self.wrapper
+                wrapper = self.wrapper
+            if eager:
+                return PyTFEagerPolicy(wrapper, use_tf_function=True, batch_time_steps=False)
+            else:
+                return wrapper
         if eager:
             return PyTFEagerPolicy(self.agent.policy, use_tf_function=True, batch_time_steps=False)
         else:

@@ -30,7 +30,7 @@ class ArgsEmulator:
                  stacked_observations : bool = False, masked_training : bool = False, 
                  env_see_reward : bool = False, env_see_num_steps : bool = False, env_see_last_action : bool = False,
                  use_entropy_reward : bool = False, full_observable_entropy_reward: bool = False, 
-                 use_binary_entropy_reward: bool = False):
+                 use_binary_entropy_reward: bool = False, batched_vec_storm : bool = False, enforce_recompilation: bool = False):
         """Args emulator for the RL parser. This class is used to emulate the args object from the RL parser for the RL initializer and other stuff.
         Args:
             prism_model (str): The path to the prism model file. Defaults to None -- must be set, if not used inside of Paynt.
@@ -155,3 +155,5 @@ class ArgsEmulator:
         self.entropy_reward = use_entropy_reward
         self.full_observable_entropy_reward = full_observable_entropy_reward
         self.use_binary_entropy_reward = use_binary_entropy_reward
+        self.batched_vec_storm = batched_vec_storm
+        self.enforce_recompilation = enforce_recompilation

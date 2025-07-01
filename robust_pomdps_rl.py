@@ -1,0 +1,335 @@
+import argparse
+
+# using Paynt for POMDP sketches
+
+import paynt.cli
+import paynt.parser.sketch
+import paynt.quotient.fsc
+import paynt.synthesizer.synthesizer_ar
+
+import payntbind
+
+import os
+import random
+import cProfile
+import pstats
+
+import paynt.synthesizer.synthesizer_onebyone
+import paynt.utils
+import paynt.utils.timer
+
+from tests.general_test_tools import init_environment, init_args, initialize_prism_model
+from environment.environment_wrapper_vec import EnvironmentWrapperVec
+from environment.tf_py_environment import TFPyEnvironment
+
+from paynt.rl_extension.self_interpretable_interface.self_interpretable_extractor import SelfInterpretableExtractor
+
+from paynt.rl_extension.family_extractors.direct_fsc_construction import ConstructorFSC
+
+from paynt.rl_extension.robust_rl.family_quotient_numpy import FamilyQuotientNumpy
+
+
+from agents.recurrent_ppo_agent import Recurrent_PPO_agent
+from tools.args_emulator import ArgsEmulator
+
+import numpy as np
+
+class RobustTrainer:
+    def __init__(self, args: ArgsEmulator, use_one_hot_memory=True, latent_dim=2,
+                 pomdp_sketch=None,
+                 obs_evaluator=None, quotient_state_valuations=None,
+                 family_quotient_numpy: FamilyQuotientNumpy = None):
+        self.args = args
+        self.use_one_hot_memory = use_one_hot_memory
+        self.model_name = args.model_name
+        self.pomdp_sketch = pomdp_sketch
+        self.obs_evaluator = obs_evaluator
+        self.quotient_state_valuations = quotient_state_valuations
+        self.family_quotient_numpy = family_quotient_numpy
+        self.direct_extractor = self.init_extractor(latent_dim)
+        self.benchmark_stats = self.BenchmarkStats(
+            fsc_size=3**latent_dim, num_training_steps_per_iteration=301)
+        self.agent = None
+
+    class BenchmarkStats:
+        def __init__(self, fsc_size=3, num_training_steps_per_iteration=50):
+            self.fsc_size = fsc_size
+            self.num_training_steps_per_iteration = num_training_steps_per_iteration
+            self.rl_performance_single_pomdp = []
+            self.extracted_fsc_performance = []
+            self.family_performance = []
+            self.available_nodes_in_fsc = []
+
+        def add_rl_performance(self, performance: float):
+            self.rl_performance_single_pomdp.append(performance)
+
+        def add_extracted_fsc_performance(self, performance):
+            self.extracted_fsc_performance.append(performance)
+
+        def add_family_performance(self, performance):
+            self.family_performance.append(performance)
+
+    def save_stats(self, path):
+        import json
+        benchmark_stats = self.benchmark_stats
+        stats = {
+            "fsc_size": str(benchmark_stats.fsc_size),
+            "num_training_steps_per_iteration": str(benchmark_stats.num_training_steps_per_iteration),
+            "rl_performance_single_pomdp": str(benchmark_stats.rl_performance_single_pomdp),
+            "extracted_fsc_performance": str(benchmark_stats.extracted_fsc_performance),
+            "family_performance": str(benchmark_stats.family_performance),
+            "available_nodes_in_fsc": str(benchmark_stats.available_nodes_in_fsc),
+        }
+        with open(path, 'w') as f:
+            json.dump(stats, f, indent=4)
+
+    def init_extractor(self, latent_dim):
+
+        direct_extractor = SelfInterpretableExtractor(memory_len=latent_dim, is_one_hot=self.use_one_hot_memory,
+                                                      use_residual_connection=True, training_epochs=20001,
+                                                      num_data_steps=4001, get_best_policy_flag=False, model_name=self.model_name,
+                                                      max_episode_len=self.args.max_steps, family_quotient_numpy=self.family_quotient_numpy)
+        return direct_extractor
+
+    def extract_fsc(self, agent: Recurrent_PPO_agent, environment, quotient, num_data_steps=4001, training_epochs=10001) -> paynt.quotient.fsc.FSC:
+        # agent.set_agent_greedy()
+        # agent.set_policy_masking()
+        agent.set_policy_masking()
+        agent.set_agent_stochastic()
+        self.direct_extractor.num_data_steps = num_data_steps
+        self.direct_extractor.training_epochs = training_epochs
+        policy = agent.get_policy(False, True)
+        tf_environment = TFPyEnvironment(environment)
+        fsc, extraction_stats = self.direct_extractor.clone_and_generate_fsc_from_policy(
+            policy, environment, tf_environment)
+        paynt_fsc = ConstructorFSC.construct_fsc_from_table_based_policy(
+            fsc, quotient, family_quotient_numpy=self.family_quotient_numpy)
+        agent.unset_policy_masking()
+        agent.set_agent_stochastic()
+        self.benchmark_stats.add_extracted_fsc_performance(
+            extraction_stats.extracted_fsc_reward[-1])
+        available_nodes = paynt_fsc.compute_available_updates(0)
+        self.benchmark_stats.available_nodes_in_fsc.append(available_nodes)
+        return paynt_fsc
+
+    def train_on_new_pomdp(self, pomdp = None, agent: Recurrent_PPO_agent = None, nr_iterations=1500):
+        # environment = EnvironmentWrapperVec(pomdp, self.args, num_envs=256, enforce_compilation=True,
+        #                                     obs_evaluator=self.obs_evaluator,
+        #                                     quotient_state_valuations=self.quotient_state_valuations,
+        #                                     observation_to_actions=self.pomdp_sketch.observation_to_actions)
+        if pomdp is not None:
+            self.environment.add_new_pomdp(pomdp)
+        agent.train_agent(iterations=nr_iterations)
+        self.benchmark_stats.add_rl_performance(
+            np.abs(agent.evaluation_result.returns[-1]))
+
+    def generate_agent(self, pomdp, args) -> Recurrent_PPO_agent:
+        self.environment = EnvironmentWrapperVec(pomdp, args, num_envs=256, enforce_compilation=True,
+                                                 obs_evaluator=self.obs_evaluator,
+                                                 quotient_state_valuations=self.quotient_state_valuations,
+                                                 observation_to_actions=self.pomdp_sketch.observation_to_actions)
+        self.tf_env = TFPyEnvironment(self.environment)
+        self.agent = Recurrent_PPO_agent(
+            environment=self.environment, tf_environment=self.tf_env, args=args)
+        return self.agent
+    
+    def add_new_pomdp(self, pomdp):
+        """
+        Adds a new POMDP to the environment.
+        """
+        self.environment.add_new_pomdp(pomdp)
+
+
+def load_sketch(project_path):
+    project_path = os.path.abspath(project_path)
+    sketch_path = os.path.join(project_path, "sketch.templ")
+    properties_path = os.path.join(project_path, "sketch.props")
+    pomdp_sketch = paynt.parser.sketch.Sketch.load_sketch(
+        sketch_path, properties_path)
+    return pomdp_sketch
+
+
+def assignment_to_pomdp(pomdp_sketch, assignment):
+    sub_pomdp = pomdp_sketch.build_pomdp(assignment)
+    pomdp = sub_pomdp.model
+    state_to_quotient_state = sub_pomdp.quotient_state_map
+    updated = payntbind.synthesis.restoreActionsInAbsorbingStates(pomdp)
+    if updated is not None:
+        pomdp = updated
+    action_labels, _ = payntbind.synthesis.extractActionLabels(pomdp)
+    num_actions = len(action_labels)
+    return pomdp, None, state_to_quotient_state
+
+
+def random_fsc(pomdp_sketch, num_nodes):
+    num_obs = pomdp_sketch.num_observations
+    fsc = paynt.quotient.fsc.FSC(num_nodes, num_obs)
+    # action function if of type NxZ -> Distr(Act)
+    for n in range(num_nodes):
+        for z in range(num_obs):
+            actions = pomdp_sketch.observation_to_actions[z]
+            fsc.action_function[n][z] = {
+                action: 1/len(actions) for action in actions}
+    # memory update function is of type NxZ -> Distr(N) and is posterior-aware
+    # note: this is currently inconsistent with definitions in paynt.quotient.fsc.FSC, but let's see how this works
+    for n in range(num_nodes):
+        for z in range(num_obs):
+            actions = pomdp_sketch.observation_to_actions[z]
+            fsc.update_function[n][z] = {
+                n_new: 1/num_nodes for n_new in range(num_nodes)}
+    return fsc
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Learning for Families with PAYNT.")
+    parser.add_argument(
+        "--project-path",
+        type=str,
+        help="Path to the project directory with template and properties.",
+        required=True)
+    args = parser.parse_args()
+    return args
+
+
+def deterministic_fsc_to_stochastic_fsc(pomdp_sketch, fsc):
+    """
+    Self-explanatory, map FSC with deterministic functions to a stochastic FSC with Dirac distributions.
+    """
+    for n in range(fsc.num_nodes):
+        for z in range(fsc.num_observations):
+            if fsc.is_deterministic:
+                action = fsc.action_function[n][z]
+                action_label = fsc.action_labels[action]
+                family_action = pomdp_sketch.action_labels.index(action_label)
+                fsc.action_function[n][z] = {int(family_action): 1.0}
+                fsc.update_function[n][z] = {
+                    int(fsc.update_function[n][z]): 1.0}
+    # assert all([len(fsc.action_function[n]) == pomdp_sketch.nO for n in range(fsc.num_nodes)])
+    fsc.is_deterministic = False
+    return fsc
+
+
+def create_json_file_name(project_path):
+    """
+    Creates a JSON file name based on the project path.
+    """
+    json_path = os.path.join(project_path, "benchmark_stats.json")
+    if os.path.exists(json_path):
+        index = 0
+        while os.path.exists(os.path.join(project_path, f"benchmark_stats_{index}.json")):
+            index += 1
+        json_path = os.path.join(project_path, f"benchmark_stats_{index}.json")
+    return json_path
+
+def generate_heatmap_complete(pomdp_sketch, fsc):
+    hole_assignments_to_test = []
+    for sub_family in pomdp_sketch.family.all_combinations():
+        assignment = pomdp_sketch.family.construct_assignment(sub_family)
+        pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, assignment)
+        hole_assignments_to_test.append(assignment)
+    dtmc_sketch = pomdp_sketch.build_dtmc_sketch(
+        fsc, negate_specification=True)
+    one_by_one = paynt.synthesizer.synthesizer_onebyone.SynthesizerOneByOne(dtmc_sketch)
+    evaluations = []
+    for i, assignment in enumerate(hole_assignments_to_test):
+        evaluations.append(one_by_one.evaluate(assignment, keep_value_only=True))
+    return evaluations, hole_assignments_to_test
+
+
+
+def main():
+    args_cmd = parse_args()
+
+    paynt.utils.timer.GlobalTimer.start()
+
+    profiling = True
+    if profiling:
+        pr = cProfile.Profile()
+        pr.enable()
+
+    paynt.cli.setup_logger()
+
+    project_path = args_cmd.project_path
+    pomdp_sketch = load_sketch(project_path)
+    json_path = create_json_file_name(project_path)
+
+    family_quotient_numpy = FamilyQuotientNumpy(pomdp_sketch)
+    
+
+    prism_path = os.path.join(project_path, "sketch.templ")
+    properties_path = os.path.join(project_path, "sketch.props")
+
+    args_emulated = init_args(
+        prism_path=prism_path, properties_path=properties_path, nr_runs=3000, batched_vec_storm=True)
+    args_emulated.model_name = project_path.split("/")[-1]
+    # pomdp = initialize_prism_model(prism_path, properties_path, constants="")
+
+    hole_assignment = pomdp_sketch.family.pick_any()
+    pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
+    # pomdp, observation_action_to_true_action = assignment_to_pomdp(pomdp_sketch, hole_assignment)
+
+    quotient_sv = pomdp_sketch.quotient_mdp.state_valuations
+    quotient_obs = pomdp_sketch.obs_evaluator
+
+    quotient_sv = pomdp_sketch.quotient_mdp.state_valuations
+
+    extractor = RobustTrainer(args_emulated, use_one_hot_memory=False, latent_dim=2, quotient_state_valuations=quotient_sv,
+                              obs_evaluator=quotient_obs, pomdp_sketch=pomdp_sketch, family_quotient_numpy=family_quotient_numpy)
+    agent = extractor.generate_agent(pomdp, args_emulated)
+
+    # hole_assignment = pomdp_sketch.family.pick_any()
+    # pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
+
+    extractor.train_on_new_pomdp(None, agent, nr_iterations=501)
+
+    fsc = extractor.extract_fsc(
+        agent, agent.environment, training_epochs=20001, quotient=pomdp_sketch)
+    dtmc_sketch = pomdp_sketch.build_dtmc_sketch(
+        fsc, negate_specification=True)
+
+    synthesizer = paynt.synthesizer.synthesizer_ar.SynthesizerAR(dtmc_sketch)
+    synthesizer.synthesize(keep_optimum=True)
+    one_by_one = paynt.synthesizer.synthesizer_onebyone.SynthesizerOneByOne(dtmc_sketch)
+
+    
+
+    extractor.benchmark_stats.add_family_performance(
+        synthesizer.best_assignment_value)
+    extractor.save_stats(json_path)
+
+    print("RANDOM PICKING ENDS HERE\n\n\n\n\n\n\n")
+
+    for i in range(50):
+        pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
+        # pomdp, observation_action_to_true_action = assignment_to_pomdp(pomdp_sketch, hole_assignment)
+        print(pomdp)
+
+        extractor.train_on_new_pomdp(pomdp, agent, nr_iterations=501)
+        fsc = extractor.extract_fsc(
+            agent, agent.environment, quotient=pomdp_sketch, num_data_steps=3001, training_epochs=22001)
+
+        dtmc_sketch = pomdp_sketch.build_dtmc_sketch(
+            fsc, negate_specification=True)
+        synthesizer = paynt.synthesizer.synthesizer_ar.SynthesizerAR(
+            dtmc_sketch)
+        hole_assignment = synthesizer.synthesize(keep_optimum=True)
+        print("Best value", synthesizer.best_assignment_value)
+        extractor.benchmark_stats.add_family_performance(
+            synthesizer.best_assignment_value)
+        extractor.save_stats(json_path)
+        evaluations = []
+        for i, assignment in enumerate(hole_assignments_to_test):
+            evaluations.append(one_by_one.evaluate(assignment, keep_value_only=True))
+        for evaluation, assignment in zip(evaluations, hole_assignments_to_test):
+            print(f"Assignment: {assignment}, Evaluation: {evaluation}")
+            print()
+
+    if profiling:
+        pr.disable()
+        stats = pr.create_stats()
+        pstats.Stats(stats).sort_stats("tottime").print_stats(10)
+    return
+
+
+main()

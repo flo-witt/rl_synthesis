@@ -57,7 +57,7 @@ cd ${PREREQUISITES}
 git clone https://github.com/moves-rwth/stormpy.git stormpy
 # git clone --branch stable https://github.com/moves-rwth/stormpy.git stormpy
 cd ${PREREQUISITES}/stormpy
-python3 setup.py develop
+pip install .
 # python3 setup.py test
 
 # paynt dependencies
@@ -80,6 +80,11 @@ cd ${PAYNT_ROOT}
 pip install tensorflow==2.15
 pip install tf_agents
 pip install tqdm dill matplotlib pandas seaborn networkx
+pip install aalpy
+
+cd ${PAYNT_ROOT}/rl_src
+pip install -e .
+cd ${PAYNT_ROOT}
 
 # done
 deactivate

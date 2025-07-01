@@ -23,8 +23,8 @@ class TableBasedPolicy(TFPolicy):
             update_function (np.ndarray): The update function table. It has shape (nr_model_states, nr_observations)."""
         policy_state_spec = TensorSpec(shape=(), dtype=tf.int32)
         super(TableBasedPolicy, self).__init__(original_policy.time_step_spec, original_policy.action_spec, policy_state_spec=policy_state_spec)
-        self.tf_observation_to_action_table = tf.constant(action_function, dtype=tf.int32)
-        self.tf_observation_to_update_table = tf.constant(update_function, dtype=tf.int32)
+        self.tf_observation_to_action_table = tf.constant(action_function, dtype=tf.float32)
+        self.tf_observation_to_update_table = tf.constant(update_function, dtype=tf.float32)
         if descending_actions is not None: # This array contains actions for a given memory and observation in descending order
                                            # The first action is the most likely one, but it could be illegal in some cases
                                            # This array is used to get the most likely legal action, when combined mask
@@ -51,8 +51,20 @@ class TableBasedPolicy(TFPolicy):
             action = descending_actions[0]
         else:
             action = tf.gather_nd(self.tf_observation_to_action_table, indices)
+        # If actions are arrays of probabilities, we need to sample from them
+        if isinstance(action, tf.Tensor) and len(action.shape) > 1:
+            action = tf.random.categorical(tf.math.log(action), num_samples=1, dtype=tf.int32)
+            action = tf.squeeze(action, axis=-1)
         update = tf.gather_nd(self.tf_observation_to_update_table, indices)
-        update = tf.reshape(update, (-1, 1))
+        
+        if isinstance(update, tf.Tensor) and len(update.shape) > 1:
+            # Get the indices of the maximum update value for each observation. These indices correspond to the selected update.
+            update = tf.argmax(update, axis=1, output_type=tf.int32)
+            update = tf.reshape(update, (-1, 1))
+        else:
+            update = tf.reshape(update, (-1, 1))
+
+        
 
         policy_step = PolicyStep(action, update)
         return policy_step

@@ -23,28 +23,31 @@ import logging
 
 import os
 
-from rl_src.interpreters.direct_fsc_extraction.extraction_stats import ExtractionStats
+from interpreters.direct_fsc_extraction.extraction_stats import ExtractionStats
 from interpreters.direct_fsc_extraction.data_sampler import sample_data_with_policy
 from interpreters.direct_fsc_extraction.cloned_fsc_actor_policy import ClonedFSCActorPolicy
 
 from agents.policies.policy_mask_wrapper import PolicyMaskWrapper
+
+from paynt.rl_extension.robust_rl.family_quotient_numpy import FamilyQuotientNumpy
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 DEBUG = False
 
-class DirectExtractor:
+class SelfInterpretableExtractor:
 
     def __init__(self, memory_len = 1, is_one_hot = False, use_residual_connection = False,
                  training_epochs = 100000, num_data_steps = 6000,
                  get_best_policy_flag = False, model_name = "generic_model",
                  max_episode_len = 800, 
-                 optimizing_specification : SpecificationChecker.Constants = SpecificationChecker.Constants.REACHABILITY):
+                 optimizing_specification : SpecificationChecker.Constants = SpecificationChecker.Constants.REACHABILITY,
+                 family_quotient_numpy : FamilyQuotientNumpy = None):
         self.memory_len = memory_len
         self.is_one_hot = is_one_hot
         self.use_residual_connection = use_residual_connection
-        self.regenerate_fsc_network_flag = True # This flag ensures, that if we repeatedly clone the same policy
+        self.regenerate_fsc_network_flag = False # This flag ensures, that if we repeatedly clone the same policy
                                                 # we do not regenerate new FSC network every time.
         self.cloned_actor : ClonedFSCActorPolicy = None
         self.specification_checker : SpecificationChecker = None
@@ -55,6 +58,7 @@ class DirectExtractor:
         self.max_episode_len = max_episode_len
         self.extraction_stats = None
         self.optimizing_specification = optimizing_specification
+        self.family_quotient_numpy = family_quotient_numpy
 
     def set_memory_len(self, memory_len):
         self.memory_len = memory_len
@@ -102,9 +106,9 @@ class DirectExtractor:
         if self.regenerate_fsc_network_flag or self.cloned_actor is None:
             self.reset_cloned_actor(original_policy, orig_eval_result, env)
 
-        if isinstance(original_policy, PolicyMaskWrapper):
-            original_policy.set_policy_masker()
-            original_policy.set_greedy(True)
+        # if isinstance(original_policy, PolicyMaskWrapper):
+        original_policy.set_policy_masker()
+        #     original_policy.set_greedy(True)
         logger.info("Sampling data with original policy")
         buffer = sample_data_with_policy(
             original_policy, num_samples=self.num_data_steps, environment=env, tf_environment=tf_env)
@@ -117,7 +121,8 @@ class DirectExtractor:
             environment=env, tf_environment=tf_env, args=None, extraction_stats=self.extraction_stats)
         # if self.get_best_policy_flag:
         #     self.cloned_actor.load_best_policy()
-        fsc, _, _ = DirectExtractor.extract_fsc(self.cloned_actor, env, self.memory_len, is_one_hot=self.is_one_hot)
+        fsc, _, _ = SelfInterpretableExtractor.extract_fsc(self.cloned_actor, env, self.memory_len, is_one_hot=self.is_one_hot, non_deterministic=True,
+                                                           family_quotient_numpy=self.family_quotient_numpy)
         fsc_res = evaluate_policy_in_model(fsc, environment=env, tf_environment=tf_env, max_steps=(self.max_episode_len + 1) * 2)
         extraction_stats.add_fsc_result(fsc_res.reach_probs[-1], fsc_res.returns[-1])
 
@@ -141,7 +146,7 @@ class DirectExtractor:
         fsc_updates = np.zeros((max_memory, nr_observations))
         logger.info("Computing memory to tensor table of non-vectorized approach")
         compute_memory, decompute_memory = get_encoding_functions(is_one_hot)
-        memory_to_tensor_table = DirectExtractor.create_memory_to_tensor_table(
+        memory_to_tensor_table = SelfInterpretableExtractor.create_memory_to_tensor_table(
             compute_memory, memory_len, max_memory)
         eager = PyTFEagerPolicy(
             policy, use_tf_function=True, batch_time_steps=False)
@@ -169,43 +174,88 @@ class DirectExtractor:
         table_based_policy = TableBasedPolicy(
             policy, fsc_actions, fsc_updates, initial_memory=0)
         return table_based_policy, fsc_actions, fsc_updates
+    
+    @staticmethod
+    def get_det_action_and_update_function(policy: TFPolicy, time_steps, memory_states, 
+                                           max_memory, nr_observations, memory_len, base, 
+                                           decompute_memory, action_keywords):
+            eager = PyTFEagerPolicy(
+                policy, use_tf_function=True, batch_time_steps=False)
+            fsc_updates = np.zeros((max_memory, nr_observations))
+            fsc_actions = np.zeros((max_memory, nr_observations))
+            policy_steps = eager.action(time_steps, policy_state=memory_states)
+            actions = policy_steps.action.numpy().reshape((max_memory, nr_observations))
+            fsc_actions[:, :] = actions
+            states = policy_steps.state  # (M*O, L)
+            states = decompute_memory(
+                memory_len, states, base)
+            states = tf.reshape(states, (max_memory, nr_observations)).numpy()  # (M, O)
+            fsc_updates[:, :] = states
+            table_based_policy = TableBasedPolicy(
+                policy, fsc_actions, fsc_updates, initial_memory=0, action_keywords=action_keywords)
+            return table_based_policy, fsc_actions, fsc_updates
+
 
     @staticmethod
-    def extract_fsc(policy: TFPolicy, environment: EnvironmentWrapperVec, memory_len: int, is_one_hot: bool = True) -> TableBasedPolicy:
+    def extract_fsc(policy: TFPolicy, environment: EnvironmentWrapperVec, memory_len: int, 
+                    is_one_hot: bool = True, non_deterministic=False, 
+                    family_quotient_numpy : FamilyQuotientNumpy = None) -> TableBasedPolicy:
         # Computes the number of potential combinations of latent memory (3 possible values for each latent memory cell, {-1, 0, 1})
         base = 3
         max_memory = base ** memory_len if not is_one_hot else memory_len
         nr_observations = environment.stormpy_model.nr_observations
-        fsc_actions = np.zeros((max_memory, nr_observations))
-        fsc_updates = np.zeros((max_memory, nr_observations))
+        
+        
         logger.info("Computing memory to tensor table")
         compute_memory, decompute_memory = get_encoding_functions(is_one_hot)
-        memory_to_tensor_table = DirectExtractor.create_memory_to_tensor_table(
+        memory_to_tensor_table = SelfInterpretableExtractor.create_memory_to_tensor_table(
             compute_memory, memory_len, max_memory)
-        eager = PyTFEagerPolicy(
-            policy, use_tf_function=True, batch_time_steps=False)
+        
         logger.info("Starting to extract FSC")
 
         _, obs_mesh = np.meshgrid(
             np.arange(max_memory), np.arange(nr_observations), indexing='ij')
         obs_mesh = obs_mesh.flatten()
         obs_batch = tf.convert_to_tensor(obs_mesh, dtype=tf.int32)  # (N,)
-        time_steps = environment.create_fake_timestep_from_observation_integer(obs_batch)
+        if family_quotient_numpy is not None:
+            time_steps, illegal_actions_flags = family_quotient_numpy.get_time_steps_for_observation_integers(
+                obs_batch, environment.action_keywords)
+        else:
+            time_steps = environment.create_fake_timestep_from_observation_integer(obs_batch)
+            illegal_actions_flags = np.zeros((time_steps.observation.shape[0], ), dtype=bool)  # No illegal actions in the fake time step
         memory_states = tf.convert_to_tensor(memory_to_tensor_table, dtype=tf.float32)  # (M, L)
         memory_states = tf.reshape(memory_states, (max_memory, 1, memory_len))          # (M, 1, L)
         memory_states = tf.repeat(memory_states, repeats=nr_observations, axis=1)       # (M, O, L)
-        memory_states = tf.reshape(memory_states, (-1, memory_len))                     # (M*O, L)
-        policy_steps = eager.action(time_steps, policy_state=memory_states)
-        actions = policy_steps.action.numpy().reshape((max_memory, nr_observations))
-        fsc_actions[:, :] = actions
+        memory_states = tf.reshape(memory_states, (-1, memory_len))                 
+        if not non_deterministic:    # (M*O, L)
+           table_based_policy, fsc_actions, fsc_updates = SelfInterpretableExtractor.get_det_action_and_update_function(
+                policy, time_steps, memory_states, max_memory, nr_observations, memory_len, base, decompute_memory,
+                environment.action_keywords)
+        else:
+            fsc_actions = np.zeros((max_memory, nr_observations, len(environment.action_keywords)), dtype=np.float32)
+            distro_function = tf.function(policy.distro)
+            logits, states = distro_function(time_steps, policy_state=memory_states, seed=0)
+            logits = tf.reshape(logits, (max_memory, nr_observations, len(environment.action_keywords)))  # (M, O, L)
+            illegal_actions_flags = np.reshape(illegal_actions_flags, (max_memory, nr_observations))  # (M, O)
+            probs = tf.nn.softmax(logits, axis=-1).numpy()  # (M, O, L)
+            # Set probs to zero when the action has too low probability
+            probs[probs < 0.001] = 0.0
+            probs /= np.sum(probs, axis=-1, keepdims=True)  # Normalize probabilities
+            # use illegal actions flags to set probabilities to zero to all actions
+            probs[illegal_actions_flags, :] = 0.0
+            fsc_actions[:, :, :] = probs
+            fsc_updates = np.zeros((max_memory, nr_observations, max_memory), dtype=np.float32)
+            states = decompute_memory(memory_len, states, base).numpy()  # (M*O)
+            states = np.reshape(states, (max_memory, nr_observations))  # (M, O)
+            # Expand states to match the shape (M, O, L), since updates are deterministic and we want to map state update to dirac distribution
+            fsc_updates[:, :, :] = np.eye(max_memory, dtype=np.float32)[states.astype(int)]  # (M, O, L)
+            table_based_policy = TableBasedPolicy(
+                policy, fsc_actions, fsc_updates, initial_memory=0, action_keywords=environment.action_keywords)
 
-        states = policy_steps.state  # (M*O, L)
-        states = decompute_memory(
-            memory_len, states, base)
-        states = tf.reshape(states, (max_memory, nr_observations)).numpy()  # (M, O, L)
-        fsc_updates[:, :] = states
-        table_based_policy = TableBasedPolicy(
-            policy, fsc_actions, fsc_updates, initial_memory=0, action_keywords=environment.action_keywords)
+            # states = tf.reshape(states, (max_memory, nr_observations, memory_len))
+
+        
+            
         return table_based_policy, fsc_actions, fsc_updates
 
     @staticmethod
@@ -255,7 +305,7 @@ class DirectExtractor:
         agent.set_agent_greedy()
         agent.set_policy_masking()
         buffer = sample_data_with_policy(
-            agent.wrapper, num_samples=num_data_steps,
+            agent.collect_policy_wrapper, num_samples=num_data_steps,
             environment=env, tf_environment=tf_env,
         )
         cloned_actor = ClonedFSCActorPolicy(
@@ -268,9 +318,9 @@ class DirectExtractor:
             environment=env, tf_environment=tf_env, args=args,
             extraction_stats=extraction_stats
         )
-        fsc, action_table, update_table = DirectExtractor.extract_fsc(cloned_actor, env, memory_size, is_one_hot=use_one_hot)
+        fsc, action_table, update_table = SelfInterpretableExtractor.extract_fsc(cloned_actor, env, memory_size, is_one_hot=use_one_hot)
         if DEBUG:
-            fsc2, action_table2, update_table2 = DirectExtractor.extract_fsc_nonvectorized(cloned_actor, env, memory_size, is_one_hot=use_one_hot)
+            fsc2, action_table2, update_table2 = SelfInterpretableExtractor.extract_fsc_nonvectorized(cloned_actor, env, memory_size, is_one_hot=use_one_hot)
             # Compare action and update tables (they should be same)
             try:
                 assert np.array_equal(action_table, action_table2)
@@ -291,8 +341,8 @@ class DirectExtractor:
         return cloned_actor, buffer, extraction_stats, agent
     
 def test_sameness_of_extracted_fsc(cloned_actor, env, memory_size, is_one_hot=False, tf_env=None, agent=None):
-    fsc, action_table, update_table = DirectExtractor.extract_fsc(cloned_actor, env, memory_size, is_one_hot=is_one_hot)
-    fsc2, action_table2, update_table2 = DirectExtractor.extract_fsc_nonvectorized(cloned_actor, env, memory_size, is_one_hot=is_one_hot)
+    fsc, action_table, update_table = SelfInterpretableExtractor.extract_fsc(cloned_actor, env, memory_size, is_one_hot=is_one_hot)
+    fsc2, action_table2, update_table2 = SelfInterpretableExtractor.extract_fsc_nonvectorized(cloned_actor, env, memory_size, is_one_hot=is_one_hot)
     # Compare action and update tables (they should be same)
     try:
         assert np.array_equal(action_table, action_table2)
@@ -320,7 +370,7 @@ def parse_args_from_cmd():
     parser.add_argument("--prism-path", type=str, required=True)
     parser.add_argument("--memory-size", type=int, default=2)
     parser.add_argument("--num-data-steps", type=int, default=6000)
-    parser.add_argument("--num-training-steps", type=int, default=2000)
+    parser.add_argument("--num-training-steps", type=int, default=20)
     parser.add_argument("--specification-goal",
                         type=str, default="reachability")
     parser.add_argument("--optimization-goal", type=str, default="max")
@@ -338,12 +388,12 @@ if __name__ == "__main__":
     # test_memory_endoce_and_decode_functions(encode, decode, max_memory, memory_size)
     prism_templ = os.path.join(args.prism_path, "sketch.templ")
     properties_templ = os.path.join(args.prism_path, "sketch.props")
-    _, _, extraction_stats, og_agent = DirectExtractor.run_benchmark(prism_templ, properties_templ, args.memory_size, 
+    _, _, extraction_stats, og_agent = SelfInterpretableExtractor.run_benchmark(prism_templ, properties_templ, args.memory_size, 
                                                                      args.num_data_steps, args.num_training_steps,
                                                                      args.specification_goal, args.optimization_goal, args.use_one_hot,
                                                                      args.extraction_epochs, args.use_residual_connection)
     
     extraction_stats.store_as_json(args.prism_path.split(
         "/")[-1], args.experiments_storage_path_folder)
-    DirectExtractor.save_eval_res_to_json(og_agent.evaluation_result, args.prism_path.split(
+    SelfInterpretableExtractor.save_eval_res_to_json(og_agent.evaluation_result, args.prism_path.split(
         "/")[-1], args.experiments_storage_path_folder)

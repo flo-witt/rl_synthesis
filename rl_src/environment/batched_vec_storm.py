@@ -1,0 +1,129 @@
+from vec_storm.storm_vec_env import StormVecEnv
+from vec_storm.storm_vec_env import StepInfo
+
+from typing import Set, Dict, Tuple
+import json
+import pickle
+
+import numpy as np
+
+import jax
+from jax import numpy as jnp
+
+from stormpy import simulator
+from stormpy.storage.storage import SparsePomdp
+
+
+class BatchedVecStorm(StormVecEnv):
+    """
+    A vectorized environment for running multiple instances of a VecStorm simulator in parallel.
+    This class extends the StormVecEnv to mainain the same interface while allowing for batch processing.
+    Initially, it is just the StormVecEnv with a different name, but you can add more POMDPs and then the simulator will play 
+    """
+    def __init__(self, pomdp: SparsePomdp, get_scalarized_reward: Dict[str, np.array], num_envs=1, seed=42, metalabels=None, random_init=False, max_steps=100,
+                 obs_evaluator=None, quotient_state_valuations=None, observation_to_actions=None):
+        super().__init__(pomdp, get_scalarized_reward, num_envs=num_envs, seed=seed, metalabels=metalabels,
+                         random_init=random_init, max_steps=max_steps, obs_evaluator=obs_evaluator,
+                         quotient_state_valuations=quotient_state_valuations,
+                         observation_to_actions=observation_to_actions)
+        self.get_scalarized_reward = get_scalarized_reward
+        self.num_envs = num_envs
+        self.metalabels = metalabels
+        self.random_init = random_init
+        self.max_steps = max_steps
+        self.obs_evaluator = obs_evaluator
+        self.quotient_state_valuations = quotient_state_valuations
+        self.observation_to_actions = observation_to_actions
+        self.simulators = [self.simulator] # Initial simulator from the superclass
+        self.num_envs_per_simulator = [self.num_envs]  # Track number of environments per simulator
+        
+    def recompute_num_envs(self, exponential_simulator_distribution=True):
+        """Recomputes the number of environments per simulator based on the current state of the simulators."""
+        num_simulators = len(self.simulators)
+        assert num_simulators > 0, "No simulators available."
+        if exponential_simulator_distribution:
+            a1 = self.num_envs * (1 - 0.5)
+            a1 = a1 / (1 - 0.5 ** num_simulators)
+            self.num_envs_per_simulator = [int(a1 * (0.5 ** i)) for i in range(num_simulators)]
+            # Ensure the total number of environments matches the original number
+            total_envs = sum(self.num_envs_per_simulator)
+            if total_envs < self.num_envs:
+                # If the total is less, distribute the remaining environments evenly
+                for i in range(self.num_envs - total_envs):
+                    self.num_envs_per_simulator[i % num_simulators] += 1
+        else:
+            self.num_envs_per_simulator = [self.num_envs // num_simulators] * num_simulators
+            # Distribute any remaining environments evenly across simulators
+            for i in range(self.num_envs % num_simulators):
+                self.num_envs_per_simulator[i] += 1
+        print("Recomputed number of environments per simulator:", self.num_envs_per_simulator)
+
+    def add_pomdp(self, pomdp):
+        """Creates new simulator for the given POMDP and adds it to the batch of simulators.
+
+        Args:
+            pomdp (SparsePomdp): The POMDP to be added to the batch of simulators.
+        """
+
+        new_storm_vec_env = StormVecEnv(
+            pomdp=pomdp,
+            get_scalarized_reward=self.get_scalarized_reward,
+            num_envs=self.num_envs // (len(self.simulators) + 1),  # Distribute environments evenly 
+            metalabels=self.metalabels,
+            random_init=self.random_init,
+            max_steps=self.max_steps,
+            obs_evaluator=self.obs_evaluator,
+            quotient_state_valuations=self.quotient_state_valuations,
+            observation_to_actions=self.observation_to_actions
+        )
+
+        new_simulator = new_storm_vec_env.simulator
+
+        self.simulators.append(new_simulator)
+        self.recompute_num_envs()
+        self.reset()
+
+    def set_num_envs(self, num_envs):
+        super().set_num_envs(num_envs)
+        self.num_envs = num_envs
+        self.recompute_num_envs()
+        self.reset()
+
+    def step(self, actions) -> Tuple[jnp.array, jnp.array, jnp.array, jnp.array, jnp.array, jnp.array]:
+        """
+            Perform a step in the environment.
+
+            actions: The actions to be taken in the current states.
+
+            Returns:
+            - observations: The observations of the new states (after the potential reset).
+            - rewards: The rewards of the transitions (before the potential reset).
+            - done: A boolean mask indicating if the new states are terminal (before the potential reset).
+            - truncated: A boolean mask indicating if the new states reached the maximum number of steps (before the potential reset).
+            - allowed_actions: The boolean mask of allowed actions for the new states (after the potential reset).
+            - metalabels: The boolean mask of metalabels for the new states (before the potential reset).
+        """
+        self.rng_key, step_key = jax.random.split(self.rng_key)
+        
+        # res: StepInfo = self.simulator.step(self.simulator_states, actions, step_key)
+        # Call step on each simulator in the batch
+        res_list = []
+        for i, simulator in enumerate(self.simulators):
+            num_envs = self.num_envs_per_simulator[i]
+            actions_for_simulator = actions[i * num_envs:(i + 1) * num_envs]
+            res: StepInfo = simulator.step(self.simulator_states.slice(i * num_envs, (i + 1) * num_envs), actions_for_simulator, step_key)
+            res_list.append(res)
+        # Combine results from all simulators
+        res = StepInfo.combine(res_list)
+
+        self.simulator_states = res.states
+        self.simulator_integer_observations = res.observations
+        return res.observations, res.rewards, res.done, res.truncated, res.allowed_actions, res.metalabels
+
+
+
+        
+
+
+        
+    

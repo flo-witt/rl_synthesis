@@ -100,9 +100,9 @@ class ClonedFSCActorPolicy(TFPolicy):
     def _action(self, time_step, policy_state, seed):
         action_probs, memory = self.distro(
             time_step, policy_state, seed)
-        # action = tf.random.categorical(action_probs, 1, dtype=tf.int32)
+        action = tf.random.categorical(action_probs, 1, dtype=tf.int32)
         # sample the most probable action
-        action = tf.argmax(action_probs, axis=-1, output_type=tf.int32)
+        # action = tf.argmax(action_probs, axis=-1, output_type=tf.int32)
         action = tf.reshape(action, (action.shape[0],))
         policy_step = PolicyStep(action=action, state=memory)
         # print(policy_step)
@@ -118,7 +118,8 @@ class ClonedFSCActorPolicy(TFPolicy):
                                                 environment: EnvironmentWrapperVec = None,
                                                 tf_environment: TFPyEnvironment = None,
                                                 args: ArgsEmulator = None,
-                                                extraction_stats: ExtractionStats = None) -> ExtractionStats:
+                                                extraction_stats: ExtractionStats = None,
+                                                learn_probs_regression=True) -> ExtractionStats:
         cloned_actor = self
         dataset_options = tf.data.Options()
         dataset_options.experimental_deterministic = False
@@ -142,10 +143,23 @@ class ClonedFSCActorPolicy(TFPolicy):
         iterator = iter(dataset)
         neural_fsc = cloned_actor.fsc_actor
         optimizer = optimizers.Adam(learning_rate=1.6e-4, weight_decay=1e-3)
-        loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+        if learn_probs_regression:
+            loss_fn = keras.losses.CategoricalCrossentropy(from_logits=True)
+            accuracy_metric = keras.metrics.CategoricalAccuracy(
+                name="accuracy")
+        else:
+            loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+            accuracy_metric = keras.metrics.SparseCategoricalAccuracy(
+                name="accuracy")
         loss_metric = keras.metrics.Mean(name="train_loss")
-        accuracy_metric = keras.metrics.SparseCategoricalAccuracy(
-            name="accuracy")
+        noise_level_scheduler = keras.optimizers.schedules.ExponentialDecay(
+            initial_learning_rate=0.35,
+            decay_steps=num_epochs // 100,
+            decay_rate=0.96,
+            staircase=True
+        )
+
+        
 
         self.evaluation_result = None
         observation_length = environment.observation_spec_len
@@ -155,7 +169,12 @@ class ClonedFSCActorPolicy(TFPolicy):
             if environment.use_stacked_observations: # If the environment uses stacked observations, we need to taky only the last observation
                 
                 observations = observations[:, :, :observation_length]
-            gt_actions = experience.action
+            if learn_probs_regression:
+                logits = experience.policy_info["dist_params"]["logits"]
+                gt_actions = tf.nn.softmax(logits, axis=-1)
+                gt_actions = tf.reshape(gt_actions, (gt_actions.shape[0], -1, gt_actions.shape[-1]))
+            else:
+                gt_actions = experience.action
             step_types = tf.cast(experience.step_type, tf.float32)
             step_types = tf.reshape(step_types, (step_types.shape[0], -1, 1))
             with tf.GradientTape() as tape:
@@ -170,36 +189,6 @@ class ClonedFSCActorPolicy(TFPolicy):
             loss_metric.update_state(loss)
             accuracy_metric.update_state(gt_actions, played_action)
             return loss
-        
-        @tf.function
-        def train_step_by_step(experience):
-            observations = experience.observation["observation"]
-            gt_actions = experience.action
-            step_types = tf.cast(experience.step_type, tf.float32)
-            loss = []
-            with tf.GradientTape() as tape:
-                mem = neural_fsc.get_initial_state(
-                    observations.shape[0])
-                mem = tf.reshape(mem, (mem.shape[0], -1))
-                for i in range(step_types.shape[1]):
-                    observation = tf.reshape(observations[:, i], (observations.shape[0], 1, -1))
-                    step_type = tf.reshape(step_types[:, i], (step_types.shape[0], 1, -1))
-                    played_action, mem = neural_fsc(
-                        observation, step_type=step_type, old_memory=mem)
-                    played_action = tf.reshape(played_action, (played_action.shape[0], -1))
-                    mem = tf.where(tf.equal(step_type, tf_agents.trajectories.time_step.StepType.LAST), 
-                                   neural_fsc.get_initial_state(observations.shape[0]), mem)
-                    loss.append(loss_fn(gt_actions[:, i], played_action))
-                    accuracy_metric.update_state(gt_actions[:, i], played_action)
-                loss = tf.reduce_mean(loss)
-            # loss = tf.reduce_mean(loss)
-            grads = tape.gradient(loss, neural_fsc.trainable_variables)
-            grads, _ = tf.clip_by_global_norm(grads, 5.0)
-            optimizer.apply_gradients(
-                zip(grads, neural_fsc.trainable_variables))
-            loss_metric.update_state(loss)
-            
-            return loss
 
         for i in range(num_epochs):
             try:
@@ -209,12 +198,16 @@ class ClonedFSCActorPolicy(TFPolicy):
                 experience, _ = next(iterator)
 
             loss = train_step(experience) # train_step(experience)
+            # Change noise level
+            neural_fsc.set_noise_level(noise_level_scheduler(i))
+            if i % 1000 == 0:
+                logger.info(noise_level_scheduler(i))
             self.periodical_evaluation(i, loss_metric, accuracy_metric, cloned_actor,
                                        environment, tf_environment, extraction_stats,
                                        self.evaluation_result, specification_checker)
             # if i > 10000 and accuracy_metric.result() > 0.98:
             #     break
-            
+        self.fsc_actor.set_noise_level(0.0)
 
         return extraction_stats
 

@@ -6,7 +6,7 @@ import tf_agents
 from tests.general_test_tools import *
 
 
-from interpreters.direct_fsc_extraction.direct_extractor import DirectExtractor
+from paynt.rl_extension.self_interpretable_interface.self_interpretable_extractor import SelfInterpretableExtractor
 from interpreters.direct_fsc_extraction.cloned_fsc_actor_policy import ClonedFSCActorPolicy
 from tools.specification_check import SpecificationChecker
 from agents.recurrent_ppo_agent import Recurrent_PPO_agent
@@ -73,7 +73,7 @@ def run_benchmark(prism_path: str, properties_path: str, memory_size, num_data_s
         environment=env, tf_environment=tf_env, args=args,
         extraction_stats=extraction_stats
     )
-    fsc = DirectExtractor.extract_fsc(
+    fsc = SelfInterpretableExtractor.extract_fsc(
         cloned_actor, env, memory_size, is_one_hot=use_one_hot)
     if DEBUG:
         buffer_test = sample_data_with_policy(

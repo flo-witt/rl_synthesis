@@ -6,7 +6,7 @@ from paynt.rl_extension.family_extractors.external_family_wrapper import Extract
 from rl_src.experimental_interface import ArgsEmulator
 from rl_src.interpreters.bottlenecking.quantized_bottleneck_extractor import BottleneckExtractor
 from rl_src.tools.evaluators import evaluate_policy_in_model
-from rl_src.interpreters.direct_fsc_extraction.direct_extractor import *
+from paynt.rl_extension.self_interpretable_interface.self_interpretable_extractor import *
 
 from .synthesizer_onebyone import SynthesizerOneByOne
 from paynt.rl_extension.saynt_rl_tools.agents_wrapper import AgentsWrapper
@@ -25,7 +25,7 @@ import tensorflow as tf
 import logging
 logger = logging.getLogger(__name__)
 
-from rl_src.interpreters.direct_fsc_extraction.direct_extractor import DirectExtractor
+from paynt.rl_extension.self_interpretable_interface.self_interpretable_extractor import SelfInterpretableExtractor
 from rl_src.interpreters.direct_fsc_extraction.extraction_stats import ExtractionStats
 from rl_src.interpreters.aalpy_extraction.aalpy_extractor import AALpyExtractor
 from paynt.rl_extension.extraction_benchmark_res import ExtractionBenchmarkRes, ExtractionBenchmarkResManager
@@ -211,7 +211,7 @@ class SynthesizerRL:
         else:
             optimization_specification = SpecificationChecker.Constants.REWARD
 
-        direct_extractor = DirectExtractor(memory_len = latent_dim, is_one_hot=self.use_one_hot_memory,
+        direct_extractor = SelfInterpretableExtractor(memory_len = latent_dim, is_one_hot=self.use_one_hot_memory,
                                            use_residual_connection=True, training_epochs=50001,
                                            num_data_steps=4001, get_best_policy_flag=False, model_name=self.model_name,
                                            max_episode_len=self.args.max_steps, optimizing_specification=optimization_specification)
