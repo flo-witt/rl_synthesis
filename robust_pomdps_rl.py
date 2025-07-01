@@ -309,8 +309,11 @@ def main():
 
     agent = extractor.generate_agent(pomdp, args_emulated)
 
+    hole_assignment = pomdp_sketch.family.pick_any()
+    pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
+
     # Using None for the POMDP here means that the extractor will use the existing environment from initialization.
-    extractor.train_on_new_pomdp(None, agent, nr_iterations=1001)
+    extractor.train_on_new_pomdp(pomdp, agent, nr_iterations=1001)
 
     # -------------------------------------------------------------------------
     # Different extraction method should be used here!!!

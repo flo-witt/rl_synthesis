@@ -44,7 +44,8 @@ class BatchedVecStorm(StormVecEnv):
         if exponential_simulator_distribution:
             a1 = self.num_envs * (1 - 0.5)
             a1 = a1 / (1 - 0.5 ** num_simulators)
-            self.num_envs_per_simulator = [int(a1 * (0.5 ** i)) for i in range(num_simulators)]
+            self.num_envs_per_simulator_reversed = [int(a1 * (0.5 ** i)) for i in range(num_simulators)]
+            self.num_envs_per_simulator = self.num_envs_per_simulator_reversed[::-1]
             # Ensure the total number of environments matches the original number
             total_envs = sum(self.num_envs_per_simulator)
             if total_envs < self.num_envs:
@@ -109,11 +110,13 @@ class BatchedVecStorm(StormVecEnv):
         res_list = []
         for i, simulator in enumerate(self.simulators):
             num_envs = self.num_envs_per_simulator[i]
+            num_prev_envs = sum(self.num_envs_per_simulator[:i]) if i > 0 else 0
             if num_envs == 0: # If the number of environments for this simulator is zero, skip it.
                 continue
-            actions_for_simulator = actions[i * num_envs:(i + 1) * num_envs]
-            res: StepInfo = simulator.step(self.simulator_states.slice(i * num_envs, (i + 1) * num_envs), actions_for_simulator, step_key)
+            actions_for_simulator = actions[num_prev_envs:num_prev_envs + num_envs]
+            res: StepInfo = simulator.step(self.simulator_states.slice(num_prev_envs, num_prev_envs + num_envs), actions_for_simulator, step_key)
             res_list.append(res)
+
         # Combine results from all simulators
         res = StepInfo.combine(res_list)
 
