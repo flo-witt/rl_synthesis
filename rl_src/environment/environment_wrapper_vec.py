@@ -296,14 +296,14 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         self.antigoal_values_vector = tf.constant(
             [self.args.evaluation_antigoal * 0] * self.num_envs, dtype=tf.float32)
         self.goal_values_vector = tf.constant(
-            [self.args.evaluation_goal * 2] * self.num_envs, dtype=tf.float32)
+            [self.args.evaluation_goal * 5] * self.num_envs, dtype=tf.float32)
         
     def set_rover_rewards(self):
         self.reward_multiplier = -0.1
         self.antigoal_values_vector = tf.constant(
             [self.args.evaluation_antigoal * 4] * self.num_envs, dtype=tf.float32)
         self.goal_values_vector = tf.constant(
-            [self.args.evaluation_goal * 4] * self.num_envs, dtype=tf.float32)
+            [1000] * self.num_envs, dtype=tf.float32)
         
     def set_negative_goal_rewards(self):
         """Sets the rewards for the negative goal states."""
@@ -319,7 +319,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         self.antigoal_values_vector = tf.constant(
             [self.args.evaluation_antigoal * 2] * self.num_envs, dtype=tf.float32)
         self.goal_values_vector = tf.constant(
-            [self.args.evaluation_goal * 2] * self.num_envs, dtype=tf.float32)
+            [1000] * self.num_envs, dtype=tf.float32)
         
     def set_dpm_rewards(self):
         """Sets the rewards for the DPM states."""
@@ -346,8 +346,6 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
             "dpm": self.set_dpm_rewards,
             "aco": self.set_obstacle_rewards,
             "rover": self.set_reachability_rewards
-
-
         }
         key_found = False
         for key in self.reward_models.keys():

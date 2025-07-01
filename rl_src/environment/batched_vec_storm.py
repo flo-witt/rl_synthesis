@@ -18,7 +18,7 @@ class BatchedVecStorm(StormVecEnv):
     """
     A vectorized environment for running multiple instances of a VecStorm simulator in parallel.
     This class extends the StormVecEnv to mainain the same interface while allowing for batch processing.
-    Initially, it is just the StormVecEnv with a different name, but you can add more POMDPs and then the simulator will play 
+    Initially, it is just the StormVecEnv with a different name, but you can add more POMDPs and then the simulator will play them in parallel.
     """
     def __init__(self, pomdp: SparsePomdp, get_scalarized_reward: Dict[str, np.array], num_envs=1, seed=42, metalabels=None, random_init=False, max_steps=100,
                  obs_evaluator=None, quotient_state_valuations=None, observation_to_actions=None):
@@ -56,7 +56,6 @@ class BatchedVecStorm(StormVecEnv):
             # Distribute any remaining environments evenly across simulators
             for i in range(self.num_envs % num_simulators):
                 self.num_envs_per_simulator[i] += 1
-        print("Recomputed number of environments per simulator:", self.num_envs_per_simulator)
 
     def add_pomdp(self, pomdp):
         """Creates new simulator for the given POMDP and adds it to the batch of simulators.
@@ -81,7 +80,7 @@ class BatchedVecStorm(StormVecEnv):
 
         self.simulators.append(new_simulator)
         self.recompute_num_envs()
-        self.reset()
+        self.reset() # Reset to initialize the new simulator states
 
     def set_num_envs(self, num_envs):
         super().set_num_envs(num_envs)
@@ -110,6 +109,8 @@ class BatchedVecStorm(StormVecEnv):
         res_list = []
         for i, simulator in enumerate(self.simulators):
             num_envs = self.num_envs_per_simulator[i]
+            if num_envs == 0: # If the number of environments for this simulator is zero, skip it.
+                continue
             actions_for_simulator = actions[i * num_envs:(i + 1) * num_envs]
             res: StepInfo = simulator.step(self.simulator_states.slice(i * num_envs, (i + 1) * num_envs), actions_for_simulator, step_key)
             res_list.append(res)

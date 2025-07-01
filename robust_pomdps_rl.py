@@ -34,6 +34,9 @@ from tools.args_emulator import ArgsEmulator
 
 import numpy as np
 
+import logging
+logger = logging.getLogger(__name__)
+
 class RobustTrainer:
     def __init__(self, args: ArgsEmulator, use_one_hot_memory=True, latent_dim=2,
                  pomdp_sketch=None,
@@ -117,8 +120,16 @@ class RobustTrainer:
         #                                     obs_evaluator=self.obs_evaluator,
         #                                     quotient_state_valuations=self.quotient_state_valuations,
         #                                     observation_to_actions=self.pomdp_sketch.observation_to_actions)
-        if pomdp is not None:
+        if pomdp is not None and self.args.batched_vec_storm:
             self.environment.add_new_pomdp(pomdp)
+        elif pomdp is not None and not self.args.batched_vec_storm:
+            self.environment = EnvironmentWrapperVec(pomdp, self.args, num_envs=256, enforce_compilation=True,
+                                                     obs_evaluator=self.obs_evaluator,
+                                                     quotient_state_valuations=self.quotient_state_valuations,
+                                                     observation_to_actions=self.pomdp_sketch.observation_to_actions)
+            agent.change_environment(self.environment)
+        else:
+            logger.info("No POMDP provided, using existing environment.")
         agent.train_agent(iterations=nr_iterations)
         self.benchmark_stats.add_rl_performance(
             np.abs(agent.evaluation_result.returns[-1]))
@@ -133,11 +144,23 @@ class RobustTrainer:
             environment=self.environment, tf_environment=self.tf_env, args=args)
         return self.agent
     
-    def add_new_pomdp(self, pomdp):
+    def add_new_pomdp(self, pomdp, agent : Recurrent_PPO_agent):
         """
         Adds a new POMDP to the environment.
         """
-        self.environment.add_new_pomdp(pomdp)
+        if self.args.batched_vec_storm:
+            agent.environment.add_new_pomdp(pomdp)
+        else:
+            agent.environment = EnvironmentWrapperVec(pomdp, self.args, num_envs=256, enforce_compilation=True,
+                                                     obs_evaluator=self.obs_evaluator,
+                                                     quotient_state_valuations=self.quotient_state_valuations,
+                                                     observation_to_actions=self.pomdp_sketch.observation_to_actions)
+            agent.change_environment(self.environment)
+
+    def sample_data_from_current_environment(self, agent : Recurrent_PPO_agent):
+        agent.set_agent_stochastic() # Agent is plays stochastic policy
+        agent.set_policy_masking() # Agent uses masking to avoid illegal actions. In the collected data, the illegal action distributions logits are set to some really low constatnt.
+        collector_policy = agent.get_policy(False, True) # If the second argument is True, the policy also returns distributions over actions in the info. Useful for stochastic-FSC extraction.
 
 
 def load_sketch(project_path):
@@ -236,6 +259,18 @@ def generate_heatmap_complete(pomdp_sketch, fsc):
         evaluations.append(one_by_one.evaluate(assignment, keep_value_only=True))
     return evaluations, hole_assignments_to_test
 
+def initialize_extractor(pomdp_sketch, args_emulated, family_quotient_numpy):
+    quotient_sv = pomdp_sketch.quotient_mdp.state_valuations
+    quotient_obs = pomdp_sketch.obs_evaluator
+
+    quotient_sv = pomdp_sketch.quotient_mdp.state_valuations
+
+    # Currently latent_dim is hardcoded to 2 (3 ** i => 9-FSC)
+    extractor = RobustTrainer(args_emulated, use_one_hot_memory=False, latent_dim=2, quotient_state_valuations=quotient_sv,
+                              obs_evaluator=quotient_obs, pomdp_sketch=pomdp_sketch, family_quotient_numpy=family_quotient_numpy)
+    
+    return extractor
+
 
 
 def main():
@@ -254,60 +289,55 @@ def main():
     pomdp_sketch = load_sketch(project_path)
     json_path = create_json_file_name(project_path)
 
-    family_quotient_numpy = FamilyQuotientNumpy(pomdp_sketch)
+    family_quotient_numpy = FamilyQuotientNumpy(pomdp_sketch) # This can be useful for extraction and some other stuff.
     
-
     prism_path = os.path.join(project_path, "sketch.templ")
     properties_path = os.path.join(project_path, "sketch.props")
 
+    # Here, you can change the main parameters of the training etc.
+    # Batched_vec_storm is used to run multiple different POMDPs in parallel. If you want to always run a single POMDP (e.g. worst-case), set it to False.
+    # Masked_training is used to train the agent with masking, i.e. the agent will be forbidden to take illegal actions.
     args_emulated = init_args(
-        prism_path=prism_path, properties_path=properties_path, nr_runs=3000, batched_vec_storm=True)
+        prism_path=prism_path, properties_path=properties_path, batched_vec_storm=True, masked_training=False)
     args_emulated.model_name = project_path.split("/")[-1]
     # pomdp = initialize_prism_model(prism_path, properties_path, constants="")
 
     hole_assignment = pomdp_sketch.family.pick_any()
     pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
-    # pomdp, observation_action_to_true_action = assignment_to_pomdp(pomdp_sketch, hole_assignment)
 
-    quotient_sv = pomdp_sketch.quotient_mdp.state_valuations
-    quotient_obs = pomdp_sketch.obs_evaluator
+    extractor = initialize_extractor(pomdp_sketch, args_emulated, family_quotient_numpy)
 
-    quotient_sv = pomdp_sketch.quotient_mdp.state_valuations
-
-    extractor = RobustTrainer(args_emulated, use_one_hot_memory=False, latent_dim=2, quotient_state_valuations=quotient_sv,
-                              obs_evaluator=quotient_obs, pomdp_sketch=pomdp_sketch, family_quotient_numpy=family_quotient_numpy)
     agent = extractor.generate_agent(pomdp, args_emulated)
 
-    # hole_assignment = pomdp_sketch.family.pick_any()
-    # pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
+    # Using None for the POMDP here means that the extractor will use the existing environment from initialization.
+    extractor.train_on_new_pomdp(None, agent, nr_iterations=1001)
 
-    extractor.train_on_new_pomdp(None, agent, nr_iterations=501)
-
+    # -------------------------------------------------------------------------
+    # Different extraction method should be used here!!!
     fsc = extractor.extract_fsc(
         agent, agent.environment, training_epochs=20001, quotient=pomdp_sketch)
+    # -------------------------------------------------------------------------
     dtmc_sketch = pomdp_sketch.build_dtmc_sketch(
         fsc, negate_specification=True)
 
     synthesizer = paynt.synthesizer.synthesizer_ar.SynthesizerAR(dtmc_sketch)
     synthesizer.synthesize(keep_optimum=True)
-    one_by_one = paynt.synthesizer.synthesizer_onebyone.SynthesizerOneByOne(dtmc_sketch)
-
+    print("Best value", synthesizer.best_assignment_value)
     
 
     extractor.benchmark_stats.add_family_performance(
         synthesizer.best_assignment_value)
     extractor.save_stats(json_path)
 
-    print("RANDOM PICKING ENDS HERE\n\n\n\n\n\n\n")
-
     for i in range(50):
         pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
-        # pomdp, observation_action_to_true_action = assignment_to_pomdp(pomdp_sketch, hole_assignment)
-        print(pomdp)
 
         extractor.train_on_new_pomdp(pomdp, agent, nr_iterations=501)
+        # -------------------------------------------------------------------------
+        # Different extraction method should be used here!!!
         fsc = extractor.extract_fsc(
-            agent, agent.environment, quotient=pomdp_sketch, num_data_steps=3001, training_epochs=22001)
+            agent, agent.environment, quotient=pomdp_sketch, num_data_steps=3001, training_epochs=10001)
+        # -------------------------------------------------------------------------
 
         dtmc_sketch = pomdp_sketch.build_dtmc_sketch(
             fsc, negate_specification=True)
@@ -318,12 +348,7 @@ def main():
         extractor.benchmark_stats.add_family_performance(
             synthesizer.best_assignment_value)
         extractor.save_stats(json_path)
-        evaluations = []
-        for i, assignment in enumerate(hole_assignments_to_test):
-            evaluations.append(one_by_one.evaluate(assignment, keep_value_only=True))
-        for evaluation, assignment in zip(evaluations, hole_assignments_to_test):
-            print(f"Assignment: {assignment}, Evaluation: {evaluation}")
-            print()
+
 
     if profiling:
         pr.disable()
