@@ -7,6 +7,12 @@ import numpy as np
 
 from interpreters.extracted_fsc.extracted_fsc_policy import ExtractedFSCPolicy
 
+from tests.general_test_tools import init_args, init_environment
+from agents.recurrent_ppo_agent import Recurrent_PPO_agent
+from tools.evaluators import evaluate_policy_in_model
+
+from tf_agents.policies.py_tf_eager_policy import PyTFEagerPolicy
+
 class TableBasedPolicy(TFPolicy):
     def __init__(self, original_policy : TFPolicy, action_function : np.ndarray, 
                  update_function : np.ndarray, # Action and update function has shape (nr_model_states, nr_observations) 
@@ -59,12 +65,39 @@ class TableBasedPolicy(TFPolicy):
         
         if isinstance(update, tf.Tensor) and len(update.shape) > 1:
             # Get the indices of the maximum update value for each observation. These indices correspond to the selected update.
-            update = tf.argmax(update, axis=1, output_type=tf.int32)
+            update = tf.random.categorical(tf.math.log(update), num_samples=1, dtype=tf.int32)
             update = tf.reshape(update, (-1, 1))
         else:
             update = tf.reshape(update, (-1, 1))
-
-        
-
         policy_step = PolicyStep(action, update)
         return policy_step
+    
+if __name__ == "__main__":
+    args = init_args("models/evade/sketch.templ", "models/evade/sketch.props")
+
+    environment, tf_env = init_environment(args)
+    action_keywords = environment.action_keywords
+    nr_observations = environment.stormpy_model.nr_observations
+    num_fsc_states = 3
+
+    action_function = np.random.uniform(0.1, 1.0, (num_fsc_states, nr_observations, len(action_keywords)))
+    update_function = np.random.uniform(0.1, 1.0, (num_fsc_states, nr_observations, num_fsc_states))
+    action_function = action_function / np.sum(action_function, axis=-1, keepdims=True) 
+    update_function = update_function / np.sum(update_function, axis=-1, keepdims=True)
+    
+    recurrent_ppo = Recurrent_PPO_agent(environment, tf_env, args)
+
+    policy = TableBasedPolicy(
+        original_policy=recurrent_ppo.get_policy(False, True),
+        action_function=action_function,
+        update_function=update_function,
+        initial_memory=0,
+        action_keywords=action_keywords,
+        descending_actions=None
+    )
+    eager = PyTFEagerPolicy(policy, use_tf_function=True) # Makes the execution faster, but is not necessary for the policy to work
+
+    evaluate_policy_in_model(policy, args, environment, tf_env, max_steps=400)
+
+
+
