@@ -9,8 +9,9 @@ class FSCLikeActorNetwork(models.Model):
                  action_range: int,
                  memory_len: int,
                  use_one_hot: bool = False,
-                 use_residual_connection: bool = True):
-        
+                 use_residual_connection: bool = True,
+                 gumbel_softmax_one_hot: bool = True,
+                 stochastic_updates: bool = True):
         super(FSCLikeActorNetwork, self).__init__()
         self.observation_shape = observation_shape
         self.action_range = action_range
@@ -19,13 +20,15 @@ class FSCLikeActorNetwork(models.Model):
         self.grumender = layers.Dense(32, activation='tanh')
         self.simple_rnn_for_memory = layers.GRU(
             32, return_sequences=True, return_state=True)
+        self.pre_memory_dense = layers.Dense(32, activation='relu')
         self.memory_dense = layers.Dense(memory_len, activation=None)
+        self.pre_action_dense = layers.Dense(64, activation='relu')
         self.action = layers.Dense(self.action_range, activation=None)
-        gumbel_softmax_one_hot = False
         if gumbel_softmax_one_hot:
+            assert use_one_hot, "Gumbel softmax requires one-hot encoding."
             self.projection_network = layers.Dense(memory_len, activation='relu')
             self.memory_function = layers.Lambda(
-                lambda x: self.gumbel_softmax(x, temperature=0.5))
+                lambda x: self.gumbel_softmax(x, temperature=1.0))
             self.quantization_layer = layers.Lambda(lambda x: tf.one_hot(tf.argmax(x, axis=-1),
                                                                          depth=self.memory_len, dtype=tf.float32))
             self.one_hot_constant = 1
@@ -42,6 +45,9 @@ class FSCLikeActorNetwork(models.Model):
             self.quantization_layer = layers.Lambda(lambda x: tf.one_hot(tf.argmax(x, axis=-1),
                                                                          depth=self.memory_len, dtype=tf.float32))
             self.one_hot_constant = 1
+        if stochastic_updates:
+            self.quantization_layer = layers.Lambda(
+                lambda x: x)
         self.noise_level = 0.35
 
     def get_initial_state(self, batch_size):
@@ -89,12 +95,13 @@ class FSCLikeActorNetwork(models.Model):
             old_memory = self.get_initial_state(tf.shape(x)[0])
         old_memory = self.grumender(old_memory)
         x, memory = self.simple_rnn_for_memory(x, initial_state=old_memory)
-
+        memory = self.pre_memory_dense(memory)
+        x = self.pre_action_dense(x)
         # x2 = self.projection_network(x)
         # x = layers.concatenate(x1, axis=-1)
         memory = self.memory_dense(memory)
         memory = self.memory_function(memory)
-        memory += self.generate_noise(memory)
+        # memory += self.generate_noise(memory)
         x_quantized = self.quantization_layer(memory)
         # State-through estimation, where we ignore round(x).
         memory = memory + tf.stop_gradient(x_quantized - memory)

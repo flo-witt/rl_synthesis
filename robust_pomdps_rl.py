@@ -38,7 +38,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class RobustTrainer:
-    def __init__(self, args: ArgsEmulator, use_one_hot_memory=True, latent_dim=2,
+    def __init__(self, args: ArgsEmulator, use_one_hot_memory=False, latent_dim=2,
                  pomdp_sketch=None,
                  obs_evaluator=None, quotient_state_valuations=None,
                  family_quotient_numpy: FamilyQuotientNumpy = None):
@@ -161,6 +161,7 @@ class RobustTrainer:
         agent.set_agent_stochastic() # Agent is plays stochastic policy
         agent.set_policy_masking() # Agent uses masking to avoid illegal actions. In the collected data, the illegal action distributions logits are set to some really low constatnt.
         collector_policy = agent.get_policy(False, True) # If the second argument is True, the policy also returns distributions over actions in the info. Useful for stochastic-FSC extraction.
+        # Data sampling
 
 
 def load_sketch(project_path):
@@ -266,7 +267,8 @@ def initialize_extractor(pomdp_sketch, args_emulated, family_quotient_numpy):
     quotient_sv = pomdp_sketch.quotient_mdp.state_valuations
 
     # Currently latent_dim is hardcoded to 2 (3 ** i => 9-FSC)
-    extractor = RobustTrainer(args_emulated, use_one_hot_memory=False, latent_dim=2, quotient_state_valuations=quotient_sv,
+    # If use one-hot memory, then the size of FSC is equal to the latent_dim.
+    extractor = RobustTrainer(args_emulated, use_one_hot_memory=True, latent_dim=64, quotient_state_valuations=quotient_sv,
                               obs_evaluator=quotient_obs, pomdp_sketch=pomdp_sketch, family_quotient_numpy=family_quotient_numpy)
     
     return extractor
@@ -318,7 +320,7 @@ def main():
     # -------------------------------------------------------------------------
     # Different extraction method should be used here!!!
     fsc = extractor.extract_fsc(
-        agent, agent.environment, training_epochs=20001, quotient=pomdp_sketch)
+        agent, agent.environment, training_epochs=20001, quotient=pomdp_sketch, num_data_steps=8001)
     # -------------------------------------------------------------------------
     dtmc_sketch = pomdp_sketch.build_dtmc_sketch(
         fsc, negate_specification=True)

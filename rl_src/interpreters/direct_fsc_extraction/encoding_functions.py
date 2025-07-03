@@ -25,7 +25,7 @@ def one_hot_encode_memory(memory_size: int, memory_int: int, memory_base=3) -> t
 
 
 def one_hot_decode_memory(memory_size=0, memory_vector: tf.Tensor = None, memory_base=3) -> int:
-    index = tf.argmax(memory_vector, axis=-1).numpy()
+    index = tf.argmax(memory_vector, axis=-1)
     if index.shape == (1,):
         index = index[0]
     return index

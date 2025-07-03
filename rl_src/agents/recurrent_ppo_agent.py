@@ -22,6 +22,7 @@ from agents.policies.policy_mask_wrapper import PolicyMaskWrapper
 
 from agents.networks.value_networks import create_recurrent_value_net_demasked
 from agents.networks.actor_networks import create_recurrent_actor_net_demasked
+from agents.networks.fsc_like_network import FSCLikeNetwork
 
 from tf_agents.networks.value_rnn_network import ValueRnnNetwork
 from tf_agents.networks.actor_distribution_rnn_network import ActorDistributionRnnNetwork
@@ -44,7 +45,7 @@ logger = logging.getLogger(__name__)
 class Recurrent_PPO_agent(FatherAgent):
     def __init__(self, environment: Environment_Wrapper, tf_environment: tf_py_environment.TFPyEnvironment,
                  args : ArgsEmulator, load=False, agent_folder=None, actor_net: ActorDistributionRnnNetwork = None,
-                 critic_net: ValueRnnNetwork = None):
+                 critic_net: ValueRnnNetwork = None, discrete_actor_memory: bool = False):
         self.common_init(environment, tf_environment, args, load, agent_folder)
         train_step_counter = tf.Variable(0)
         optimizer = tf.keras.optimizers.Adam(
@@ -53,6 +54,14 @@ class Recurrent_PPO_agent(FatherAgent):
         action_spec = tf_environment.action_spec()
         if actor_net is not None:
             self.actor_net = actor_net
+        elif discrete_actor_memory:
+            self.actor_net = FSCLikeNetwork(
+                tf_environment.observation_spec()["observation"],
+                action_spec,
+                memory_length=2,
+                lstm_size=(32,),
+                input_fc_layer_params=(64,),
+            )
         else:
             self.actor_net = create_recurrent_actor_net_demasked(
                 tf_environment, action_spec, rnn_less=self.args.use_rnn_less)
@@ -60,7 +69,7 @@ class Recurrent_PPO_agent(FatherAgent):
             self.value_net = critic_net
         else:
             self.value_net = create_recurrent_value_net_demasked(
-                tf_environment, rnn_less=self.args.use_rnn_less) 
+                tf_environment, rnn_less=self.args.use_rnn_less)
 
         time_step_spec = tf_environment.time_step_spec()
         time_step_spec = time_step_spec._replace(
@@ -71,7 +80,7 @@ class Recurrent_PPO_agent(FatherAgent):
             optimizer,
             actor_net=self.actor_net,
             value_net=self.value_net,
-            num_epochs=3,
+            num_epochs=4,
             train_step_counter=train_step_counter,
             greedy_eval=self.args.completely_greedy,
             discount_factor=0.99,

@@ -111,6 +111,52 @@ class ClonedFSCActorPolicy(TFPolicy):
     def _get_initial_state(self, batch_size: int):
         init_state = self.fsc_actor.get_initial_state(batch_size)
         return tf.reshape(init_state, (batch_size, -1))
+    
+    def compute_inverted_global_action_distribution(self, buffer: TFUniformReplayBuffer, nr_actions, use_probs_regression=False):
+        """ Computes the inverted global action distribution from the replay buffer, that is used to compute weights for the cross entropy weights.
+        Args:
+            buffer (TFUniformReplayBuffer): The replay buffer containing the experience.
+            nr_actions (int): The number of actions in the environment.
+        Returns:
+            tf.Tensor: A tensor containing the inverted global action distribution."""
+        data = buffer.gather_all()
+        dataset = tf.data.Dataset.from_tensor_slices(data)
+        dataset = dataset.batch(64).prefetch(tf.data.AUTOTUNE)
+        action_counts_or_probs = tf.zeros((nr_actions,), dtype=tf.float32)
+        for experience in dataset:
+            if use_probs_regression:
+                logits = experience.policy_info["dist_params"]["logits"]
+                logits = tf.reshape(logits, (-1, logits.shape[-1]))
+                probs = tf.nn.softmax(logits, axis=-1)
+                action_counts_or_probs += tf.reduce_sum(probs, axis=0)
+            else:
+                actions = experience.action
+                actions = tf.reshape(actions, (-1,))
+                action_counts += tf.math.bincount(actions, minlength=nr_actions)
+        action_counts_or_probs = tf.cast(action_counts_or_probs, tf.float32)
+        action_counts_or_probs = tf.where(
+            action_counts_or_probs == 0, tf.ones_like(action_counts_or_probs), action_counts_or_probs)
+        probs = tf.math.reciprocal(action_counts_or_probs)
+        probs = probs / tf.reduce_sum(probs)
+        inverted_weights = 1 / probs
+        return inverted_weights
+    
+    def get_weighted_cross_entropy_loss(self, weights, nr_actions):
+        """ Returns a weighted cross entropy loss function.
+        Args:
+            weights (tf.Tensor): The weights of each class (used for the cross entropy loss).
+            nr_actions (int): The number of actions in the environment.
+        Returns:
+            function: A loss function that takes logits and labels as input and returns the weighted cross entropy loss.
+        """
+        weights = tf.constant(weights, dtype=tf.float32)
+        def weighted_cross_entropy_loss(gt_probs, logits): # Data are in shape (batch_size, trajectory_length, nr_actions)
+            element_wise = tf.math.multiply(gt_probs, logits)
+            weighted_element_wise = tf.math.multiply(element_wise, weights)
+            loss = -tf.reduce_sum(weighted_element_wise)
+            return loss
+        return weighted_cross_entropy_loss
+            
 
     def behavioral_clone_original_policy_to_fsc(self, buffer: TFUniformReplayBuffer, num_epochs: int,
                                                 sample_len=32,
@@ -142,13 +188,21 @@ class ClonedFSCActorPolicy(TFPolicy):
 
         iterator = iter(dataset)
         neural_fsc = cloned_actor.fsc_actor
-        optimizer = optimizers.Adam(learning_rate=1.6e-4, weight_decay=1e-3)
+        optimizer = optimizers.Adam(learning_rate=1.6e-3, weight_decay=1e-4)
+        weights = self.compute_inverted_global_action_distribution(
+            buffer, len(environment.action_keywords), learn_probs_regression)
+        weights_normalized = weights / tf.reduce_sum(weights)
         if learn_probs_regression:
-            loss_fn = keras.losses.CategoricalCrossentropy(from_logits=True)
+            # loss_fn = keras.losses.CategoricalCrossentropy(from_logits=True)
+            # loss_fn = keras.losses.MeanSquaredError()
+            loss_fn = keras.losses.KLDivergence()
+            # loss_fn = self.get_weighted_cross_entropy_loss(
+            #     weights_normalized, len(environment.action_keywords))
             accuracy_metric = keras.metrics.CategoricalAccuracy(
-                name="accuracy")
+                name="accuracy"
+            )
         else:
-            loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+            # loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
             accuracy_metric = keras.metrics.SparseCategoricalAccuracy(
                 name="accuracy")
         loss_metric = keras.metrics.Mean(name="train_loss")
@@ -159,15 +213,13 @@ class ClonedFSCActorPolicy(TFPolicy):
             staircase=True
         )
 
-        
-
         self.evaluation_result = None
         observation_length = environment.observation_spec_len
+
         @tf.function
         def train_step(experience):
             observations = experience.observation["observation"]
             if environment.use_stacked_observations: # If the environment uses stacked observations, we need to taky only the last observation
-                
                 observations = observations[:, :, :observation_length]
             if learn_probs_regression:
                 logits = experience.policy_info["dist_params"]["logits"]
@@ -180,6 +232,9 @@ class ClonedFSCActorPolicy(TFPolicy):
             with tf.GradientTape() as tape:
                 played_action, mem = neural_fsc(
                     observations, step_type=step_types)
+                if learn_probs_regression:
+                    played_action = keras.activations.softmax(played_action, axis=-1)
+                
                 loss = loss_fn(gt_actions, played_action)
                 loss = tf.reduce_mean(loss)
             grads = tape.gradient(loss, neural_fsc.trainable_variables)
@@ -200,7 +255,7 @@ class ClonedFSCActorPolicy(TFPolicy):
             loss = train_step(experience) # train_step(experience)
             # Change noise level
             neural_fsc.set_noise_level(noise_level_scheduler(i))
-            if i % 1000 == 0:
+            if i % 500 == 0:
                 logger.info(noise_level_scheduler(i))
             self.periodical_evaluation(i, loss_metric, accuracy_metric, cloned_actor,
                                        environment, tf_environment, extraction_stats,
