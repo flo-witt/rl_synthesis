@@ -10,8 +10,8 @@ class FSCLikeActorNetwork(models.Model):
                  memory_len: int,
                  use_one_hot: bool = False,
                  use_residual_connection: bool = True,
-                 gumbel_softmax_one_hot: bool = True,
-                 stochastic_updates: bool = True):
+                 gumbel_softmax_one_hot: bool = False,
+                 stochastic_updates: bool = False):
         super(FSCLikeActorNetwork, self).__init__()
         self.observation_shape = observation_shape
         self.action_range = action_range

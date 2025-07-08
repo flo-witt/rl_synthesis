@@ -58,6 +58,20 @@ class BatchedVecStorm(StormVecEnv):
             for i in range(self.num_envs % num_simulators):
                 self.num_envs_per_simulator[i] += 1
 
+    def set_dominant_simulator(self, simulator_index):
+        """Sets the dominant simulator to be used for the next reset and steps.
+
+        Args:
+            simulator_index (int): The index of the simulator to be set as dominant.
+        """
+        if 0 <= simulator_index < len(self.simulators):
+            self.num_envs_per_simulator = [0] * len(self.simulators)
+            self.num_envs_per_simulator[simulator_index] = self.num_envs
+        else:
+            raise ValueError(f"Simulator index {simulator_index} is out of bounds. Must be between 0 and {len(self.simulators) - 1}.")
+        self.reset()
+
+
     def add_pomdp(self, pomdp):
         """Creates new simulator for the given POMDP and adds it to the batch of simulators.
 

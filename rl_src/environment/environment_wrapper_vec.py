@@ -296,7 +296,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         self.antigoal_values_vector = tf.constant(
             [self.args.evaluation_antigoal * 0] * self.num_envs, dtype=tf.float32)
         self.goal_values_vector = tf.constant(
-            [self.args.evaluation_goal * 5] * self.num_envs, dtype=tf.float32)
+            [self.args.evaluation_goal * 3] * self.num_envs, dtype=tf.float32)
         
     def set_rover_rewards(self):
         self.reward_multiplier = -0.1

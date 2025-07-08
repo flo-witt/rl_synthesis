@@ -31,6 +31,7 @@ from paynt.rl_extension.robust_rl.family_quotient_numpy import FamilyQuotientNum
 
 from agents.recurrent_ppo_agent import Recurrent_PPO_agent
 from tools.args_emulator import ArgsEmulator
+from tools.evaluators import evaluate_policy_in_model
 
 import numpy as np
 
@@ -50,8 +51,9 @@ class RobustTrainer:
         self.quotient_state_valuations = quotient_state_valuations
         self.family_quotient_numpy = family_quotient_numpy
         self.direct_extractor = self.init_extractor(latent_dim)
+        fsc_size = latent_dim if use_one_hot_memory else 3**latent_dim
         self.benchmark_stats = self.BenchmarkStats(
-            fsc_size=3**latent_dim, num_training_steps_per_iteration=301)
+            fsc_size=fsc_size, num_training_steps_per_iteration=301)
         self.agent = None
 
     class BenchmarkStats:
@@ -163,6 +165,103 @@ class RobustTrainer:
         collector_policy = agent.get_policy(False, True) # If the second argument is True, the policy also returns distributions over actions in the info. Useful for stochastic-FSC extraction.
         # Data sampling
 
+    def prepare_environments(self, pomdp_sketch, args_emulated):
+        """
+        Prepares the environments for the POMDP sketch.
+        """
+        obs_evaluator = pomdp_sketch.obs_evaluator
+        quotient_state_valuations = pomdp_sketch.quotient_mdp.state_valuations
+        environment_wrappers = []
+        pomdps = []
+        for sub_family in pomdp_sketch.family.all_combinations():
+            hole_assignment = pomdp_sketch.family.construct_assignment(sub_family)
+            pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
+            environment = EnvironmentWrapperVec(pomdp, args_emulated, num_envs=256, enforce_compilation=True,
+                                                obs_evaluator=obs_evaluator,
+                                                quotient_state_valuations=quotient_state_valuations,
+                                                observation_to_actions=pomdp_sketch.observation_to_actions)
+            environment_wrappers.append(environment)
+            pomdps.append(pomdp)
+        tf_environments = [TFPyEnvironment(env) for env in environment_wrappers]
+        return environment_wrappers, tf_environments, list(pomdp_sketch.family.all_combinations()), pomdps
+        
+
+    def evaluate_on_all_pomdps(self, agent: Recurrent_PPO_agent, environments, tf_environments, hole_assignments):
+        policy = agent.get_policy(True, False)
+        results = {}
+        for i, environment in enumerate(environments):
+            result = evaluate_policy_in_model(
+                policy, agent.args, environment, tf_environments[i], self.args.max_steps)
+            results[hole_assignments[i]] = result.best_return
+        return results
+
+    def merge_results(self, results, merged_results=None):
+        """
+        Merges the results from the evaluation of all POMDPs.
+        """
+        if merged_results is None:
+            merged_results = {}
+        for assignment, value in results.items():
+            if assignment not in merged_results:
+                merged_results[assignment] = []
+            merged_results[assignment].append(value)
+        return merged_results
+    
+    def get_worst_case_pomdp_index(self, all_evaluations, all_hole_assignments):
+        worst_hole_assignment = min(all_evaluations, key=all_evaluations.get)
+        logger.info(f"Worst hole assignment: {worst_hole_assignment} with value {all_evaluations[worst_hole_assignment]}")
+        worst_case_index = all_hole_assignments.index(worst_hole_assignment)
+        return worst_case_index       
+
+    def pure_rl_loop(self, pomdp_sketch, all_evaluations_file="all_evaluations.txt", extract_after_iters=5):
+        """
+        Pure RL loop, without FSC extraction.
+        """
+
+        args_emulated = self.args
+        print("All hole assignments in the POMDP sketch:")
+        for assignment in pomdp_sketch.family.all_combinations():
+            print(assignment)
+        environments, tf_environments, all_hole_assignments, pomdps = self.prepare_environments(pomdp_sketch, args_emulated)
+
+        all_evaluations = self.evaluate_on_all_pomdps(self.agent, environments, tf_environments, all_hole_assignments)
+
+        merged_results = self.merge_results(all_evaluations)
+
+        with open(all_evaluations_file, 'w') as f:
+            f.write("All evaluations:\n")
+            for assignment, values in merged_results.items():
+                f.write(f"{assignment}: {values}\n")
+
+        # Get hole assignment, where the agent performed the worst
+        
+        
+        worst_case_index = self.get_worst_case_pomdp_index(all_evaluations, all_hole_assignments)
+        for i in range(100):
+            logger.info(f"Iteration {i+1} of pure RL loop")
+            # Train the agent on all POMDPs
+            self.train_on_new_pomdp(pomdps[worst_case_index], self.agent, nr_iterations=501)
+
+            # Evaluate the agent on all POMDPs
+            all_evaluations = self.evaluate_on_all_pomdps(self.agent, environments, tf_environments, all_hole_assignments)
+            merged_results = self.merge_results(all_evaluations, merged_results)
+            worst_case_index = self.get_worst_case_pomdp_index(all_evaluations, all_hole_assignments)
+            with open(all_evaluations_file, 'w') as f:
+                f.write(f"Iteration {i+1} evaluations:\n")
+                for assignment, values in merged_results.items():
+                    f.write(f"{assignment}: {values}\n")
+            if i % extract_after_iters == 0 and i > 0:
+                # Extract the FSC from the agent
+                fsc = self.extract_fsc(self.agent, self.agent.environment, pomdp_sketch, training_epochs=100001)
+                # Evaluate the FSC on all POMDPs
+                dtmc_sketch = pomdp_sketch.build_dtmc_sketch(fsc, negate_specification=True)
+                synthesizer = paynt.synthesizer.synthesizer_ar.SynthesizerAR(dtmc_sketch)
+                hole_assignment = synthesizer.synthesize(keep_optimum=True)
+                logger.info(f"Extracted FSC for hole assignment: {hole_assignment}")
+                self.benchmark_stats.add_family_performance(synthesizer.best_assignment_value)
+                self.save_stats(os.path.join(f"{args_emulated.model_name}_benchmark_stats.json"))
+
+            
 
 def load_sketch(project_path):
     project_path = os.path.abspath(project_path)
@@ -268,12 +367,10 @@ def initialize_extractor(pomdp_sketch, args_emulated, family_quotient_numpy):
 
     # Currently latent_dim is hardcoded to 2 (3 ** i => 9-FSC)
     # If use one-hot memory, then the size of FSC is equal to the latent_dim.
-    extractor = RobustTrainer(args_emulated, use_one_hot_memory=True, latent_dim=64, quotient_state_valuations=quotient_sv,
+    extractor = RobustTrainer(args_emulated, use_one_hot_memory=False, latent_dim=2, quotient_state_valuations=quotient_sv,
                               obs_evaluator=quotient_obs, pomdp_sketch=pomdp_sketch, family_quotient_numpy=family_quotient_numpy)
     
     return extractor
-
-
 
 def main():
     args_cmd = parse_args()
@@ -291,10 +388,14 @@ def main():
     pomdp_sketch = load_sketch(project_path)
     json_path = create_json_file_name(project_path)
 
+    
+
     family_quotient_numpy = FamilyQuotientNumpy(pomdp_sketch) # This can be useful for extraction and some other stuff.
     
     prism_path = os.path.join(project_path, "sketch.templ")
     properties_path = os.path.join(project_path, "sketch.props")
+
+
 
     # Here, you can change the main parameters of the training etc.
     # Batched_vec_storm is used to run multiple different POMDPs in parallel. If you want to always run a single POMDP (e.g. worst-case), set it to False.
@@ -309,30 +410,52 @@ def main():
 
     extractor = initialize_extractor(pomdp_sketch, args_emulated, family_quotient_numpy)
 
-    agent = extractor.generate_agent(pomdp, args_emulated)
+    extractor.generate_agent(pomdp, args_emulated)
+    train_extraction_less_and_then_extract = False
+    if train_extraction_less_and_then_extract:
+        file_name_suffix = "batched" if args_emulated.batched_vec_storm else "single"
+        file_name_suffix += "_masked" if args_emulated.masked_training else "_unmasked"
+        file_name_suffix += "_rnn_less" if args_emulated.use_rnn_less else "_rnn"
+        file_name = os.path.join(project_path, f"extraction_evaluations_{file_name_suffix}.txt")
+        extractor.pure_rl_loop(pomdp_sketch, all_evaluations_file=file_name, extract_after_iters = 5)
+        return
+    else:
+        file_name_suffix = "batched" if args_emulated.batched_vec_storm else "single"
+        file_name_suffix += "_masked" if args_emulated.masked_training else "_unmasked"
+        file_name_suffix += "_rnn_less" if args_emulated.use_rnn_less else "_rnn"
+        file_name = os.path.join(project_path, f"all_evaluations_{file_name_suffix}.txt")
+        extractor.pure_rl_loop(pomdp_sketch, all_evaluations_file=file_name)
+        return
 
-    hole_assignment = pomdp_sketch.family.pick_any()
-    pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
+    
 
     # Using None for the POMDP here means that the extractor will use the existing environment from initialization.
-    extractor.train_on_new_pomdp(pomdp, agent, nr_iterations=1001)
+    extractor.train_on_new_pomdp(None, agent, nr_iterations=701)
 
     # -------------------------------------------------------------------------
     # Different extraction method should be used here!!!
     fsc = extractor.extract_fsc(
-        agent, agent.environment, training_epochs=20001, quotient=pomdp_sketch, num_data_steps=8001)
+        agent, agent.environment, training_epochs=20001, quotient=pomdp_sketch, num_data_steps=4001)
     # -------------------------------------------------------------------------
     dtmc_sketch = pomdp_sketch.build_dtmc_sketch(
         fsc, negate_specification=True)
+    
+    heatmap_evaluations, hole_assignments_to_test = generate_heatmap_complete(pomdp_sketch, fsc)
+    with open(os.path.join(project_path, "heatmap_evaluations.txt"), 'w') as f:
+        f.write(f"Heatmap evaluations, the original assignment is: {hole_assignment}\n", )
+        for i, evaluation in enumerate(heatmap_evaluations):
+            f.write(f"{hole_assignments_to_test[i]}: {evaluation}\n")
+        f.write("\n")
 
     synthesizer = paynt.synthesizer.synthesizer_ar.SynthesizerAR(dtmc_sketch)
-    synthesizer.synthesize(keep_optimum=True)
+    hole_assignment = synthesizer.synthesize(keep_optimum=True)
     print("Best value", synthesizer.best_assignment_value)
     
 
     extractor.benchmark_stats.add_family_performance(
         synthesizer.best_assignment_value)
     extractor.save_stats(json_path)
+    
 
     for i in range(50):
         pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
@@ -348,11 +471,18 @@ def main():
             fsc, negate_specification=True)
         synthesizer = paynt.synthesizer.synthesizer_ar.SynthesizerAR(
             dtmc_sketch)
+        with open(os.path.join(project_path, "heatmap_evaluations.txt"), 'a') as f:
+            f.write(f"Heatmap evaluations, the new assignment is: {hole_assignment}\n")
+            for i, evaluation in enumerate(heatmap_evaluations):
+                f.write(f"{hole_assignments_to_test[i]}: {evaluation}\n")
+            f.write("\n")
         hole_assignment = synthesizer.synthesize(keep_optimum=True)
         print("Best value", synthesizer.best_assignment_value)
         extractor.benchmark_stats.add_family_performance(
             synthesizer.best_assignment_value)
         extractor.save_stats(json_path)
+        heatmap_evaluations, hole_assignments_to_test = generate_heatmap_complete(pomdp_sketch, fsc)
+        
 
 
     if profiling:
