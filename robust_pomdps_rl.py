@@ -1,5 +1,7 @@
 import argparse
 
+import stormpy
+
 # using Paynt for POMDP sketches
 
 import paynt.cli
@@ -36,13 +38,20 @@ from tools.evaluators import evaluate_policy_in_model
 import numpy as np
 
 import logging
+
+from tools.evaluators import evaluate_policy_in_model
+
+from paynt.parser.prism_parser import PrismParser
+from paynt.verification.property import construct_property, Property, OptimalityProperty
+
 logger = logging.getLogger(__name__)
 
 class RobustTrainer:
     def __init__(self, args: ArgsEmulator, use_one_hot_memory=False, latent_dim=2,
                  pomdp_sketch=None,
                  obs_evaluator=None, quotient_state_valuations=None,
-                 family_quotient_numpy: FamilyQuotientNumpy = None):
+                 family_quotient_numpy: FamilyQuotientNumpy = None,
+                 autlearn_extraction = True):
         self.args = args
         self.use_one_hot_memory = use_one_hot_memory
         self.model_name = args.model_name
@@ -50,7 +59,8 @@ class RobustTrainer:
         self.obs_evaluator = obs_evaluator
         self.quotient_state_valuations = quotient_state_valuations
         self.family_quotient_numpy = family_quotient_numpy
-        self.direct_extractor = self.init_extractor(latent_dim)
+        self.direct_extractor = self.init_extractor(latent_dim, autlearn_extraction)
+        self.autlearn_extraction = autlearn_extraction
         fsc_size = latent_dim if use_one_hot_memory else 3**latent_dim
         self.benchmark_stats = self.BenchmarkStats(
             fsc_size=fsc_size, num_training_steps_per_iteration=301)
@@ -88,12 +98,14 @@ class RobustTrainer:
         with open(path, 'w') as f:
             json.dump(stats, f, indent=4)
 
-    def init_extractor(self, latent_dim):
+    def init_extractor(self, latent_dim, autlearn_extraction=False):
 
         direct_extractor = SelfInterpretableExtractor(memory_len=latent_dim, is_one_hot=self.use_one_hot_memory,
                                                       use_residual_connection=True, training_epochs=20001,
                                                       num_data_steps=4001, get_best_policy_flag=False, model_name=self.model_name,
-                                                      max_episode_len=self.args.max_steps, family_quotient_numpy=self.family_quotient_numpy)
+                                                      max_episode_len=self.args.max_steps,
+                                                      family_quotient_numpy=self.family_quotient_numpy,
+                                                      autlearn_extraction=autlearn_extraction)
         return direct_extractor
 
     def extract_fsc(self, agent: Recurrent_PPO_agent, environment, quotient, num_data_steps=4001, training_epochs=10001) -> paynt.quotient.fsc.FSC:
@@ -261,7 +273,15 @@ class RobustTrainer:
                 self.benchmark_stats.add_family_performance(synthesizer.best_assignment_value)
                 self.save_stats(os.path.join(f"{args_emulated.model_name}_benchmark_stats.json"))
 
-            
+def construct_reachability_spec(sketch_path):
+    prism, _ = PrismParser.load_sketch_prism(sketch_path)
+
+    prop = construct_property(stormpy.parse_properties_for_prism_program(f"Pmin=? [F goal]", prism)[0], 0)
+
+    spec = paynt.verification.property.Specification([prop])
+
+    return spec
+
 
 def load_sketch(project_path):
     project_path = os.path.abspath(project_path)
@@ -359,7 +379,7 @@ def generate_heatmap_complete(pomdp_sketch, fsc):
         evaluations.append(one_by_one.evaluate(assignment, keep_value_only=True))
     return evaluations, hole_assignments_to_test
 
-def initialize_extractor(pomdp_sketch, args_emulated, family_quotient_numpy):
+def initialize_extractor(pomdp_sketch, args_emulated, family_quotient_numpy,autlearn_extraction):
     quotient_sv = pomdp_sketch.quotient_mdp.state_valuations
     quotient_obs = pomdp_sketch.obs_evaluator
 
@@ -368,7 +388,8 @@ def initialize_extractor(pomdp_sketch, args_emulated, family_quotient_numpy):
     # Currently latent_dim is hardcoded to 2 (3 ** i => 9-FSC)
     # If use one-hot memory, then the size of FSC is equal to the latent_dim.
     extractor = RobustTrainer(args_emulated, use_one_hot_memory=False, latent_dim=2, quotient_state_valuations=quotient_sv,
-                              obs_evaluator=quotient_obs, pomdp_sketch=pomdp_sketch, family_quotient_numpy=family_quotient_numpy)
+                              obs_evaluator=quotient_obs, pomdp_sketch=pomdp_sketch, 
+                              family_quotient_numpy=family_quotient_numpy, autlearn_extraction=autlearn_extraction)
     
     return extractor
 
@@ -388,7 +409,9 @@ def main():
     pomdp_sketch = load_sketch(project_path)
     json_path = create_json_file_name(project_path)
 
-    
+    num_samples_learn = 4000
+    nr_pomdps = 10
+    autlearn_extraction = True
 
     family_quotient_numpy = FamilyQuotientNumpy(pomdp_sketch) # This can be useful for extraction and some other stuff.
     
@@ -403,39 +426,50 @@ def main():
     args_emulated = init_args(
         prism_path=prism_path, properties_path=properties_path, batched_vec_storm=True, masked_training=False)
     args_emulated.model_name = project_path.split("/")[-1]
+    args_emulated.max_steps = 300
     # pomdp = initialize_prism_model(prism_path, properties_path, constants="")
 
     hole_assignment = pomdp_sketch.family.pick_any()
     pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
 
-    extractor = initialize_extractor(pomdp_sketch, args_emulated, family_quotient_numpy)
+    extractor = initialize_extractor(pomdp_sketch, args_emulated, family_quotient_numpy, autlearn_extraction)
 
-    extractor.generate_agent(pomdp, args_emulated)
+    agent = extractor.generate_agent(pomdp, args_emulated)
+    last_hole = None
+    for i in range(nr_pomdps):
+        hole_assignment = pomdp_sketch.family.pick_random()
     train_extraction_less_and_then_extract = False
-    if train_extraction_less_and_then_extract:
-        file_name_suffix = "batched" if args_emulated.batched_vec_storm else "single"
-        file_name_suffix += "_masked" if args_emulated.masked_training else "_unmasked"
-        file_name_suffix += "_rnn_less" if args_emulated.use_rnn_less else "_rnn"
-        file_name = os.path.join(project_path, f"extraction_evaluations_{file_name_suffix}.txt")
-        extractor.pure_rl_loop(pomdp_sketch, all_evaluations_file=file_name, extract_after_iters = 5)
-        return
-    else:
-        file_name_suffix = "batched" if args_emulated.batched_vec_storm else "single"
-        file_name_suffix += "_masked" if args_emulated.masked_training else "_unmasked"
-        file_name_suffix += "_rnn_less" if args_emulated.use_rnn_less else "_rnn"
-        file_name = os.path.join(project_path, f"all_evaluations_{file_name_suffix}.txt")
-        extractor.pure_rl_loop(pomdp_sketch, all_evaluations_file=file_name)
-        return
+    # if train_extraction_less_and_then_extract:
+    #     file_name_suffix = "batched" if args_emulated.batched_vec_storm else "single"
+    #     file_name_suffix += "_masked" if args_emulated.masked_training else "_unmasked"
+    #     file_name_suffix += "_rnn_less" if args_emulated.use_rnn_less else "_rnn"
+    #     file_name = os.path.join(project_path, f"extraction_evaluations_{file_name_suffix}.txt")
+    #     extractor.pure_rl_loop(pomdp_sketch, all_evaluations_file=file_name, extract_after_iters = 5)
+    #     return
+    # else:
+    #     file_name_suffix = "batched" if args_emulated.batched_vec_storm else "single"
+    #     file_name_suffix += "_masked" if args_emulated.masked_training else "_unmasked"
+    #     file_name_suffix += "_rnn_less" if args_emulated.use_rnn_less else "_rnn"
+    #     file_name = os.path.join(project_path, f"all_evaluations_{file_name_suffix}.txt")
+    #     extractor.pure_rl_loop(pomdp_sketch, all_evaluations_file=file_name)
+    #     return
+
+    last_hole = None
+    for i in range(nr_pomdps):
+        hole_assignment = pomdp_sketch.family.pick_random()
+        pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
+        extractor.add_new_pomdp(pomdp,agent)
+        last_hole = hole_assignment
 
     
 
     # Using None for the POMDP here means that the extractor will use the existing environment from initialization.
-    extractor.train_on_new_pomdp(None, agent, nr_iterations=701)
+    extractor.train_on_new_pomdp(None, agent, nr_iterations=501)
 
     # -------------------------------------------------------------------------
     # Different extraction method should be used here!!!
     fsc = extractor.extract_fsc(
-        agent, agent.environment, training_epochs=20001, quotient=pomdp_sketch, num_data_steps=4001)
+        agent, agent.environment, training_epochs=20001, quotient=pomdp_sketch, num_data_steps=num_samples_learn)
     # -------------------------------------------------------------------------
     dtmc_sketch = pomdp_sketch.build_dtmc_sketch(
         fsc, negate_specification=True)
@@ -477,12 +511,29 @@ def main():
                 f.write(f"{hole_assignments_to_test[i]}: {evaluation}\n")
             f.write("\n")
         hole_assignment = synthesizer.synthesize(keep_optimum=True)
+
+        one_by_one = paynt.synthesizer.synthesizer_onebyone.SynthesizerOneByOne(dtmc_sketch)
+        worst_case_eval = one_by_one.evaluate(last_hole, keep_value_only=True)
+        print()
+        print(f"HOLES:{hole_assignment}")
+        print("Best value: ", synthesizer.best_assignment_value)
+        print("Worst-case eval last hole:", worst_case_eval)
+        if hole_assignment is None:
+            continue
         print("Best value", synthesizer.best_assignment_value)
         extractor.benchmark_stats.add_family_performance(
             synthesizer.best_assignment_value)
         extractor.save_stats(json_path)
         heatmap_evaluations, hole_assignments_to_test = generate_heatmap_complete(pomdp_sketch, fsc)
-        
+        with open(os.path.join(project_path, "heatmap_evaluations.txt"), 'a') as f:
+            f.write(f"Heatmap evaluations, the new assignment is: {hole_assignment}\n")
+            for i, evaluation in enumerate(heatmap_evaluations):
+                f.write(f"{hole_assignments_to_test[i]}: {evaluation}\n")
+            f.write("\n")
+        pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
+        last_hole = hole_assignment
+
+        extractor.add_new_pomdp(pomdp,agent)
 
 
     if profiling:

@@ -34,11 +34,18 @@ class ConstructorFSC:
                     for action, prob in enumerate(np_action_function[memory][observation]):
                         if prob > 0.0:
                             action = int(action) if (family_quotient_numpy and original_action_labels) is None else family_quotient_numpy.action_labels.tolist().index(original_action_labels[action])
-                            action_dict[action] = prob
+                            if family_quotient_numpy is not None and not family_quotient_numpy.observation_to_legal_action_mask[observation][action]:
+                                continue
+                            else:
+                                action_dict[action] = prob
                     if action_dict == {}:
                         if family_quotient_numpy is not None:
                             action_dict = {action: 1.0 for action in range(len(family_quotient_numpy.action_labels)) if family_quotient_numpy.observation_to_legal_action_mask[observation][action]}
                             action_dict = {action: 1.0 / len(action_dict) for action in action_dict}  # Uniform distribution over legal actions
+                    # Normalize the action probabilities
+                    total_prob = sum(action_dict.values())
+                    if total_prob > 0:
+                        action_dict = {action: prob / total_prob for action, prob in action_dict.items()}
                     action_for_memory.append(action_dict)
                 action_function.append(action_for_memory)
             return action_function
@@ -66,6 +73,12 @@ class ConstructorFSC:
                     for update, prob in enumerate(np_update_function[memory][observation]):
                         if prob > 0:
                             update_dict[update] = prob
+                    if update_dict == {}:
+                        update_dict = {update: 1.0 for update in range(np_update_function.shape[-1])}
+                    # Normalize the update probabilities
+                    total_prob = sum(update_dict.values())
+                    if total_prob > 0:
+                        update_dict = {update: prob / total_prob for update, prob in update_dict.items()}
                     update_for_memory.append(update_dict)
                 update_function.append(update_for_memory)
             return update_function

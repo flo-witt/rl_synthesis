@@ -1,0 +1,332 @@
+diff a/paynt/rl_extension/self_interpretable_interface/self_interpretable_extractor.py b/paynt/rl_extension/self_interpretable_interface/self_interpretable_extractor.py	(rejected hunks)
+@@ -1,7 +1,18 @@
++from collections import defaultdict
++from typing import Union, Dict, List
++
+ import numpy as np
+ 
+ import tensorflow as tf
++from aalpy import MealyMachine, Onfsm, StochasticMealyMachine, StochasticMealyState, run_RPNI, run_Alergia
++from aalpy.learning_algs import run_k_tails
++from aalpy.learning_algs.general_passive.GeneralizedStateMerging import GeneralizedStateMerging
++from aalpy.learning_algs.general_passive.GsmNode import GsmNode
++from aalpy.learning_algs.general_passive.ScoreFunctionsGSM import differential_info, hoeffding_compatibility, \
++    ScoreCalculation, ScoreFunction
++from scipy.stats import chi2
+ 
++from comp_checker import ChiSquareChecker
+ from interpreters.direct_fsc_extraction.test_functions import *
+ from interpreters.direct_fsc_extraction.encoding_functions import get_encoding_functions
+ 
+@@ -10,6 +21,7 @@
+ from tf_agents.policies.py_tf_eager_policy import PyTFEagerPolicy
+ 
+ from environment.environment_wrapper_vec import EnvironmentWrapperVec
++from learn_aut import create_trajectories, create_mealy_learn_traj
+ from tools.evaluation_results_class import EvaluationResults
+ 
+ from tests.general_test_tools import init_environment, init_args
+@@ -43,7 +55,9 @@
+                  get_best_policy_flag = False, model_name = "generic_model",
+                  max_episode_len = 800, 
+                  optimizing_specification : SpecificationChecker.Constants = SpecificationChecker.Constants.REACHABILITY,
+-                 family_quotient_numpy : FamilyQuotientNumpy = None):
++                 family_quotient_numpy : FamilyQuotientNumpy = None, autlearn_extraction = True):
++        self.autlearn_extraction = autlearn_extraction
++        self.iteration = 0
+         self.memory_len = memory_len
+         self.is_one_hot = is_one_hot
+         self.use_residual_connection = use_residual_connection
+@@ -59,6 +73,8 @@
+         self.extraction_stats = None
+         self.optimizing_specification = optimizing_specification
+         self.family_quotient_numpy = family_quotient_numpy
++        self.stoch = True
++        self.k_tail = False
+ 
+     def set_memory_len(self, memory_len):
+         self.memory_len = memory_len
+@@ -95,38 +111,257 @@
+                                                      residual_connection=self.use_residual_connection)
+         self.regenerate_fsc_network_flag = False
+ 
++
++    def learn_fsc(self, all_trajectories : List, original_policy : TFPolicy,
++                                           env : EnvironmentWrapperVec):
++        learn_trajectories = create_mealy_learn_traj(all_trajectories)
++        print(f"Learning from {len(all_trajectories)} trajectories")
++        if self.stoch:
++            if self.k_tail:
++                model = run_k_tails(all_trajectories, 'mealy', k=1,
++                                 input_completeness=None, print_info=True)
++            else:
++                # alergia_trajectories = self.create_alergia_smm_traj(all_trajectories)
++                mdp_traj = [["init"] + t for t in all_trajectories]
++                model = run_Alergia(mdp_traj,"mdp",eps=0.1)
++                print(f"Learned MDP of size {len(model.states)}")
++                model = run_Alergia(all_trajectories,"smm",compatibility_checker = ChiSquareChecker())
++                print(f"Learned Chi2 SMM of size {len(model.states)}")
++                epsilon = 0.5
++                score = ScoreCalculation(hoeffding_compatibility(epsilon, True))
++                def likelihood_ratio_score(alpha=0.05) -> ScoreFunction:
++                    if not 0 < alpha <= 1:
++                        raise ValueError(f"Confidence {alpha} not between 0 and 1")
++
++                    def score_fun(part: Dict[GsmNode, GsmNode]):
++                        llh_diff, param_diff = differential_info(part)
++                        if param_diff == 0:
++                            # This should cover the corner case when the partition merges only states with no outgoing transitions.
++                            return -1  # Let them be very bad merges.
++                        score = 1 - chi2.cdf(2 * llh_diff, param_diff)
++                        if score < alpha:
++                            return False
++                        return score
++
++                    return score_fun
++                # score = ScoreCalculation(score_function=likelihood_ratio_score())
++                # alg = GeneralizedStateMerging(output_behavior="mealy", transition_behavior="stochastic",
++                #                               score_calc=score,
++                #                               compatibility_on_pta=True, compatibility_on_futures=True)
++                # model = alg.run(all_trajectories)
++        else:
++            model = run_RPNI(learn_trajectories, 'mealy', algorithm='gsm',
++                             input_completeness=None, print_info=True)
++        self.make_aalpy_input_complete(model,env.stormpy_model.nr_observations)
++        if self.stoch and self.k_tail:
++            probs = self.compute_probs(model,all_trajectories)
++        else:
++            probs = None
++        model.save(f"fsc_{self.iteration}.dot")
++        print(f"Learned FSC of size {len(model.states)}")
++        self.iteration += 1
++        fsc_actions, fsc_updates, initial_state = self.aalpy_to_fsc(model,env,probs)
++        print(fsc_updates.shape)
++        print(fsc_actions.shape)
++
++        table_based_policy = TableBasedPolicy(
++            original_policy, fsc_actions, fsc_updates, initial_memory=initial_state, action_keywords=env.action_keywords)
++        return table_based_policy,model
++
++    def aalpy_to_fsc(self, model : Union[MealyMachine,Onfsm,StochasticMealyMachine],
++                     env : EnvironmentWrapperVec,probs):
++        n_states = len(model.states)
++        s_id_to_fsc_id = {state.state_id : fsc_id for fsc_id, state in enumerate(model.states)}
++        nr_observations = env.stormpy_model.nr_observations
++        fsc_actions = np.zeros((n_states, nr_observations, len(env.action_keywords)), dtype=np.float32)
++        fsc_updates = np.zeros((n_states, nr_observations, n_states), dtype=np.float32)
++        for state in model.states:
++            fsc_id = s_id_to_fsc_id[state.state_id]
++            for obs in range(nr_observations):
++                str_obs = str(obs)
++                if self.stoch:
++                    if self.k_tail:
++                        for (act, next_state) in state.transitions[str_obs]:
++                            action_int = int(act) if act != "epsilon" else 0
++                            next_fsc_id = s_id_to_fsc_id[next_state.state_id]
++                            prob = probs[(state.state_id, str_obs, act)]
++                            fsc_actions[fsc_id, obs, action_int] = prob
++                            fsc_updates[fsc_id, obs, next_fsc_id] = prob
++                    else:
++                        for (next_state,act,prob) in state.transitions[str_obs]:
++                            action_int = int(act) if act != "epsilon" else 0
++                            next_fsc_id = s_id_to_fsc_id[next_state.state_id]
++                            fsc_actions[fsc_id, obs, action_int] = prob
++                            fsc_updates[fsc_id, obs, next_fsc_id] = prob
++                else:
++                    next_state = state.transitions[str_obs]
++                    action = int(state.output_fun[str_obs]) if state.output_fun[str_obs] != "epsilon" else 0
++                    next_fsc_id = s_id_to_fsc_id[next_state.state_id]
++                    fsc_actions[fsc_id, obs, action] = 1
++                    fsc_updates[fsc_id, obs, next_fsc_id] = 1
++
++        # add full action support
++        fsc_actions += 0.0001
++        for state in range(n_states):
++            for obs in range(nr_observations):
++                fsc_actions[state,obs,:] /= sum(fsc_actions[state,obs,:])
++        return fsc_actions, fsc_updates, s_id_to_fsc_id[model.initial_state.state_id]
++
++    def make_aalpy_input_complete(self, model : Union[MealyMachine,Onfsm,StochasticMealyMachine], nr_observations):
++        if self.stoch and not self.ktail and len(model.states) == 1:
++            print("Learned single state SMM")
++            dummy_state = StochasticMealyState("q10")
++            model.states.append(dummy_state)
++            for obs in model.initial_state.transitions.keys():
++                for (_,act,prob) in model.initial_state.transitions[obs]:
++                    dummy_state.transitions[obs].append((dummy_state,act,prob))
++                new_trans = [(dummy_state, act,prob) for(_,act,prob) in model.initial_state.transitions[obs]]
++                model.initial_state.transitions[obs] = new_trans
++        for state in model.states:
++            for obs in range(nr_observations):
++                obs = str(obs)
++                if obs not in state.transitions.keys():
++                    target_state = state
++                    if self.stoch:
++                        if self.ktail:
++                            state.transitions[obs].append(( 'epsilon', target_state))
++                        else:
++                            state.transitions[obs].append((  target_state,'epsilon',1.0))
++                    else:
++                        state.transitions[obs] = target_state
++                        state.output_fun[obs] = 'epsilon'
++
++    def compute_probs(self, model, learn_trajectories):
++        counts = defaultdict(int)
++        for trajectory in learn_trajectories:
++            state = model.initial_state
++            for (obs,act) in trajectory:
++                transitions = state.transitions[obs]
++                next_state = None
++                for a,next_s in transitions:
++                    if act == a:
++                        counts[(state.state_id,obs,a)] += 1
++                        next_state = next_s
++                        break
++                if next_state is None:
++                    print("Did not find next state, how?")
++                    exit(1)
++                else:
++                    state = next_state
++        # normalize
++        probs = dict()
++        for state in model.states:
++            counts_for_state = [((obs,act), cnt) for ((s_id,obs,act), cnt) in counts.items() if s_id == state.state_id]
++            obs_set = {obs for ((obs,_),_) in counts_for_state}
++            for obs in obs_set:
++                cnt_sum = sum([cnt for ((o,a),cnt) in counts_for_state])
++                for ((obs_i,act), cnt) in counts_for_state:
++                    if obs_i == obs:
++                        prob_for_a = cnt/cnt_sum
++                        probs[(state.state_id,obs_i,act)] = prob_for_a
++        return probs
++
++    def create_alergia_smm_traj(self, all_trajectories):
++        def create_single_traj(t):
++            new_t = []
++            for (i,o) in t:
++                new_t.extend([i,o])
++            return new_t
++        smm_trajs = [create_single_traj(t) for t in all_trajectories]
++        for t in smm_trajs:
++            print(t)
++        return smm_trajs
++
+     def clone_and_generate_fsc_from_policy(self, original_policy : TFPolicy, 
+                                            env : EnvironmentWrapperVec = None, 
+                                            tf_env : TFPyEnvironment = None) -> tuple[TableBasedPolicy, ExtractionStats]:
+-        
+-        orig_eval_result = evaluate_policy_in_model(original_policy, environment=env, tf_environment=tf_env, max_steps=(self.max_episode_len + 1) * 2)
+-        if self.specification_checker is not None:
+-            self.specification_checker.set_optimal_value_from_evaluation_results(orig_eval_result)
++        if self.autlearn_extraction:
++
++            orig_eval_result = evaluate_policy_in_model(original_policy, environment=env, tf_environment=tf_env,
++                                                        max_steps=(self.max_episode_len + 1) * 2)
++            if self.specification_checker is not None:
++                self.specification_checker.set_optimal_value_from_evaluation_results(orig_eval_result)
++
++            if self.regenerate_fsc_network_flag or self.cloned_actor is None:
++                self.reset_cloned_actor(original_policy, orig_eval_result, env)
++
++            # if isinstance(original_policy, PolicyMaskWrapper):
++            original_policy.set_policy_masker()
++            # original_policy.set_greedy(True)
++            all_trajectories = []
++            logger.info("Sampling data with original policy")
++            for i in range(3):
++                print(f"Buffer {i}")
++                buffer = sample_data_with_policy(
++                    original_policy, num_samples=self.num_data_steps, environment=env, tf_environment=tf_env,
++                    use_replay_buffer=False)
++
++                aut_learn_data = buffer
++                n_envs = len(aut_learn_data[0])
++                all_trajectories.extend(create_trajectories(aut_learn_data, mealy=True, n_envs=n_envs))
++                print("Learn trajectory lengths ",set(map(len,all_trajectories)))
++                del buffer
++
++            # original_policy.set_greedy(False)
++            logger.info("Data sampled")
++            if isinstance(original_policy, PolicyMaskWrapper):
++                original_policy.unset_policy_masker()
++            logger.info("Learning FSC from original policy")
++
++            fsc, aalpy_model = self.learn_fsc(all_trajectories, original_policy, env)
++
++            extraction_stats = ExtractionStats(
++                original_policy_reachability=0,
++                original_policy_reward=0,
++                use_one_hot=False,
++                number_of_samples=0,
++                memory_size=len(aalpy_model.states),
++                residual_connection=False
++            )
++            # extraction_stats = self.cloned_actor.behavioral_clone_original_policy_to_fsc(
++            #     buffer, num_epochs=self.training_epochs, specification_checker=self.specification_checker,
++            #     environment=env, tf_environment=tf_env, args=None, extraction_stats=self.extraction_stats)
++            # # if self.get_best_policy_flag:
++            # #     self.cloned_actor.load_best_policy()
++            # fsc, _, _ = SelfInterpretableExtractor.extract_fsc(self.cloned_actor, env, self.memory_len,
++            #                                                    is_one_hot=self.is_one_hot, non_deterministic=True,
++            #                                                    family_quotient_numpy=self.family_quotient_numpy)
++            fsc_res = evaluate_policy_in_model(fsc, environment=env, tf_environment=tf_env,
++                                               max_steps=(self.max_episode_len + 1) * 2)
++
++            print(f"FSC Result: {fsc_res}")
++            extraction_stats.add_fsc_result(fsc_res.reach_probs[-1], fsc_res.returns[-1])
++
++            return fsc, extraction_stats
++        else:
++            orig_eval_result = evaluate_policy_in_model(original_policy, environment=env, tf_environment=tf_env, max_steps=(self.max_episode_len + 1) * 2)
++            if self.specification_checker is not None:
++                self.specification_checker.set_optimal_value_from_evaluation_results(orig_eval_result)
+ 
+-        if self.regenerate_fsc_network_flag or self.cloned_actor is None:
+-            self.reset_cloned_actor(original_policy, orig_eval_result, env)
++            if self.regenerate_fsc_network_flag or self.cloned_actor is None:
++                self.reset_cloned_actor(original_policy, orig_eval_result, env)
+ 
+-        # if isinstance(original_policy, PolicyMaskWrapper):
+-        original_policy.set_policy_masker()
+-        #     original_policy.set_greedy(True)
+-        logger.info("Sampling data with original policy")
+-        buffer = sample_data_with_policy(
+-            original_policy, num_samples=self.num_data_steps, environment=env, tf_environment=tf_env)
+-        logger.info("Data sampled")
+-        if isinstance(original_policy, PolicyMaskWrapper):
+-            original_policy.unset_policy_masker()
+-        logger.info("Cloning original policy to FSC")
+-        extraction_stats = self.cloned_actor.behavioral_clone_original_policy_to_fsc(
+-            buffer, num_epochs=self.training_epochs, specification_checker=self.specification_checker,
+-            environment=env, tf_environment=tf_env, args=None, extraction_stats=self.extraction_stats)
+-        # if self.get_best_policy_flag:
+-        #     self.cloned_actor.load_best_policy()
+-        fsc, _, _ = SelfInterpretableExtractor.extract_fsc(self.cloned_actor, env, self.memory_len, is_one_hot=self.is_one_hot, non_deterministic=True,
+-                                                           family_quotient_numpy=self.family_quotient_numpy)
+-        fsc_res = evaluate_policy_in_model(fsc, environment=env, tf_environment=tf_env, max_steps=(self.max_episode_len + 1) * 2)
+-        extraction_stats.add_fsc_result(fsc_res.reach_probs[-1], fsc_res.returns[-1])
++            # if isinstance(original_policy, PolicyMaskWrapper):
++            original_policy.set_policy_masker()
++            #     original_policy.set_greedy(True)
++            logger.info("Sampling data with original policy")
++            buffer = sample_data_with_policy(
++                original_policy, num_samples=self.num_data_steps, environment=env, tf_environment=tf_env)
++            logger.info("Data sampled")
++            if isinstance(original_policy, PolicyMaskWrapper):
++                original_policy.unset_policy_masker()
++            logger.info("Cloning original policy to FSC")
++            extraction_stats = self.cloned_actor.behavioral_clone_original_policy_to_fsc(
++                buffer, num_epochs=self.training_epochs, specification_checker=self.specification_checker,
++                environment=env, tf_environment=tf_env, args=None, extraction_stats=self.extraction_stats)
++            # if self.get_best_policy_flag:
++            #     self.cloned_actor.load_best_policy()
++            fsc, _, _ = SelfInterpretableExtractor.extract_fsc(self.cloned_actor, env, self.memory_len, is_one_hot=self.is_one_hot, non_deterministic=True,
++                                                               family_quotient_numpy=self.family_quotient_numpy)
++            fsc_res = evaluate_policy_in_model(fsc, environment=env, tf_environment=tf_env, max_steps=(self.max_episode_len + 1) * 2)
++            extraction_stats.add_fsc_result(fsc_res.reach_probs[-1], fsc_res.returns[-1])
+ 
+-        return fsc, extraction_stats
++            return fsc, extraction_stats
+ 
+ 
+     @staticmethod

@@ -1,0 +1,6 @@
+{
+    "rl_performance_single_pomdp": "[22.765879, 21.163065, 21.054264, 19.015907, 24.355585, 20.513758, 16.461464, 22.288969, 25.69322]",
+    "extracted_fsc_performance": "[-42.52157, -59.129665, -71.927574, -69.299774, -69.9966, -73.15612, -63.95817, -64.11684, -64.83836]",
+    "family_performance": "[97.08535930658333, 96.21302390944007, 101.80764218802099, 98.30764349012557, 97.49070209551272, 99.54871497913584, 91.54016552052018, 85.33966090065255, 95.14583916504684]",
+    "available_nodes_in_fsc": "[array([ True,  True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True])]"
+}
