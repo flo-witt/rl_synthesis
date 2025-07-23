@@ -296,14 +296,17 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         self.antigoal_values_vector = tf.constant(
             [self.args.evaluation_antigoal * 0] * self.num_envs, dtype=tf.float32)
         self.goal_values_vector = tf.constant(
-            [self.args.evaluation_goal * 3] * self.num_envs, dtype=tf.float32)
-        
+            [self.args.evaluation_goal * 5] * self.num_envs, dtype=tf.float32)
+        self.truncation_values_vector = tf.constant(
+            [-10.0] * self.num_envs, dtype=tf.float32)
+
+
     def set_rover_rewards(self):
-        self.reward_multiplier = -0.1
+        self.reward_multiplier = 1.0
         self.antigoal_values_vector = tf.constant(
             [self.args.evaluation_antigoal * 4] * self.num_envs, dtype=tf.float32)
         self.goal_values_vector = tf.constant(
-            [1000] * self.num_envs, dtype=tf.float32)
+            [1] * self.num_envs, dtype=tf.float32)
         
     def set_negative_goal_rewards(self):
         """Sets the rewards for the negative goal states."""
@@ -315,21 +318,28 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         
     def set_avoid_rewards(self):
         """Sets the rewards for the avoid states."""
-        self.reward_multiplier = -0.1
+        self.reward_multiplier = -1.0
         self.antigoal_values_vector = tf.constant(
             [self.args.evaluation_antigoal * 2] * self.num_envs, dtype=tf.float32)
         self.goal_values_vector = tf.constant(
-            [1000] * self.num_envs, dtype=tf.float32)
-        
+            [self.args.evaluation_goal * 5] * self.num_envs, dtype=tf.float32)
+        self.truncation_values_vector = tf.constant(
+            [-10.0] * self.num_envs, dtype=tf.float32)
+
+
     def set_dpm_rewards(self):
         """Sets the rewards for the DPM states."""
-        self.reward_multiplier = 1.0
+        self.reward_multiplier = 0.5
         self.antigoal_values_vector = tf.constant(
-            [self.args.evaluation_antigoal * 2] * self.num_envs, dtype=tf.float32)
+            [self.args.evaluation_antigoal] * self.num_envs, dtype=tf.float32)
         self.goal_values_vector = tf.constant(
-            [self.args.evaluation_goal * 2] * self.num_envs, dtype=tf.float32)
+            [5.0] * self.num_envs, dtype=tf.float32)
+        self.truncation_values_vector = tf.constant(
+            [-0.0] * self.num_envs, dtype=tf.float32)
 
     def set_reward_model(self, model_name):
+        self.truncation_values_vector = tf.constant(
+            [0.0] * self.num_envs, dtype=tf.float32)
         self.reward_models = {
             "network": self.set_minimizing_rewards,
             "drone": self.set_reachability_rewards,
@@ -340,12 +350,12 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
             "geo": self.set_reachability_rewards,
             "mba": self.set_minimizing_rewards,
             "maze": self.set_maxizing_rewards,
-            "avoid": self.set_obstacle_rewards,
+            "avoid": self.set_avoid_rewards,
             "grid": self.set_reachability_rewards,
             "obstacle": self.set_obstacle_rewards,
             "dpm": self.set_dpm_rewards,
             "aco": self.set_obstacle_rewards,
-            "rover": self.set_reachability_rewards
+            "rover": self.set_rover_rewards,
         }
         key_found = False
         for key in self.reward_models.keys():
@@ -512,19 +522,12 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
                 (self.num_envs, self.observation_spec_len * (self.observation_length_multiplier - 1), ))
             self.stacked_observations = tf.concat(
                 [self.last_observation, self.stacked_observations], axis=1)
-        # self.integer_observations = self.vectorized_simulator.observations # TODO: implement it with proposed vectorized simulator
         self.last_action = np.zeros((self.num_envs,), dtype=np.float32)
         self.virtual_reward = tf.zeros((self.num_envs,), dtype=tf.float32)
         self.dones = np.array(len(self.last_observation) * [False])
         self.orig_reward = tf.constant(
             np.array(len(self.last_observation) * [0.0]), dtype=tf.float32)
-        hidden_state = self.vectorized_simulator.simulator_states
-        self.integers = tf.reshape(
-            tf.gather(self.state_to_observation_map, hidden_state.vertices),
-            (self.num_envs, 1)
-        )
-        if hasattr(self, "state_estimator") and self.state_estimator is not None:
-            self.state_estimator.reset()
+        self.integers = self.vectorized_simulator.simulator_integer_observations
         self.current_num_steps = tf.constant(
             [0] * self.num_envs, dtype=tf.float32)
         observation_tensor = self.get_observation()
@@ -537,7 +540,6 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
             discount=self.discount,
             step_type=tf.convert_to_tensor([ts.StepType.FIRST] * self.num_envs, dtype=tf.int32))
         self.prev_dones = np.array(len(self.last_observation) * [False])
-
         return self._current_time_step
 
     def get_oracle_based_reward(self, action, sim_state):
@@ -589,6 +591,12 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
                 self.default_rewards
             )
         )
+        truncation_penalty = tf.where(
+            self.truncated,
+            self.truncation_values_vector,
+            tf.zeros((self.num_envs,), dtype=tf.float32)
+        )
+        self.reward += truncation_penalty
         # self.reward = tf.where(
         #     self.goal_state_mask,
         #     goal_values_vector,
@@ -694,10 +702,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
             rewards.tolist(), dtype=tf.float32)
         self.dones = done
         self.truncated = truncated
-        self.integers = tf.reshape(
-            tf.gather(self.state_to_observation_map, self.states.vertices),
-            (self.num_envs, 1)
-        )
+        self.integers = self.vectorized_simulator.simulator_integer_observations
 
     def get_mask_of_played_illegal_actions(self, actions) -> tf.Tensor:
         """Returns the mask of played illegal actions. Used for evaluation of the environment."""

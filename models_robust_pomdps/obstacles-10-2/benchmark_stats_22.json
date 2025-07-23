@@ -1,0 +1,13 @@
+{
+    "num_training_steps_per_iteration": "301",
+    "average_rl_performance_subset_simulated": "[25.857063, 20.79573, 21.166708, 22.931711, 23.888618, 23.43183, 23.974306, 25.401411, 24.2426, 24.538124]",
+    "average_extracted_fsc_performance_subset_simulated": "[-57.58183, -297.5977, -52.475685, -53.50898, -60.88984, -67.18072, -79.06888, -67.86995, -75.91321, -73.567055]",
+    "family_performance": "[128.06719687834703, 971.2752794362528, 85.98720992955576, 71.50798018268601, 80.71468652466395, 83.81674048237272, 106.40767341842893, 98.528448459354, 104.81461650373339, 106.29919313404372]",
+    "available_nodes_in_fsc": "[array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True,  True]), array([ True,  True,  True])]",
+    "worst_case_pomdp_values_simulated_rl": "[-449.49036, -94.18063, -47.826477, -25.412533, -24.406319, -25.406214, -24.380903, -24.606586, -25.807867, -25.528713, -27.0912]",
+    "worst_case_pomdp_values_simulated_fsc": "[-127.503654, -494.08276, -89.333694, -72.158325, -79.33411, -85.861786, -106.48801, -99.58731, -107.41932, -104.67863]",
+    "was_worst_case_same_as_simulated": "[None, None, None, None, None, None, None, None, None, None]",
+    "worst_case_index_rl": "[(0, 2, 0, 2), (0, 1, 0, 2), (0, 0, 0, 2), (0, 2, 0, 2), (0, 0, 0, 2), (0, 1, 0, 2), (2, 1, 0, 2), (2, 2, 0, 2), (1, 0, 0, 1), (2, 2, 0, 2)]",
+    "worst_case_index_fsc": "[(0, 2, 0, 0), (2, 2, 0, 1), (0, 2, 0, 2), (0, 2, 0, 2), (0, 2, 0, 1), (0, 2, 0, 2), (0, 2, 0, 1), (0, 2, 0, 1), (0, 2, 0, 1), (0, 2, 0, 1)]",
+    "worst_case_index_paynt": "[<paynt.family.family.Family object at 0x767a15b90220>, <paynt.family.family.Family object at 0x767a15c326b0>, <paynt.family.family.Family object at 0x767a151aa980>, <paynt.family.family.Family object at 0x767a15772080>, <paynt.family.family.Family object at 0x767a15d75a20>, <paynt.family.family.Family object at 0x767a157e9300>, <paynt.family.family.Family object at 0x767a151b7cd0>, <paynt.family.family.Family object at 0x7679ed2adcc0>, <paynt.family.family.Family object at 0x767a140fe260>, <paynt.family.family.Family object at 0x7679ed2558a0>]"
+}

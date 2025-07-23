@@ -17,9 +17,9 @@ def init_args(prism_path, properties_path, nr_runs=101, goal_value_multiplier = 
                             restart_weights=0, learning_method="PPO", prefer_stochastic=False,
                             nr_runs=nr_runs, agent_name="Testus", load_agent=False,
                             evaluate_random_policy=False, max_steps=301, evaluation_goal=50, evaluation_antigoal=-20,
-                            trajectory_num_steps=32, discount_factor=0.99, num_environments=256,
+                            trajectory_num_steps=25, discount_factor=0.99, num_environments=128,
                             normalize_simulator_rewards=False, buffer_size=500, random_start_simulator=False,
-                            batch_size=256, vectorized_envs_flag=True, perform_interpretation=True, use_rnn_less=False, model_memory_size=0,
+                            batch_size=128, vectorized_envs_flag=True, perform_interpretation=True, use_rnn_less=False, model_memory_size=0,
                             stacked_observations=False, batched_vec_storm=batched_vec_storm, masked_training=masked_training)
     return args
 

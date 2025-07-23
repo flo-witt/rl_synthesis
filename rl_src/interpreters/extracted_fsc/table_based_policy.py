@@ -18,7 +18,8 @@ class TableBasedPolicy(TFPolicy):
                  update_function : np.ndarray, # Action and update function has shape (nr_model_states, nr_observations) 
                  initial_memory = 0,
                  action_keywords = None,
-                 descending_actions = None
+                 descending_actions = None,
+                 nr_observations = None
                  ):
         """
         TableBasedPolicy is a policy that uses a table to map observations to actions and updates.
@@ -31,6 +32,8 @@ class TableBasedPolicy(TFPolicy):
         super(TableBasedPolicy, self).__init__(original_policy.time_step_spec, original_policy.action_spec, policy_state_spec=policy_state_spec)
         self.tf_observation_to_action_table = tf.constant(action_function, dtype=tf.float32)
         self.tf_observation_to_update_table = tf.constant(update_function, dtype=tf.float32)
+        self.nr_observations = nr_observations if nr_observations is not None else action_function.shape[1]
+        self.fix_action_table_probs()
         if descending_actions is not None: # This array contains actions for a given memory and observation in descending order
                                            # The first action is the most likely one, but it could be illegal in some cases
                                            # This array is used to get the most likely legal action, when combined mask
@@ -40,6 +43,37 @@ class TableBasedPolicy(TFPolicy):
         
         self.action_keywords = action_keywords
         self.initial_memory = initial_memory
+
+    def fix_action_table_probs(self):
+        """Fixes the action table probabilities to sum to 1 for each observation."""
+        if self.nr_observations is not None and self.nr_observations != self.tf_observation_to_action_table.shape[1]:
+            # Fill the action table with zeros for the missing observations
+            missing_observations = self.nr_observations - self.tf_observation_to_action_table.shape[1]
+            if missing_observations > 0:
+                zeros = tf.zeros((self.tf_observation_to_action_table.shape[0], missing_observations, self.tf_observation_to_action_table.shape[-1]), dtype=tf.float32)
+                self.tf_observation_to_action_table = tf.concat([self.tf_observation_to_action_table, zeros], axis=1)
+        if self.tf_observation_to_action_table.shape[-1] != self.tf_observation_to_update_table.shape[-1]:
+            # Fill the update table with zeros for the missing updates
+            missing_updates = self.tf_observation_to_action_table.shape[-1] - self.tf_observation_to_update_table.shape[-1]
+            if missing_updates > 0:
+                zeros = tf.zeros((self.tf_observation_to_update_table.shape[0], missing_updates, self.tf_observation_to_update_table.shape[2]), dtype=tf.float32)
+                self.tf_observation_to_update_table = tf.concat([self.tf_observation_to_update_table, zeros], axis=1)
+        if self.tf_observation_to_action_table.shape[-1] > 1:
+            normalizers = tf.reduce_sum(self.tf_observation_to_action_table, axis=-1, keepdims=True)
+            self.tf_observation_to_action_table = tf.math.divide_no_nan(self.tf_observation_to_action_table, normalizers)
+            # Repair the action table to ensure that it is a valid probability distribution
+            self.tf_observation_to_action_table = tf.where(normalizers > 0, 
+                                                           self.tf_observation_to_action_table, 
+                                                           tf.ones_like(self.tf_observation_to_action_table) / tf.cast(tf.shape(self.tf_observation_to_action_table)[-1], 
+                                                                                                                       dtype=tf.float32))
+        if self.tf_observation_to_update_table.shape[-1] > 1:
+            normalizers = tf.reduce_sum(self.tf_observation_to_update_table, axis=-1, keepdims=True)
+            self.tf_observation_to_update_table = tf.math.divide_no_nan(self.tf_observation_to_update_table, normalizers)
+            # Repair the update table to ensure that it is a valid probability distribution
+            self.tf_observation_to_update_table = tf.where(normalizers > 0, 
+                                                           self.tf_observation_to_update_table, 
+                                                           tf.ones_like(self.tf_observation_to_update_table) / tf.cast(tf.shape(self.tf_observation_to_update_table)[-1], 
+                                                                                                                       dtype=tf.float32))
 
     def _get_initial_state(self, batch_size):
         return tf.constant(self.initial_memory, shape=(batch_size, 1), dtype=tf.int32)

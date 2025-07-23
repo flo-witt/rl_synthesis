@@ -42,16 +42,16 @@ class BatchedVecStorm(StormVecEnv):
         num_simulators = len(self.simulators)
         assert num_simulators > 0, "No simulators available."
         if exponential_simulator_distribution:
-            a1 = self.num_envs * (1 - 0.5)
-            a1 = a1 / (1 - 0.5 ** num_simulators)
-            self.num_envs_per_simulator_reversed = [int(a1 * (0.5 ** i)) for i in range(num_simulators)]
+            a1 = self.num_envs * (1 - 0.4)
+            a1 = a1 / (1 - 0.4 ** num_simulators)
+            self.num_envs_per_simulator_reversed = [int(a1 * (0.4 ** i)) for i in range(num_simulators)]
             self.num_envs_per_simulator = self.num_envs_per_simulator_reversed[::-1]
             # Ensure the total number of environments matches the original number
             total_envs = sum(self.num_envs_per_simulator)
             if total_envs < self.num_envs:
                 # If the total is less, distribute the remaining environments evenly
                 for i in range(self.num_envs - total_envs):
-                    self.num_envs_per_simulator[i % num_simulators] += 1
+                    self.num_envs_per_simulator[-(i % num_simulators)] += 1
         else:
             self.num_envs_per_simulator = [self.num_envs // num_simulators] * num_simulators
             # Distribute any remaining environments evenly across simulators
@@ -135,7 +135,7 @@ class BatchedVecStorm(StormVecEnv):
         res = StepInfo.combine(res_list)
 
         self.simulator_states = res.states
-        self.simulator_integer_observations = res.observations
+        self.simulator_integer_observations = res.integer_observations
         return res.observations, res.rewards, res.done, res.truncated, res.allowed_actions, res.metalabels
 
 

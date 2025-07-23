@@ -155,7 +155,7 @@ class FatherAgent(AbstractAgent):
             if self.args.replay_buffer_option == ReplayBufferOptions.OFF_POLICY:
                 buffer_size = self.args.max_steps * OFF_POLICY_BUFFER_SIZE_MULTIPLIER
             elif self.args.replay_buffer_option == ReplayBufferOptions.ON_POLICY:
-                buffer_size = self.args.trajectory_num_steps + 10
+                buffer_size = self.args.trajectory_num_steps + self.args.max_steps + 1
 
         self.replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
             data_spec=self.agent.collect_data_spec,
@@ -446,6 +446,10 @@ class FatherAgent(AbstractAgent):
                         self.run_artificial_reward_buffer)
                     self.run_artificial_reward_buffer.clear()
                 else:
+                    if i == 0:
+                        for j in range(10):
+                            self.driver.run()
+                            self.replay_buffer.clear()
                     self.driver.run()
             if i == num_iterations // 4:
                 self.environment.unset_reward_shaper()

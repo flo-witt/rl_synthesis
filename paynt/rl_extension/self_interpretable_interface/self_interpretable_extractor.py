@@ -165,7 +165,8 @@ class SelfInterpretableExtractor:
         print(fsc_actions.shape)
 
         table_based_policy = TableBasedPolicy(
-            original_policy, fsc_actions, fsc_updates, initial_memory=initial_state, action_keywords=env.action_keywords)
+            original_policy, fsc_actions, fsc_updates, initial_memory=initial_state, action_keywords=env.action_keywords, 
+            nr_observations=len(self.family_quotient_numpy.observation_to_legal_action_mask))
         return table_based_policy,model
 
     def aalpy_to_fsc(self, model : Union[MealyMachine,Onfsm,StochasticMealyMachine],

@@ -1,0 +1,13 @@
+{
+    "num_training_steps_per_iteration": "301",
+    "average_rl_performance_subset_simulated": "[42.722538, 42.65077, 42.71126, 42.000282, 41.894936, 42.322372, 41.900433]",
+    "average_extracted_fsc_performance_subset_simulated": "[-50.603756, -53.498898, -51.47282, -62.709526, -52.88956, -52.281757, -53.29557]",
+    "family_performance": "[0.9853780836169257, 0.9855024787347026, 0.984967717492083, 0.977891399338416, 0.9840083736657492, 0.9855907686891803, 0.984559570397685]",
+    "available_nodes_in_fsc": "[array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True])]",
+    "worst_case_pomdp_values_simulated_rl": "[-341.37613, -42.989918, -42.544235, -43.05114, -42.162247, -42.310444, -42.38816, -42.101074]",
+    "worst_case_pomdp_values_simulated_fsc": "[-49.009426, -49.733833, -49.54901, -54.233273, -50.432003, -49.340874, -48.969566]",
+    "was_worst_case_same_as_simulated": "[None, None, None, None, None, None, None]",
+    "worst_case_index_rl": "[]",
+    "worst_case_index_fsc": "[]",
+    "worst_case_index_paynt": "[]"
+}
