@@ -39,6 +39,10 @@ class EvaluationResults:
 
         self.artificial_reward_means = []
         self.artificial_reward_stds = []
+        self.average_episode_length = []
+        self.counted_episodes = []
+        self.discounted_rewards = []
+        self.new_pomdp_iteration_numbers = []
 
     def add_artificial_reward(self, artificial_rewards_buffer : list[np.ndarray]):
         """Add artificial rewards to the evaluation results."""
@@ -60,8 +64,11 @@ class EvaluationResults:
         number_of_iterations = len(self.returns)
         self.paynt_bounds.append([bound, number_of_iterations])
 
-    def save_to_json(self, filename, evaluation_time: float = float("nan"), split_iteration = -1):
+    def save_to_json(self, filename, evaluation_time: float = float("nan"), split_iteration = -1, new_pomdp=False):
         import json
+        filename = filename.replace(".json", "_training.json")
+        if new_pomdp:
+            self.new_pomdp_iteration_numbers.append(len(self.returns))
         with open(filename, "w") as file:
             _dict_ = self.__dict__.copy()
             del _dict_["best_updated"]
@@ -80,7 +87,8 @@ class EvaluationResults:
     def __str__(self):
         return str(self.__dict__)
 
-    def update(self, avg_return, avg_episodic_return, reach_prob, episodes_variance=None, num_episodes=1, trap_reach_prob=0.0, virtual_variance=None, combined_variance=None):
+    def update(self, avg_return, avg_episodic_return, reach_prob, episodes_variance=None, num_episodes=1, trap_reach_prob=0.0, virtual_variance=None, combined_variance=None,
+                 average_episode_length=None, counted_episodes=None, discounted_rewards=None):
         """Update the evaluation results in the object of EvaluationResults.
 
         Args:
@@ -108,10 +116,39 @@ class EvaluationResults:
             self.each_episode_virtual_variance.append(virtual_variance)
         if combined_variance is not None:
             self.combined_variance.append(combined_variance)
+        if average_episode_length is not None:
+            self.average_episode_length.append(average_episode_length)
+        if counted_episodes is not None:
+            self.counted_episodes.append(counted_episodes)
+        if discounted_rewards is not None:
+            self.discounted_rewards.append(discounted_rewards)
 
     def add_loss(self, loss):
         """Add loss to the list of losses."""
         self.losses.append(loss)
+
+    def log_evaluation_info(self):
+        logger.info('Average Return = {0}'.format(
+            self.returns[-1]))
+        logger.info('Average Virtual Goal Value = {0}'.format(
+            self.returns_episodic[-1]))
+        logger.info('Average Discounted Reward = {0}'.format(
+            self.discounted_rewards[-1]))
+        logger.info('Goal Reach Probability = {0}'.format(
+            self.reach_probs[-1]))
+        logger.info('Trap Reach Probability = {0}'.format(
+            self.trap_reach_probs[-1]))
+        logger.info('Variance of Return = {0}'.format(
+            self.each_episode_variance[-1]))
+        logger.info('Current Best Return = {0}'.format(
+            self.best_return))
+        logger.info('Current Best Reach Probability = {0}'.format(
+            self.best_reach_prob))
+        logger.info('Average Episode Length = {0}'.format(
+            self.average_episode_length[-1]))
+        logger.info('Counted Episodes = {0}'.format(
+            self.counted_episodes[-1]))
+        
 
 
 def set_fsc_values_to_evaluation_result(external_evaluation_result : EvaluationResults, evaluation_result : EvaluationResults):
@@ -123,20 +160,3 @@ def set_fsc_values_to_evaluation_result(external_evaluation_result : EvaluationR
     external_evaluation_result.extracted_fsc_variance = evaluation_result.each_episode_variance[-1]
     external_evaluation_result.extracted_fsc_virtual_variance = evaluation_result.each_episode_virtual_variance[-1]
     external_evaluation_result.extracted_fsc_combined_variance = evaluation_result.combined_variance[-1]
-
-
-def log_evaluation_info(evaluation_result: EvaluationResults = None):
-    logger.info('Average Return = {0}'.format(
-        evaluation_result.returns[-1]))
-    logger.info('Average Virtual Goal Value = {0}'.format(
-        evaluation_result.returns_episodic[-1]))
-    logger.info('Goal Reach Probability = {0}'.format(
-        evaluation_result.reach_probs[-1]))
-    logger.info('Trap Reach Probability = {0}'.format(
-        evaluation_result.trap_reach_probs[-1]))
-    logger.info('Variance of Return = {0}'.format(
-        evaluation_result.each_episode_variance[-1]))
-    logger.info('Current Best Return = {0}'.format(
-        evaluation_result.best_return))
-    logger.info('Current Best Reach Probability = {0}'.format(
-        evaluation_result.best_reach_prob))

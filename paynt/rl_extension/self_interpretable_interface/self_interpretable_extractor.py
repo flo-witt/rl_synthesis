@@ -39,6 +39,8 @@ from interpreters.direct_fsc_extraction.extraction_stats import ExtractionStats
 from interpreters.direct_fsc_extraction.data_sampler import sample_data_with_policy
 from interpreters.direct_fsc_extraction.cloned_fsc_actor_policy import ClonedFSCActorPolicy
 
+from interpreters.aalpy_extraction.mealy_automata_learner import MealyAutomataLearner
+
 from agents.policies.policy_mask_wrapper import PolicyMaskWrapper
 
 from paynt.rl_extension.robust_rl.family_quotient_numpy import FamilyQuotientNumpy
@@ -114,7 +116,7 @@ class SelfInterpretableExtractor:
 
     def learn_fsc(self, all_trajectories : List, original_policy : TFPolicy,
                                            env : EnvironmentWrapperVec):
-        learn_trajectories = create_mealy_learn_traj(all_trajectories)
+        
         print(f"Learning from {len(all_trajectories)} trajectories")
         if self.stoch:
             if self.k_tail:
@@ -122,10 +124,10 @@ class SelfInterpretableExtractor:
                                  input_completeness=None, print_info=True)
             else:
                 # alergia_trajectories = self.create_alergia_smm_traj(all_trajectories)
-                mdp_traj = [["init"] + t for t in all_trajectories]
-                model = run_Alergia(mdp_traj,"mdp",eps=0.1)
-                print(f"Learned MDP of size {len(model.states)}")
-                model = run_Alergia(all_trajectories,"smm",compatibility_checker = ChiSquareChecker())
+                # mdp_traj = [["init"] + t for t in all_trajectories]
+                # model = run_Alergia(mdp_traj,"mdp",eps=0.1)
+                # print(f"Learned MDP of size {len(model.states)}")
+                model = run_Alergia(all_trajectories,"smm",compatibility_checker = ChiSquareChecker(alpha=0.05))
                 print(f"Learned Chi2 SMM of size {len(model.states)}")
                 epsilon = 0.5
                 score = ScoreCalculation(hoeffding_compatibility(epsilon, True))
@@ -150,6 +152,7 @@ class SelfInterpretableExtractor:
                 #                               compatibility_on_pta=True, compatibility_on_futures=True)
                 # model = alg.run(all_trajectories)
         else:
+            learn_trajectories = create_mealy_learn_traj(all_trajectories)
             model = run_RPNI(learn_trajectories, 'mealy', algorithm='gsm',
                              input_completeness=None, print_info=True)
         self.make_aalpy_input_complete(model,env.stormpy_model.nr_observations)
@@ -161,8 +164,6 @@ class SelfInterpretableExtractor:
         print(f"Learned FSC of size {len(model.states)}")
         self.iteration += 1
         fsc_actions, fsc_updates, initial_state = self.aalpy_to_fsc(model,env,probs)
-        print(fsc_updates.shape)
-        print(fsc_actions.shape)
 
         table_based_policy = TableBasedPolicy(
             original_policy, fsc_actions, fsc_updates, initial_memory=initial_state, action_keywords=env.action_keywords, 
@@ -289,27 +290,72 @@ class SelfInterpretableExtractor:
             # if isinstance(original_policy, PolicyMaskWrapper):
             original_policy.set_policy_masker()
             # original_policy.set_greedy(True)
-            all_trajectories = []
             logger.info("Sampling data with original policy")
-            for i in range(3):
+            get_both = False
+            use_replay_buffer = True
+            if get_both:
+                all_trajectories_1 = []
+                all_trajectories_2 = []
+            else:
+                all_trajectories = []
+            num_samples = self.num_data_steps
+            for i in range(4):
                 print(f"Buffer {i}")
                 buffer = sample_data_with_policy(
-                    original_policy, num_samples=self.num_data_steps, environment=env, tf_environment=tf_env,
-                    use_replay_buffer=False)
+                    original_policy, num_samples=num_samples, environment=env, tf_environment=tf_env,
+                    use_replay_buffer=use_replay_buffer, get_both=get_both)
+                if get_both:
+                    # print(f"Buffer size: {len(buffer)}")
+                    replay_buffer: TFUniformReplayBuffer = buffer[1]
 
-                aut_learn_data = buffer
-                n_envs = len(aut_learn_data[0])
-                all_trajectories.extend(create_trajectories(aut_learn_data, mealy=True, n_envs=n_envs))
-                print("Learn trajectory lengths ",set(map(len,all_trajectories)))
-                del buffer
-
+                    observations, actions = MealyAutomataLearner.convert_trajectories_to_episodes(replay_buffer.gather_all())
+                    for obs_sequence, action_sequence in zip(observations, actions):
+                        trajectory = list(zip(obs_sequence.tolist(), action_sequence.tolist()))
+                        all_trajectories_1.append(trajectory)
+                    # print(all_trajectories)
+                    print(f"Learned {len(all_trajectories_1)} trajectories")
+                    print("Learned trajectory lengths ", set(map(len, all_trajectories_1)))
+                    aut_learn_data = buffer[0]
+                    n_envs = env.num_envs
+                    all_trajectories_2.extend(create_trajectories(aut_learn_data, mealy=True, n_envs=n_envs))
+                    print(f"Learned {len(all_trajectories_2)} trajectories")
+                    print("Learn trajectory lengths ", set(map(len, all_trajectories_2)))
+                    del buffer
+                elif use_replay_buffer:
+                    replay_buffer: TFUniformReplayBuffer = buffer
+                    observations, actions = MealyAutomataLearner.convert_trajectories_to_episodes(replay_buffer.gather_all())
+                    for obs_sequence, action_sequence in zip(observations, actions):
+                        trajectory = list(zip(obs_sequence.tolist(), action_sequence.tolist()))
+                        all_trajectories.append(trajectory)
+                    # print(all_trajectories)
+                    print(f"Learned {len(all_trajectories)} trajectories")
+                    print("Learned trajectory lengths ", set(map(len, all_trajectories)))
+                else:
+                    print(f"Buffer size: {len(buffer)}")
+                    aut_learn_data = buffer
+                    n_envs = env.num_envs
+                    all_trajectories.extend(create_trajectories(aut_learn_data, mealy=True, n_envs=n_envs))
+                    print(f"Learned {len(all_trajectories)} trajectories")
+                    print("Learn trajectory lengths ",set(map(len,all_trajectories)))
+                    del buffer
+            print("All trajectories collected")
             # original_policy.set_greedy(False)
             logger.info("Data sampled")
             if isinstance(original_policy, PolicyMaskWrapper):
                 original_policy.unset_policy_masker()
             logger.info("Learning FSC from original policy")
 
-            fsc, aalpy_model = self.learn_fsc(all_trajectories, original_policy, env)
+            if get_both:
+                fsc, aalpy_model = self.learn_fsc(all_trajectories_1, original_policy, env)
+                evaluate_policy_in_model(fsc, environment=env, tf_environment=tf_env,
+                                         max_steps=(self.max_episode_len + 1) * 2)
+                fsc_2, aalpy_model_2 = self.learn_fsc(all_trajectories_2, original_policy, env)
+                evaluate_policy_in_model(fsc_2, environment=env, tf_environment=tf_env,
+                                         max_steps=(self.max_episode_len + 1) * 2)
+                
+
+            else:
+                fsc, aalpy_model = self.learn_fsc(all_trajectories, original_policy, env)
 
             extraction_stats = ExtractionStats(
                 original_policy_reachability=0,
@@ -332,7 +378,7 @@ class SelfInterpretableExtractor:
 
             print(f"FSC Result: {fsc_res}")
             extraction_stats.add_fsc_result(fsc_res.reach_probs[-1], fsc_res.returns[-1])
-
+            extraction_stats.add_number_of_training_trajectories(len(all_trajectories) if not get_both else len(all_trajectories_1) + len(all_trajectories_2))
             return fsc, extraction_stats
         else:
             orig_eval_result = evaluate_policy_in_model(original_policy, environment=env, tf_environment=tf_env, max_steps=(self.max_episode_len + 1) * 2)
@@ -507,7 +553,7 @@ class SelfInterpretableExtractor:
     
 
     @staticmethod
-    def run_benchmark(prism_path : str, properties_path : str, memory_size, num_data_steps=100, num_training_steps=300,
+    def run_benchmark(prism_path : str, properties_path : str, memory_size, num_data_steps=1000, num_training_steps=300,
                        specification_goal="reachability", optimization_goal="max", use_one_hot=False,
                        extraction_epochs=100000, use_residual_connection=False
                        ) -> tuple[ClonedFSCActorPolicy, TFUniformReplayBuffer, ExtractionStats, Recurrent_PPO_agent]:

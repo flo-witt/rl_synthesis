@@ -72,7 +72,7 @@ class SimpleFSCPolicy(TFPolicy):
         return sparse_probs
     
     def create_inference_tensors(self, table_function, is_update_function=False):
-        max_action = self._fsc.action_labels.shape[0] if not is_update_function else len(table_function[0])
+        max_action = self._fsc.action_labels.shape[0] if not is_update_function else len(table_function)
         is_det_table = np.ones((len(table_function), len(table_function[0])), dtype=bool)
         det_choice_table = np.zeros((len(table_function), len(table_function[0])), dtype=np.int32)
         non_det_choice_table = []
@@ -84,7 +84,7 @@ class SimpleFSCPolicy(TFPolicy):
                 observations_number += 1
                 if observation is not None:
                     
-                    actions = np.array(list(observation.keys()))
+                    actions = np.array(list(observation.keys()), dtype=np.int32)
                     probs = np.array(list(observation.values()))
                     if len(actions) == 1:
                         det_choice_table[memory_int, observation_int] = actions[0]
@@ -229,6 +229,7 @@ class SimpleFSCPolicy(TFPolicy):
                 non_det_indices = tf.cast(non_det_indices, dtype=tf.int32)
                 # Convert non-det-indices to self.non_det_action_probs_table_action indices by self.non_det_choice_table_action
                 default_probs = tf.zeros([tf.shape(is_det_choice)[0], self._fsc.action_labels.shape[0]], dtype=tf.float32)
+                print(f"Default probs shape: {self.non_det_action_probs_table_action.shape}, non_det_indices shape: {non_det_indices.shape}")
                 non_det_probs = tf.gather_nd(self.non_det_action_probs_table_action, non_det_indices)
                 # Replace default probs with non_det_probs given non_det_indices
                 non_det_probs = tf.tensor_scatter_nd_update(default_probs, non_det_indices, non_det_probs)

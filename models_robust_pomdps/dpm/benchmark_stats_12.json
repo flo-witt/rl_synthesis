@@ -1,0 +1,14 @@
+{
+    "num_training_steps_per_iteration": "301",
+    "average_rl_performance_subset_simulated": "[145.7754, 125.61214, 128.18597, 126.43361, 120.166756, 128.77853, 123.24734]",
+    "average_extracted_fsc_performance_subset_simulated": "[202.75824, 163.09361, 144.36761, 136.16913, 144.17944, 128.18277, 142.56903]",
+    "family_performance": "[162.84355720843539, 162.56034776911144, 163.83594915049702, 156.68090109026554, 164.33146804321757, 164.32675051360084, 164.31878488655386]",
+    "available_nodes_in_fsc": "[array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True])]",
+    "worst_case_pomdp_values_simulated_rl": "[]",
+    "worst_case_pomdp_values_simulated_fsc": "[]",
+    "was_worst_case_same_as_simulated": "[]",
+    "worst_case_index_rl": "[]",
+    "worst_case_index_fsc": "[]",
+    "worst_case_index_paynt": "[]",
+    "environment_type": "batched_vec_storm"
+}

@@ -22,7 +22,7 @@ from tools.args_emulator import ArgsEmulator
 
 import logging
 
-from tools.evaluation_results_class import EvaluationResults, log_evaluation_info
+from tools.evaluation_results_class import EvaluationResults
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,8 @@ def get_new_vectorized_evaluation_driver(tf_environment: tf_py_environment.TFPyE
 def evaluate_policy_in_model(policy: TFPolicy, args: ArgsEmulator = None,
                              environment: EnvironmentWrapperVec = None,
                              tf_environment=None, max_steps=None,
-                             evaluation_result: EvaluationResults = None) -> EvaluationResults:
+                             evaluation_result: EvaluationResults = None,
+                             use_tf_function=True) -> EvaluationResults:
     """Evaluate the policy in the given environment and return the evaluation results."""
     if max_steps is None and args is not None:
         max_steps = args.max_steps
@@ -90,6 +91,6 @@ def evaluate_policy_in_model(policy: TFPolicy, args: ArgsEmulator = None,
     tf_environment.reset()
     driver.run()
     buffer.final_update_of_results(evaluation_result.update)
-    log_evaluation_info(evaluation_result)
+    evaluation_result.log_evaluation_info()
     buffer.clear()
     return evaluation_result

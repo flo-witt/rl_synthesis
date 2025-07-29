@@ -1,0 +1,13 @@
+{
+    "num_training_steps_per_iteration": "301",
+    "average_rl_performance_subset_simulated": "[55.04658, 108.36644, 120.951515, 107.33867, 125.85901, 99.139206, 122.5967, 139.21706, 96.58253, 27.241083, 218.45714, 25.349174, 53.221504, 65.49348]",
+    "average_extracted_fsc_performance_subset_simulated": "[-79.04388, -112.96777, -129.0093, -113.78831, -130.92146, -97.053375, -126.90884, -254.36751, -102.90592, -157.55147, -221.03546, -113.38599, -77.48833, -105.98494]",
+    "family_performance": "[296.81191674988133, 287.18233337930815, 316.5302194719406, 293.0475440942281, 313.0331306725336, 279.09978734029136, 290.4010294242179, 388.24438254064626, 296.2798015906214, 290.9782017698496, 360.48125927795877, 323.4984103156496, 320.8763538189804, 326.3496298204013]",
+    "available_nodes_in_fsc": "[array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True,  True])]",
+    "worst_case_pomdp_values_simulated_rl": "[]",
+    "worst_case_pomdp_values_simulated_fsc": "[]",
+    "was_worst_case_same_as_simulated": "[]",
+    "worst_case_index_rl": "[]",
+    "worst_case_index_fsc": "[]",
+    "worst_case_index_paynt": "[]"
+}

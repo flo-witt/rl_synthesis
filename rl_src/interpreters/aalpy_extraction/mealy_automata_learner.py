@@ -87,15 +87,21 @@ class MealyAutomataLearner:
         Returns:
             tuple[list, list]: A tuple of episodes observations and episodes actions.
         """
-        observations : np.ndarray = trajectories.observation.numpy()
+        if isinstance(trajectories.observation, dict):
+            observations: np.ndarray = trajectories.observation['integer'].numpy()
+        else:
+            observations : np.ndarray = trajectories.observation.numpy()
+        # Convert observations to int if they are str
+        observations = np.array([obs.astype(str) for obs in observations])
         actions : np.ndarray = trajectories.action.numpy()
         step_types : np.ndarray = trajectories.step_type.numpy()
         
         episode_ranges = MealyAutomataLearner.compute_episode_ranges(step_types)
         
         # Indices of overflows
-        episodes_observations = [observations[episode_range[0], episode_range[1]:episode_range[2] + 1] for episode_range in episode_ranges]
+        episodes_observations = [observations[episode_range[0], episode_range[1]:episode_range[2] + 1].reshape(-1) for episode_range in episode_ranges]
         episodes_actions = [actions[episode_range[0], episode_range[1]:episode_range[2]] for episode_range in episode_ranges]
+
         return episodes_observations, episodes_actions
 
     @staticmethod

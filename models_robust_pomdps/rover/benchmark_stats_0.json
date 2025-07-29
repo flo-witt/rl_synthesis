@@ -1,9 +1,9 @@
 {
     "num_training_steps_per_iteration": "301",
-    "average_rl_performance_subset_simulated": "[527.17224, 346.24167, 300.58548, 286.88013, 287.78357, 280.90488, 279.82883, 281.71304]",
-    "average_extracted_fsc_performance_subset_simulated": "[478.50275, 332.6765, 298.2998, 293.69278, 291.26477, 280.00333, 283.51797, 284.16458]",
-    "family_performance": "[240.7813409183301, 249.37907411996403, 270.7092790798478, 280.1189395579001, 287.2924500839577, 280.8185978116835, 285.0970375862137, 286.9285292499893]",
-    "available_nodes_in_fsc": "[array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True]), array([ True,  True])]",
+    "average_rl_performance_subset_simulated": "[527.17224, 346.24167, 300.58548, 286.88013, 287.78357, 280.90488, 279.82883, 281.71304, 279.6738, 279.30692, 276.69733, 282.04877, 285.70615, 285.0121, 288.6159, 284.72684, 278.62994, 285.62332]",
+    "average_extracted_fsc_performance_subset_simulated": "[478.50275, 332.6765, 298.2998, 293.69278, 291.26477, 280.00333, 283.51797, 284.16458, 278.72592, 278.75446, 276.53305, 282.14227, 281.15146, 281.85852, 284.96616, 288.34042, 287.39792, 283.74612]",
+    "family_performance": "[240.7813409183301, 249.37907411996403, 270.7092790798478, 280.1189395579001, 287.2924500839577, 280.8185978116835, 285.0970375862137, 286.9285292499893, 285.0535603833505, 286.48585127371416, 282.32355283672166, 285.56295538055764, 288.1538734971899, 287.2405374819157, 290.14015231671544, 288.4375211704436, 287.3273568284604, 288.43811260655434]",
+    "available_nodes_in_fsc": "[array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True,  True,  True]), array([ True,  True]), array([ True,  True,  True]), array([ True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True,  True]), array([ True,  True,  True])]",
     "worst_case_pomdp_values_simulated_rl": "[]",
     "worst_case_pomdp_values_simulated_fsc": "[]",
     "was_worst_case_same_as_simulated": "[]",

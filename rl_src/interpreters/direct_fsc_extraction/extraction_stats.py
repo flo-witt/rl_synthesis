@@ -22,6 +22,7 @@ class ExtractionStats:
         self.extracted_fsc_reward = []
 
         self.evaluation_accuracies = []
+        self.number_of_training_trajectories = []
 
     def add_extraction_result(self, extracted_policy_reachability: float, extracted_policy_reward: float):
         self.extracted_policy_reachabilities.append(
@@ -34,6 +35,9 @@ class ExtractionStats:
         
     def add_evaluation_accuracy(self, evaluation_accuracy: tf.Tensor):
         self.evaluation_accuracies.append(evaluation_accuracy.numpy())
+
+    def add_number_of_training_trajectories(self, number_of_trajectories: int):
+        self.number_of_training_trajectories.append(number_of_trajectories)
 
     def store_as_json(self, model_name: str, experiments_path: str):
         if not os.path.exists(experiments_path):

@@ -7,6 +7,7 @@ import stormpy
 import paynt.cli
 import paynt.parser.sketch
 import paynt.quotient.fsc
+from paynt.rl_extension.robust_rl import family_quotient_numpy
 import paynt.synthesizer.synthesizer_ar
 
 import payntbind
@@ -46,6 +47,8 @@ from tools.evaluators import evaluate_policy_in_model
 from paynt.parser.prism_parser import PrismParser
 from paynt.verification.property import construct_property, Property, OptimalityProperty
 
+from paynt.quotient.fsc import FSC
+
 logger = logging.getLogger(__name__)
 
 class RobustTrainer:
@@ -65,11 +68,11 @@ class RobustTrainer:
         self.autlearn_extraction = autlearn_extraction
         fsc_size = latent_dim if use_one_hot_memory else 3**latent_dim
         self.benchmark_stats = self.BenchmarkStats(
-            fsc_size=fsc_size, num_training_steps_per_iteration=301)
+            fsc_size=fsc_size, num_training_steps_per_iteration=301, batched_vec_storm=args.batched_vec_storm)
         self.agent = None
 
     class BenchmarkStats:
-        def __init__(self, fsc_size=3, num_training_steps_per_iteration=50):
+        def __init__(self, fsc_size=3, num_training_steps_per_iteration=50, batched_vec_storm=True):
             self.fsc_size = fsc_size
             self.num_training_steps_per_iteration = num_training_steps_per_iteration
             self.rl_performance_single_pomdp = []
@@ -82,6 +85,8 @@ class RobustTrainer:
             self.worst_case_index_rl = []
             self.worst_case_index_fsc = []
             self.worst_case_index_verif = []
+            self.number_of_training_trajectories = []
+            self.environment_type = "batched_vec_storm" if batched_vec_storm else "vec_storm"
 
         def add_rl_performance(self, performance: float):
             self.rl_performance_single_pomdp.append(performance)
@@ -106,10 +111,14 @@ class RobustTrainer:
             self.worst_case_index_fsc.append(fsc_assignment)
             self.worst_case_index_verif.append(verif_assignment)
 
+        def add_number_of_training_trajectories(self, number_of_trajectories: int):
+            self.number_of_training_trajectories.append(number_of_trajectories)
+
     def save_stats(self, path):
         import json
         benchmark_stats = self.benchmark_stats
         stats = {
+            "number_of_pomdps_in_family": str(len(list(self.pomdp_sketch.family.all_combinations()))),
             "num_training_steps_per_iteration": str(benchmark_stats.num_training_steps_per_iteration),
             "average_rl_performance_subset_simulated": str(benchmark_stats.rl_performance_single_pomdp),
             "average_extracted_fsc_performance_subset_simulated": str(benchmark_stats.extracted_fsc_performance),
@@ -121,6 +130,8 @@ class RobustTrainer:
             "worst_case_index_rl": str(benchmark_stats.worst_case_index_rl),
             "worst_case_index_fsc": str(benchmark_stats.worst_case_index_fsc),
             "worst_case_index_paynt": str(benchmark_stats.worst_case_index_verif),
+            "environment_type": benchmark_stats.environment_type,
+            "number_of_extraction_trajectories": str(benchmark_stats.number_of_training_trajectories)
             
         }
         with open(path, 'w') as f:
@@ -351,7 +362,7 @@ class RobustTrainer:
                 f.write("\n")
         return heatmap_evaluations, hole_assignments_to_test
 
-    def extraction_loop(self, pomdp_sketch, project_path, nr_initial_pomdps = 10):
+    def extraction_loop(self, pomdp_sketch, project_path, nr_initial_pomdps = 10, num_samples_learn=401):
         """
         Pure RL loop, without FSC extraction.
         """
@@ -367,17 +378,30 @@ class RobustTrainer:
         else:
             hole_assignment = pomdp_sketch.family.pick_random()
             pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
+
+        # from paynt.new_fscs.dpm import get_dpm_fsc
+        # from paynt.new_fscs.avoid import get_avoid_fsc
+        # fsc = get_avoid_fsc(self.family_quotient_numpy.action_labels.tolist())    
+        # fsc = convert_all_fsc_keys_to_int(fsc)
+        # dtmc_sketch = pomdp_sketch.build_dtmc_sketch(fsc, negate_specification=True)
+        # synthesizer = paynt.synthesizer.synthesizer_ar.SynthesizerAR(dtmc_sketch)
+        # hole_assignment = synthesizer.synthesize(keep_optimum=True)
+        # table_based_fsc = generate_table_based_fsc_from_paynt_fsc(fsc, self.environment.action_keywords, self.agent)
+
+        # evaluate_policy_in_model(
+        #     table_based_fsc, self.args, self.environment, self.tf_env, self.args.max_steps + 1)
+        # exit(0)
         merged_results = None
         for i in range(100):
             logger.info(f"Iteration {i+1} of pure RL loop")
             # Train the agent on multiple POMDPs
-            self.train_on_new_pomdp(pomdp, self.agent, nr_iterations=601)
+            self.train_on_new_pomdp(pomdp, self.agent, nr_iterations=1001)
 
             # Evaluate the agent on all POMDPs
             # merged_results, worst_case_index_rl = self.perform_overall_evaluation(merged_results, self.agent.get_policy(False, True), 
             #                                                      environments, tf_environments, all_hole_assignments, save=True,
             #                                                      project_path=project_path)
-            fsc = self.extract_fsc(self.agent, self.agent.environment, pomdp_sketch, training_epochs=20001, get_dict=True)
+            fsc = self.extract_fsc(self.agent, self.agent.environment, pomdp_sketch, training_epochs=20001, get_dict=True, num_data_steps=num_samples_learn)
             # Evaluate the FSC on all POMDPs
             paynt_fsc = fsc["extracted_paynt_fsc"]
             # table_based_fsc = fsc["extracted_fsc"]
@@ -394,11 +418,53 @@ class RobustTrainer:
             logger.info(f"Extracted FSC for hole assignment: {hole_assignment}")
             self.benchmark_stats.add_family_performance(synthesizer.best_assignment_value)
             self.save_stats(json_path)
+            self.agent.evaluation_result.save_to_json(json_path, new_pomdp=True)
             # Perform heatmap evaluation
             # heatmap_evaluations, hole_assignments_to_test = self.perform_heatmap_evaluation(paynt_fsc, pomdp_sketch, save=True, project_path=project_path)
 
             # Get the worst-case pomdp
             pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
+
+def convert_all_fsc_keys_to_int(fsc: FSC):
+    """
+    Converts all keys in the FSC to integers.
+    This is necessary for compatibility with the PAYNT library.
+    """
+    for n in range(fsc.num_nodes):
+        for z in range(fsc.num_observations):
+            fsc.action_function[n][z] = {int(action): prob for action, prob in fsc.action_function[n][z].items()}
+            fsc.update_function[n][z] = {int(n_new): prob for n_new, prob in fsc.update_function[n][z].items()}
+    return fsc
+
+def generate_table_based_fsc_from_paynt_fsc(paynt_fsc : FSC, original_action_space : str, agent: Recurrent_PPO_agent):
+    from rl_src.interpreters.extracted_fsc.table_based_policy import TableBasedPolicy
+    # Convert [[{}]] to [[[]]] format
+    minusor = 0
+    if "__no_label__" in paynt_fsc.action_labels:
+        minusor = 1
+    action_function = np.zeros((paynt_fsc.num_nodes, paynt_fsc.num_observations, len(paynt_fsc.action_labels) - minusor), dtype=np.float32)
+    for n in range(paynt_fsc.num_nodes):
+        for z in range(paynt_fsc.num_observations):
+            for action, prob in paynt_fsc.action_function[n][z].items():
+                action_label = paynt_fsc.action_labels[int(action)]
+                if action_label == "__no_label__":
+                    action_function[n][z][0] = prob
+                else:
+                    action_function[n][z][original_action_space.index(action_label)] = prob
+    update_function = np.zeros((paynt_fsc.num_nodes, paynt_fsc.num_observations, paynt_fsc.num_nodes), dtype=np.float32)
+    for n in range(paynt_fsc.num_nodes):
+        for z in range(paynt_fsc.num_observations):
+            for n_new, prob in paynt_fsc.update_function[n][z].items():
+                update_function[n][z][int(n_new)] = prob
+    # Create the table-based policy
+    table_based_policy = TableBasedPolicy(
+        original_policy= agent.get_policy(False, True),
+        action_function=action_function,
+        update_function=update_function,
+        action_keywords=original_action_space)
+
+    return table_based_policy
+
 
 def construct_reachability_spec(sketch_path):
     prism, _ = PrismParser.load_sketch_prism(sketch_path)
@@ -537,7 +603,7 @@ def main():
     json_path = create_json_file_name(project_path)
 
 
-    num_samples_learn = 4000
+    num_samples_learn = 801
     nr_pomdps = 10
     autlearn_extraction = True
 
@@ -546,15 +612,13 @@ def main():
     prism_path = os.path.join(project_path, "sketch.templ")
     properties_path = os.path.join(project_path, "sketch.props")
 
-
-
     # Here, you can change the main parameters of the training etc.
     # Batched_vec_storm is used to run multiple different POMDPs in parallel. If you want to always run a single POMDP (e.g. worst-case), set it to False.
     # Masked_training is used to train the agent with masking, i.e. the agent will be forbidden to take illegal actions.
     args_emulated = init_args(
         prism_path=prism_path, properties_path=properties_path, batched_vec_storm=True, masked_training=False)
     args_emulated.model_name = project_path.split("/")[-1]
-    args_emulated.max_steps = 801
+    args_emulated.max_steps = 2001
     # pomdp = initialize_prism_model(prism_path, properties_path, constants="")
 
     hole_assignment = pomdp_sketch.family.pick_any()
@@ -562,11 +626,16 @@ def main():
 
     extractor = initialize_extractor(pomdp_sketch, args_emulated, family_quotient_numpy, autlearn_extraction)
 
+    
+
+    
+    
+
     agent = extractor.generate_agent(pomdp, args_emulated)
     last_hole = None
     for i in range(nr_pomdps):
         hole_assignment = pomdp_sketch.family.pick_random()
-    extractor.extraction_loop(pomdp_sketch, project_path=project_path, nr_initial_pomdps=nr_pomdps)
+    extractor.extraction_loop(pomdp_sketch, project_path=project_path, nr_initial_pomdps=nr_pomdps, num_samples_learn=num_samples_learn)
     return
     # if train_extraction_less_and_then_extract:
     #     file_name_suffix = "batched" if args_emulated.batched_vec_storm else "single"
@@ -582,7 +651,6 @@ def main():
     #     file_name = os.path.join(project_path, f"all_evaluations_{file_name_suffix}.txt")
     #     extractor.pure_rl_loop(pomdp_sketch, all_evaluations_file=file_name)
     #     return
-
     last_hole = None
     for i in range(nr_pomdps):
         hole_assignment = pomdp_sketch.family.pick_random()

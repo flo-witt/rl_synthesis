@@ -80,20 +80,21 @@ class Recurrent_PPO_agent(FatherAgent):
             optimizer,
             actor_net=self.actor_net,
             value_net=self.value_net,
-            num_epochs=4,
+            num_epochs=3,
             train_step_counter=train_step_counter,
             greedy_eval=self.args.completely_greedy,
-            discount_factor=0.99,
+            discount_factor=self.args.discount_factor,
             use_gae=True,
             lambda_value=0.95,
-            # gradient_clipping=0.5,
+            gradient_clipping=0.5,
             policy_l2_reg=0.0001,
             value_function_l2_reg=0.0001,
             entropy_regularization=0.03,
             normalize_rewards=True,
             normalize_observations=True,
-            # log_prob_loss=0.00001
-            
+            # log_prob_loss=0.00001,
+            # gradient_clipping=0.5
+            importance_ratio_clipping=0.2,
         )
         self.agent.initialize()
         
@@ -139,11 +140,11 @@ class Recurrent_PPO_agent(FatherAgent):
 
     def set_policy_masking(self):
         """If PPO, this function sets the masking active for agent wrapper."""
-        # self.wrapper.set_policy_masker()
+        self.wrapper.set_policy_masker()
 
     def unset_policy_masking(self):
         """If PPO, this function sets the masking inactive for agent wrapper."""
-        # self.wrapper.unset_policy_masker()
+        self.wrapper.unset_policy_masker()
 
     def reset_weights(self):
         for net_type in [self.agent._value_net, self.agent._actor_net]:

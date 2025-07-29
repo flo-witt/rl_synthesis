@@ -157,7 +157,7 @@ class PPOAgent(tf_agent.TFAgent):
       summarize_grads_and_vars: bool = False,
       train_step_counter: Optional[tf.Variable] = None,
       name: Optional[Text] = None,
-      log_prob_loss: types.Float = 0.0
+      log_prob_loss: types.Float = 0.00
   ):
     """Creates a PPO Agent.
 

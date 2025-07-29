@@ -79,7 +79,24 @@ class PolicyMaskWrapper(TFPolicy):
             tf.cast(mask, tf.bool), logits, tf.constant(logits.dtype.min, dtype=logits.dtype))
         self.__policy_dummy_masker = lambda logits, mask: logits
         self.current_masker = self.__policy_dummy_masker
+        self.epsilon_greedy_probability = 0.0
         
+
+    def epsilon_greedy_action(self, time_step : TimeStep) -> tf.Tensor:
+        """Returns a random action from a set of legal actions with a uniform distribution,
+        where the legal actions are defined by the mask in the time step observation."""
+        _, mask = self._observation_and_action_constraint_splitter(time_step.observation)
+        probs = tf.where(
+            tf.cast(mask, tf.bool),
+            tf.ones_like(mask, dtype=tf.float32) / tf.reduce_sum(tf.cast(mask, tf.float32)),
+            tf.zeros_like(mask, dtype=tf.float32)
+        )
+        # Return a random action from the legal actions with a uniform distribution
+        action = tf.random.categorical(
+            tf.math.log(probs), num_samples=1, dtype=tf.int32
+        )
+        action = tf.squeeze(action, axis=-1)
+        return action
 
     def is_greedy(self):
         return self._is_greedy
@@ -150,22 +167,20 @@ class PolicyMaskWrapper(TFPolicy):
         return distribution
 
     def _action(self, time_step, policy_state, seed) -> PolicyStep:
-        # observation, mask = self._observation_and_action_constraint_splitter(time_step.observation)
-        # time_step = time_step._replace(observation=observation)
-        # return self._policy.action(time_step, policy_state, seed)
+        """Returns the action for the given time step and policy state."""
+        mask = time_step.observation["mask"]
         distribution = self._real_distribution(time_step, policy_state)
-
         if self._is_greedy:
             # print("Greedy action")
             logits = distribution.action.logits
-            logits = self.current_masker(logits, time_step.observation["mask"])
+            logits = self.current_masker(logits, mask)
             action = tf.argmax(logits, output_type=tf.int32, axis=-1)
         else:
             # print("Stochastic action")
             # _, mask = self._observation_and_action_constraint_splitter(time_step.observation)
             # action = self._get_action_masked(distribution, mask)
             logits = distribution.action.logits
-            # logits = self.current_masker(logits, time_step.observation["mask"])
+            logits = self.current_masker(logits, mask)
             # action = tf.random.categorical(distribution.action.logits, num_samples=1, dtype=tf.int32)
             action = tf.random.categorical(logits, num_samples=1, dtype=tf.int32)
             action = tf.squeeze(action, axis=-1)
@@ -205,5 +220,9 @@ class PolicyMaskWrapper(TFPolicy):
         else:
             new_policy_state = distribution.state
             info = distribution.info
+
+        if self.epsilon_greedy_probability > 0.0:
+            use_epsilon_greedy = tf.random.uniform((), 0, 1) < self.epsilon_greedy_probability
+            action = tf.where(use_epsilon_greedy, self.epsilon_greedy_action(time_step), action)
         policy_step = PolicyStep(action=action, state=new_policy_state, info=info)
         return policy_step

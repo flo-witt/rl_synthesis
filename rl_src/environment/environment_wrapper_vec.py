@@ -296,9 +296,9 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         self.antigoal_values_vector = tf.constant(
             [self.args.evaluation_antigoal * 0] * self.num_envs, dtype=tf.float32)
         self.goal_values_vector = tf.constant(
-            [self.args.evaluation_goal * 5] * self.num_envs, dtype=tf.float32)
+            [self.args.evaluation_goal * 8] * self.num_envs, dtype=tf.float32)
         self.truncation_values_vector = tf.constant(
-            [-10.0] * self.num_envs, dtype=tf.float32)
+            [-0.0] * self.num_envs, dtype=tf.float32)
 
 
     def set_rover_rewards(self):
@@ -329,13 +329,13 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
 
     def set_dpm_rewards(self):
         """Sets the rewards for the DPM states."""
-        self.reward_multiplier = 0.5
+        self.reward_multiplier = 0.1
         self.antigoal_values_vector = tf.constant(
             [self.args.evaluation_antigoal] * self.num_envs, dtype=tf.float32)
         self.goal_values_vector = tf.constant(
-            [5.0] * self.num_envs, dtype=tf.float32)
+            [1.0] * self.num_envs, dtype=tf.float32)
         self.truncation_values_vector = tf.constant(
-            [-0.0] * self.num_envs, dtype=tf.float32)
+            [-1.0] * self.num_envs, dtype=tf.float32)
 
     def set_reward_model(self, model_name):
         self.truncation_values_vector = tf.constant(

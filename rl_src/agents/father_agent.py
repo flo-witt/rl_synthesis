@@ -261,8 +261,10 @@ class FatherAgent(AbstractAgent):
             self.collect_policy_wrapper = PolicyMaskWrapper(
                 self.agent.collect_policy, observation_and_action_constraint_splitter, tf_environment.time_step_spec(), predicate_automata=predicate_automata)
             if self.args.masked_training:
+                print("Using masked training with policy wrapper.")
                 self.collect_policy_wrapper.set_policy_masker()
             else:
+                print("Using unmasked training with policy wrapper.")
                 self.collect_policy_wrapper.unset_policy_masker()
 
             eager = py_tf_eager_policy.PyTFEagerPolicy(
@@ -627,7 +629,7 @@ class FatherAgent(AbstractAgent):
             self.environment.unset_go_explore()
         # if self.args.prefer_stochastic:
         self.set_agent_stochastic()
-        self.set_policy_masking()
+        self.unset_policy_masking()
         # else:
         #     self.set_agent_greedy()
         #     self.set_policy_masking()
@@ -671,20 +673,7 @@ class FatherAgent(AbstractAgent):
         self.environment.reset_num_envs()
 
     def log_evaluation_info(self):
-        logger.info('Average Return = {0}'.format(
-            self.evaluation_result.returns[-1]))
-        logger.info('Average Virtual Goal Value = {0}'.format(
-            self.evaluation_result.returns_episodic[-1]))
-        logger.info('Goal Reach Probability = {0}'.format(
-            self.evaluation_result.reach_probs[-1]))
-        logger.info('Trap Reach Probability = {0}'.format(
-            self.evaluation_result.trap_reach_probs[-1]))
-        logger.info('Variance of Return = {0}'.format(
-            self.evaluation_result.each_episode_variance[-1]))
-        logger.info('Current Best Return = {0}'.format(
-            self.evaluation_result.best_return))
-        logger.info('Current Best Reach Probability = {0}'.format(
-            self.evaluation_result.best_reach_prob))
+        self.evaluation_result.log_evaluation_info()
 
     def set_agent_greedy(self):
         """Set the agent for to be greedy for evaluation. Used only with PPO agent, where we select greedy evaluation.
@@ -825,24 +814,5 @@ class FatherAgent(AbstractAgent):
     def evaluate_fsc(self, fsc: FSC):
         fsc_policy = SimpleFSCPolicy(fsc, self.environment.action_keywords, self.tf_environment.time_step_spec(), self.tf_environment.action_spec(),
                                      policy_state_spec=(), info_spec=(), observation_and_action_constraint_splitter=fsc_action_constraint_splitter)
-        eager = py_tf_eager_policy.PyTFEagerPolicy(
-            fsc_policy, use_tf_function=True, batch_time_steps=False)
-        trajectory_buffer = TrajectoryBuffer(self.environment)
-        vec_driver = DynamicStepDriver(
-            self.tf_environment, eager, observers=[trajectory_buffer.add_batched_step], num_steps=self.args.num_environments * (self.args.max_steps + 1))
-        vec_driver.run()
-
-        def print_results(avg_return, avg_episode_return, reach_prob, episode_variance, num_episodes,
-                          trap_reach_prob, virtual_variance, combined_variance):
-            logger.info("Average return: {0}".format(avg_return))
-            logger.info("Average episode return: {0}".format(
-                avg_episode_return))
-            logger.info("Reachability probability: {0}".format(reach_prob))
-            logger.info("Episode variance: {0}".format(episode_variance))
-            logger.info("Number of episodes: {0}".format(num_episodes))
-            logger.info(
-                "Trap reachability probability: {0}".format(trap_reach_prob))
-            logger.info("Virtual variance: {0}".format(virtual_variance))
-            logger.info("Combined variance: {0}".format(combined_variance))
-
-        trajectory_buffer.final_update_of_results(print_results)
+        evaluate_policy_in_model(
+            fsc_policy, self.args, self.environment, self.tf_environment)

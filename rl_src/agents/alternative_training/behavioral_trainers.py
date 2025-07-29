@@ -2,7 +2,7 @@ import tensorflow as tf
 from tf_agents.trajectories.trajectory import Trajectory
 from tf_agents.replay_buffers.tf_uniform_replay_buffer import TFUniformReplayBuffer
 from tools.trajectory_buffer import TrajectoryBuffer
-from tools.evaluation_results_class import EvaluationResults, log_evaluation_info
+from tools.evaluation_results_class import EvaluationResults
 
 from environment.tf_py_environment import TFPyEnvironment
 from tf_agents.policies.py_tf_eager_policy import PyTFEagerPolicy
@@ -187,7 +187,7 @@ class ActorValuePretrainer:
             self.evaluation_result.update)
         self.aux_trajectory_buffer.clear()
         logger.info("Evaluating results of the SAYNT policy")
-        log_evaluation_info(self.evaluation_result)
+        self.evaluation_result.log_evaluation_info()
 
     def reinit_fsc_policy_driver(self, fsc: FSC = None):
         self.init_fsc_policy_driver(
@@ -280,7 +280,7 @@ class ActorValuePretrainer:
             self.trajectory_buffer.final_update_of_results(
                 self.evaluation_result.update)
             self.trajectory_buffer.clear()
-            log_evaluation_info(self.evaluation_result)
+            self.evaluation_result.log_evaluation_info()
         else:
             raise NotImplementedError(
                 "Non-vectorized environments are not supported anymore.")
