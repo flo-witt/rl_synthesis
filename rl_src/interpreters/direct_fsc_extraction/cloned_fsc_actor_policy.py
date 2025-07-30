@@ -63,6 +63,11 @@ class ClonedFSCActorPolicy(TFPolicy):
         self.observation_length = observation_length
         self.orig_env_use_stacked_observations = orig_env_use_stacked_observations
 
+    def set_probs_updates(self):
+        self.fsc_actor.set_return_probs(True)
+
+    def unset_probs_updates(self):
+        self.fsc_actor.set_return_probs(False)
 
     def load_best_policy(self):
         try:

@@ -10,13 +10,13 @@ class FSCLikeActorNetwork(models.Model):
                  memory_len: int,
                  use_one_hot: bool = False,
                  use_residual_connection: bool = True,
-                 gumbel_softmax_one_hot: bool = False,
-                 stochastic_updates: bool = False):
+                 gumbel_softmax_one_hot: bool = True,
+                 stochastic_updates: bool = True):
         super(FSCLikeActorNetwork, self).__init__()
         self.observation_shape = observation_shape
         self.action_range = action_range
         self.memory_len = memory_len
-        self.dense1 = layers.Dense(128, activation='relu')
+        self.dense1 = layers.Dense(64, activation='relu')
         self.grumender = layers.Dense(32, activation='tanh')
         self.simple_rnn_for_memory = layers.GRU(
             32, return_sequences=True, return_state=True)
@@ -24,14 +24,26 @@ class FSCLikeActorNetwork(models.Model):
         self.memory_dense = layers.Dense(memory_len, activation=None)
         self.pre_action_dense = layers.Dense(64, activation='relu')
         self.action = layers.Dense(self.action_range, activation=None)
+        self.return_probs = False
+        self.use_one_hot = use_one_hot
+        self.gumbel_softmax_one_hot = gumbel_softmax_one_hot
         if gumbel_softmax_one_hot:
             assert use_one_hot, "Gumbel softmax requires one-hot encoding."
             self.projection_network = layers.Dense(memory_len, activation='relu')
             self.memory_function = layers.Lambda(
                 lambda x: self.gumbel_softmax(x, temperature=1.0))
-            self.quantization_layer = layers.Lambda(lambda x: tf.one_hot(tf.argmax(x, axis=-1),
-                                                                         depth=self.memory_len, dtype=tf.float32))
             self.one_hot_constant = 1
+            if stochastic_updates:
+                self.quantization_layer = layers.Lambda(lambda x: 
+                                                        tf.one_hot(
+                                                            tf.reshape(tf.random.categorical(
+                                                                logits=tf.math.log(x), num_samples=1, dtype=tf.int32),
+                                                                shape=(x.shape[0], -1)), 
+                                                            depth=self.memory_len, 
+                                                            dtype=tf.float32, axis=-1))
+            else:
+                self.quantization_layer = layers.Lambda(lambda x: tf.one_hot(tf.argmax(x, axis=-1),
+                                                                         depth=self.memory_len, dtype=tf.float32))
         elif not use_one_hot:
 
             self.memory_function = layers.Lambda(
@@ -45,10 +57,14 @@ class FSCLikeActorNetwork(models.Model):
             self.quantization_layer = layers.Lambda(lambda x: tf.one_hot(tf.argmax(x, axis=-1),
                                                                          depth=self.memory_len, dtype=tf.float32))
             self.one_hot_constant = 1
-        if stochastic_updates:
-            self.quantization_layer = layers.Lambda(
-                lambda x: x)
+        
         self.noise_level = 0.35
+
+    def set_return_probs(self, return_probs: bool):
+        """
+        Set whether the network should return probabilities or not.
+        """
+        self.return_probs = return_probs
 
     def get_initial_state(self, batch_size):
         zeros_like = tf.zeros(
@@ -102,10 +118,13 @@ class FSCLikeActorNetwork(models.Model):
         memory = self.memory_dense(memory)
         memory = self.memory_function(memory)
         # memory += self.generate_noise(memory)
-        x_quantized = self.quantization_layer(memory)
+        if self.gumbel_softmax_one_hot and self.return_probs:
+            x_quantized = memory
+        else:
+            x_quantized = self.quantization_layer(memory)
+            x_quantized = tf.reshape(x_quantized, (x_quantized.shape[0], -1))
         # State-through estimation, where we ignore round(x).
         memory = memory + tf.stop_gradient(x_quantized - memory)
         action = self.action(x)
-        
 
         return action, memory

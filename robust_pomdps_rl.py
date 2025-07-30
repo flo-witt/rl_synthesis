@@ -64,9 +64,11 @@ class RobustTrainer:
         self.obs_evaluator = obs_evaluator
         self.quotient_state_valuations = quotient_state_valuations
         self.family_quotient_numpy = family_quotient_numpy
-        self.direct_extractor = self.init_extractor(latent_dim, autlearn_extraction)
-        self.autlearn_extraction = autlearn_extraction
         fsc_size = latent_dim if use_one_hot_memory else 3**latent_dim
+
+        self.direct_extractor = self.init_extractor(fsc_size, autlearn_extraction)
+        self.autlearn_extraction = autlearn_extraction
+        
         self.benchmark_stats = self.BenchmarkStats(
             fsc_size=fsc_size, num_training_steps_per_iteration=301, batched_vec_storm=args.batched_vec_storm)
         self.agent = None
@@ -138,7 +140,6 @@ class RobustTrainer:
             json.dump(stats, f, indent=4)
 
     def init_extractor(self, latent_dim, autlearn_extraction=False):
-
         direct_extractor = SelfInterpretableExtractor(memory_len=latent_dim, is_one_hot=self.use_one_hot_memory,
                                                       use_residual_connection=True, training_epochs=20001,
                                                       num_data_steps=4001, get_best_policy_flag=False, model_name=self.model_name,
@@ -395,7 +396,7 @@ class RobustTrainer:
         for i in range(100):
             logger.info(f"Iteration {i+1} of pure RL loop")
             # Train the agent on multiple POMDPs
-            self.train_on_new_pomdp(pomdp, self.agent, nr_iterations=1001)
+            self.train_on_new_pomdp(pomdp, self.agent, nr_iterations=101)
 
             # Evaluate the agent on all POMDPs
             # merged_results, worst_case_index_rl = self.perform_overall_evaluation(merged_results, self.agent.get_policy(False, True), 
@@ -580,7 +581,7 @@ def initialize_extractor(pomdp_sketch, args_emulated, family_quotient_numpy,autl
 
     # Currently latent_dim is hardcoded to 2 (3 ** i => 9-FSC)
     # If use one-hot memory, then the size of FSC is equal to the latent_dim.
-    extractor = RobustTrainer(args_emulated, use_one_hot_memory=False, latent_dim=2, quotient_state_valuations=quotient_sv,
+    extractor = RobustTrainer(args_emulated, use_one_hot_memory=True, latent_dim=3, quotient_state_valuations=quotient_sv,
                               obs_evaluator=quotient_obs, pomdp_sketch=pomdp_sketch, 
                               family_quotient_numpy=family_quotient_numpy, autlearn_extraction=autlearn_extraction)
     
@@ -603,9 +604,9 @@ def main():
     json_path = create_json_file_name(project_path)
 
 
-    num_samples_learn = 801
+    num_samples_learn = 4001
     nr_pomdps = 10
-    autlearn_extraction = True
+    autlearn_extraction = False
 
     family_quotient_numpy = FamilyQuotientNumpy(pomdp_sketch) # This can be useful for extraction and some other stuff.
     
@@ -618,7 +619,7 @@ def main():
     args_emulated = init_args(
         prism_path=prism_path, properties_path=properties_path, batched_vec_storm=True, masked_training=False)
     args_emulated.model_name = project_path.split("/")[-1]
-    args_emulated.max_steps = 2001
+    args_emulated.max_steps = 1001
     # pomdp = initialize_prism_model(prism_path, properties_path, constants="")
 
     hole_assignment = pomdp_sketch.family.pick_any()

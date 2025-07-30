@@ -83,18 +83,16 @@ class Recurrent_PPO_agent(FatherAgent):
             num_epochs=3,
             train_step_counter=train_step_counter,
             greedy_eval=self.args.completely_greedy,
-            discount_factor=self.args.discount_factor,
+            discount_factor=0.99,
             use_gae=True,
             lambda_value=0.95,
-            gradient_clipping=0.5,
+            # gradient_clipping=0.5,
             policy_l2_reg=0.0001,
             value_function_l2_reg=0.0001,
-            entropy_regularization=0.03,
+            value_pred_loss_coef=0.45,
+            entropy_regularization=0.02,
             normalize_rewards=True,
             normalize_observations=True,
-            # log_prob_loss=0.00001,
-            # gradient_clipping=0.5
-            importance_ratio_clipping=0.2,
         )
         self.agent.initialize()
         

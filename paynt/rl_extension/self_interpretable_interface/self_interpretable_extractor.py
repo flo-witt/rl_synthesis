@@ -403,8 +403,10 @@ class SelfInterpretableExtractor:
                 environment=env, tf_environment=tf_env, args=None, extraction_stats=self.extraction_stats)
             # if self.get_best_policy_flag:
             #     self.cloned_actor.load_best_policy()
-            fsc, _, _ = SelfInterpretableExtractor.extract_fsc(self.cloned_actor, env, self.memory_len, is_one_hot=self.is_one_hot, non_deterministic=True,
-                                                               family_quotient_numpy=self.family_quotient_numpy)
+            fsc, fsc_actions, fsc_updates = SelfInterpretableExtractor.extract_fsc(self.cloned_actor, env, self.memory_len, 
+                                                                                   is_one_hot=self.is_one_hot, non_deterministic=True,
+                                                                                   family_quotient_numpy=self.family_quotient_numpy)
+            print(f"Extracted FSC with {fsc_actions} actions and {fsc_updates} updates")
             fsc_res = evaluate_policy_in_model(fsc, environment=env, tf_environment=tf_env, max_steps=(self.max_episode_len + 1) * 2)
             extraction_stats.add_fsc_result(fsc_res.reach_probs[-1], fsc_res.returns[-1])
 
@@ -479,9 +481,10 @@ class SelfInterpretableExtractor:
 
 
     @staticmethod
-    def extract_fsc(policy: TFPolicy, environment: EnvironmentWrapperVec, memory_len: int, 
-                    is_one_hot: bool = True, non_deterministic=False, 
-                    family_quotient_numpy : FamilyQuotientNumpy = None) -> TableBasedPolicy:
+    def extract_fsc(policy: TFPolicy, environment: EnvironmentWrapperVec, memory_len: int,
+                    is_one_hot: bool = True, non_deterministic=True,
+                    family_quotient_numpy: FamilyQuotientNumpy = None,
+                    complete_probs = True) -> tuple[TableBasedPolicy, np.ndarray, np.ndarray]:
         # Computes the number of potential combinations of latent memory (3 possible values for each latent memory cell, {-1, 0, 1})
         base = 3
         max_memory = base ** memory_len if not is_one_hot else memory_len
@@ -489,7 +492,7 @@ class SelfInterpretableExtractor:
         
         
         logger.info("Computing memory to tensor table")
-        compute_memory, decompute_memory = get_encoding_functions(is_one_hot)
+        compute_memory, decompute_memory = get_encoding_functions(is_one_hot, complete_probs=complete_probs)
         memory_to_tensor_table = SelfInterpretableExtractor.create_memory_to_tensor_table(
             compute_memory, memory_len, max_memory)
         
@@ -504,7 +507,7 @@ class SelfInterpretableExtractor:
                 obs_batch, environment.action_keywords)
         else:
             time_steps = environment.create_fake_timestep_from_observation_integer(obs_batch)
-            illegal_actions_flags = np.zeros((time_steps.observation.shape[0], ), dtype=bool)  # No illegal actions in the fake time step
+            illegal_actions_flags = np.zeros((time_steps.observation["mask"].shape[0], ), dtype=bool)  # No illegal actions in the fake time step
         memory_states = tf.convert_to_tensor(memory_to_tensor_table, dtype=tf.float32)  # (M, L)
         memory_states = tf.reshape(memory_states, (max_memory, 1, memory_len))          # (M, 1, L)
         memory_states = tf.repeat(memory_states, repeats=nr_observations, axis=1)       # (M, O, L)
@@ -527,17 +530,22 @@ class SelfInterpretableExtractor:
             probs[illegal_actions_flags, :] = 0.0
             fsc_actions[:, :, :] = probs
             fsc_updates = np.zeros((max_memory, nr_observations, max_memory), dtype=np.float32)
-            states = decompute_memory(memory_len, states, base).numpy()  # (M*O)
-            states = np.reshape(states, (max_memory, nr_observations))  # (M, O)
-            # Expand states to match the shape (M, O, L), since updates are deterministic and we want to map state update to dirac distribution
-            fsc_updates[:, :, :] = np.eye(max_memory, dtype=np.float32)[states.astype(int)]  # (M, O, L)
+            states = decompute_memory(memory_len, states, base).numpy()  # (M*O) if not complete_probs else (M*O, L)
+            if complete_probs:
+                states = np.reshape(states, (max_memory, nr_observations, max_memory))
+                fsc_updates[:, :, :] = states  # (M, O, L)
+            else:
+                states = np.reshape(states, (max_memory, nr_observations))  # (M, O)
+                # Expand states to match the shape (M, O, L), since updates are deterministic and we want to map state update to dirac distribution
+                fsc_updates[:, :, :] = np.eye(max_memory, dtype=np.float32)[states.astype(int)]  # (M, O, L)
             table_based_policy = TableBasedPolicy(
                 policy, fsc_actions, fsc_updates, initial_memory=0, action_keywords=environment.action_keywords)
 
             # states = tf.reshape(states, (max_memory, nr_observations, memory_len))
 
         
-            
+        print(fsc_actions)
+        print(fsc_updates)
         return table_based_policy, fsc_actions, fsc_updates
 
     @staticmethod
@@ -600,6 +608,8 @@ class SelfInterpretableExtractor:
             environment=env, tf_environment=tf_env, args=args,
             extraction_stats=extraction_stats
         )
+        cloned_actor
+        cloned_actor.set_probs_updates()
         fsc, action_table, update_table = SelfInterpretableExtractor.extract_fsc(cloned_actor, env, memory_size, is_one_hot=use_one_hot)
         if DEBUG:
             fsc2, action_table2, update_table2 = SelfInterpretableExtractor.extract_fsc_nonvectorized(cloned_actor, env, memory_size, is_one_hot=use_one_hot)
@@ -651,15 +661,15 @@ def parse_args_from_cmd():
     parser = argparse.ArgumentParser()
     parser.add_argument("--prism-path", type=str, required=True)
     parser.add_argument("--memory-size", type=int, default=2)
-    parser.add_argument("--num-data-steps", type=int, default=6000)
-    parser.add_argument("--num-training-steps", type=int, default=20)
+    parser.add_argument("--num-data-steps", type=int, default=4001)
+    parser.add_argument("--num-training-steps", type=int, default=1001)
     parser.add_argument("--specification-goal",
                         type=str, default="reachability")
     parser.add_argument("--optimization-goal", type=str, default="max")
     parser.add_argument("--use-one-hot", action="store_true")
     parser.add_argument("--experiments-storage-path-folder",
                         type=str, default="experiments_extraction")
-    parser.add_argument("--extraction-epochs", type=int, default=100000)
+    parser.add_argument("--extraction-epochs", type=int, default=20001)
     parser.add_argument("--use-residual-connection", action="store_true")
     args = parser.parse_args()
     return args
