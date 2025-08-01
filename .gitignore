@@ -35,8 +35,5 @@ build/
 .vscode/launch.json
 drone-2-8-1-tanh.txt
 *.txt
-learn_aut.py
-pomdp_to_rm.py
-train_aut_policy.py
 *.dot
 *stats*.json
