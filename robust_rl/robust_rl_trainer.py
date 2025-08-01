@@ -427,17 +427,17 @@ class RobustTrainer:
         #     table_based_fsc, self.args, self.environment, self.tf_env, self.args.max_steps + 1)
         # exit(0)
         merged_results = None
-        nr_iterations = 11
-        for i in range(3):
+        nr_iterations = 1001
+        for i in range(20):
             logger.info(f"Iteration {i+1} of pure RL loop")
             # Train the agent on multiple POMDPs
             self.train_on_new_pomdp(pomdp, self.agent, nr_iterations=nr_iterations)
-            nr_iterations = 11
+            nr_iterations = 501
             # Evaluate the agent on all POMDPs
             # merged_results, worst_case_index_rl = self.perform_overall_evaluation(merged_results, self.agent.get_policy(False, True), 
             #                                                      environments, tf_environments, all_hole_assignments, save=True,
             #                                                      project_path=project_path)
-            fsc = self.extract_fsc(self.agent, self.agent.environment, pomdp_sketch, training_epochs=301, get_dict=True, num_data_steps=num_samples_learn)
+            fsc = self.extract_fsc(self.agent, self.agent.environment, pomdp_sketch, training_epochs=30001, get_dict=True, num_data_steps=num_samples_learn)
             # Evaluate the FSC on all POMDPs
             paynt_fsc = fsc["extracted_paynt_fsc"]
             # table_based_fsc = fsc["extracted_fsc"]
