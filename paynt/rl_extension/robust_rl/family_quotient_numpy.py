@@ -60,7 +60,7 @@ class FamilyQuotientNumpy:
         action_mapping = np.array([new_action_labels.index(label) if label in new_action_labels else len(new_action_labels) for label in self.action_labels])
 
         np_observation_integers = np.array(observation_integer, dtype=np.int32)
-        legal_actions = self.observation_to_legal_action_mask[np_observation_integers] 
+        legal_actions = self.observation_to_legal_action_mask[np_observation_integers]
         mapped_legal_actions = np.zeros((len(np_observation_integers), len(new_action_labels) + 1), dtype=bool)
         mapped_legal_actions[:, action_mapping] = legal_actions
         illegal_actions_flags = mapped_legal_actions[:, -1]
@@ -72,9 +72,9 @@ class FamilyQuotientNumpy:
             reward=tf.constant([0.0] * len(np_observation_integers), dtype=tf.float32),
             discount=tf.constant([1.0] * len(np_observation_integers), dtype=tf.float32),
             observation={
-                "integer": tf.constant(np_observation_integers, dtype=tf.int32),
+                "integer": tf.constant(np_observation_integers.reshape(-1, 1), dtype=tf.int32),
                 "mask": tf.constant(mapped_legal_actions, dtype=tf.bool),
-                "observation": tf.constant(observation_valuations, dtype=tf.int32)
+                "observation": tf.constant(observation_valuations, dtype=tf.float32)
             }
         )
 

@@ -57,7 +57,8 @@ class SelfInterpretableExtractor:
                  get_best_policy_flag = False, model_name = "generic_model",
                  max_episode_len = 800, 
                  optimizing_specification : SpecificationChecker.Constants = SpecificationChecker.Constants.REACHABILITY,
-                 family_quotient_numpy : FamilyQuotientNumpy = None, autlearn_extraction = True):
+                 family_quotient_numpy : FamilyQuotientNumpy = None, autlearn_extraction = True,
+                 use_gumbel_softmax = False, stacked_observations = False):
         self.autlearn_extraction = autlearn_extraction
         self.iteration = 0
         self.memory_len = memory_len
@@ -77,6 +78,10 @@ class SelfInterpretableExtractor:
         self.family_quotient_numpy = family_quotient_numpy
         self.stoch = True
         self.k_tail = False
+        self.use_gumbel_softmax = use_gumbel_softmax
+        self.stacked_observations = stacked_observations
+        self.non_deterministic = True
+        self.complete_probs = True if use_gumbel_softmax else False
 
     def set_memory_len(self, memory_len):
         self.memory_len = memory_len
@@ -104,7 +109,8 @@ class SelfInterpretableExtractor:
                 use_one_hot=self.is_one_hot, use_residual_connection=self.use_residual_connection,
                 optimization_specification = self.optimizing_specification, model_name = self.model_name,
                 find_best_policy=self.get_best_policy_flag,
-                max_episode_length=self.max_episode_len, observation_length=env.observation_spec_len)
+                max_episode_length=self.max_episode_len, observation_length=env.observation_spec_len, 
+                orig_env_use_stacked_observations=self.stacked_observations)
         self.extraction_stats = ExtractionStats(original_policy_reachability=orig_eval_result.reach_probs[-1],
                                                      original_policy_reward=orig_eval_result.returns[-1],
                                                      use_one_hot=self.is_one_hot,
@@ -277,15 +283,11 @@ class SelfInterpretableExtractor:
     def clone_and_generate_fsc_from_policy(self, original_policy : TFPolicy, 
                                            env : EnvironmentWrapperVec = None, 
                                            tf_env : TFPyEnvironment = None) -> tuple[TableBasedPolicy, ExtractionStats]:
+        logger.error(str(self.autlearn_extraction))
         if self.autlearn_extraction:
 
             orig_eval_result = evaluate_policy_in_model(original_policy, environment=env, tf_environment=tf_env,
                                                         max_steps=(self.max_episode_len + 1) * 2)
-            if self.specification_checker is not None:
-                self.specification_checker.set_optimal_value_from_evaluation_results(orig_eval_result)
-
-            if self.regenerate_fsc_network_flag or self.cloned_actor is None:
-                self.reset_cloned_actor(original_policy, orig_eval_result, env)
 
             # if isinstance(original_policy, PolicyMaskWrapper):
             original_policy.set_policy_masker()
@@ -299,7 +301,7 @@ class SelfInterpretableExtractor:
             else:
                 all_trajectories = []
             num_samples = self.num_data_steps
-            for i in range(4):
+            for i in range(3):
                 print(f"Buffer {i}")
                 buffer = sample_data_with_policy(
                     original_policy, num_samples=num_samples, environment=env, tf_environment=tf_env,
@@ -330,6 +332,7 @@ class SelfInterpretableExtractor:
                     # print(all_trajectories)
                     print(f"Learned {len(all_trajectories)} trajectories")
                     print("Learned trajectory lengths ", set(map(len, all_trajectories)))
+                    del buffer
                 else:
                     print(f"Buffer size: {len(buffer)}")
                     aut_learn_data = buffer
@@ -356,7 +359,7 @@ class SelfInterpretableExtractor:
 
             else:
                 fsc, aalpy_model = self.learn_fsc(all_trajectories, original_policy, env)
-
+            
             extraction_stats = ExtractionStats(
                 original_policy_reachability=0,
                 original_policy_reward=0,
@@ -379,6 +382,7 @@ class SelfInterpretableExtractor:
             print(f"FSC Result: {fsc_res}")
             extraction_stats.add_fsc_result(fsc_res.reach_probs[-1], fsc_res.returns[-1])
             extraction_stats.add_number_of_training_trajectories(len(all_trajectories) if not get_both else len(all_trajectories_1) + len(all_trajectories_2))
+            del all_trajectories
             return fsc, extraction_stats
         else:
             orig_eval_result = evaluate_policy_in_model(original_policy, environment=env, tf_environment=tf_env, max_steps=(self.max_episode_len + 1) * 2)
@@ -401,12 +405,14 @@ class SelfInterpretableExtractor:
             extraction_stats = self.cloned_actor.behavioral_clone_original_policy_to_fsc(
                 buffer, num_epochs=self.training_epochs, specification_checker=self.specification_checker,
                 environment=env, tf_environment=tf_env, args=None, extraction_stats=self.extraction_stats)
+            self.cloned_actor.set_probs_updates()
             # if self.get_best_policy_flag:
             #     self.cloned_actor.load_best_policy()
             fsc, fsc_actions, fsc_updates = SelfInterpretableExtractor.extract_fsc(self.cloned_actor, env, self.memory_len, 
-                                                                                   is_one_hot=self.is_one_hot, non_deterministic=True,
-                                                                                   family_quotient_numpy=self.family_quotient_numpy)
-            print(f"Extracted FSC with {fsc_actions} actions and {fsc_updates} updates")
+                                                                                   is_one_hot=self.is_one_hot, non_deterministic=self.non_deterministic,
+                                                                                   family_quotient_numpy=self.family_quotient_numpy,
+                                                                                   complete_probs=self.complete_probs)
+            self.cloned_actor.unset_probs_updates()
             fsc_res = evaluate_policy_in_model(fsc, environment=env, tf_environment=tf_env, max_steps=(self.max_episode_len + 1) * 2)
             extraction_stats.add_fsc_result(fsc_res.reach_probs[-1], fsc_res.returns[-1])
 
@@ -488,7 +494,7 @@ class SelfInterpretableExtractor:
         # Computes the number of potential combinations of latent memory (3 possible values for each latent memory cell, {-1, 0, 1})
         base = 3
         max_memory = base ** memory_len if not is_one_hot else memory_len
-        nr_observations = environment.stormpy_model.nr_observations
+        nr_observations = environment.stormpy_model.nr_observations if family_quotient_numpy is None else len(family_quotient_numpy.observation_to_legal_action_mask)
         
         
         logger.info("Computing memory to tensor table")
@@ -543,9 +549,6 @@ class SelfInterpretableExtractor:
 
             # states = tf.reshape(states, (max_memory, nr_observations, memory_len))
 
-        
-        print(fsc_actions)
-        print(fsc_updates)
         return table_based_policy, fsc_actions, fsc_updates
 
     @staticmethod
@@ -608,7 +611,6 @@ class SelfInterpretableExtractor:
             environment=env, tf_environment=tf_env, args=args,
             extraction_stats=extraction_stats
         )
-        cloned_actor
         cloned_actor.set_probs_updates()
         fsc, action_table, update_table = SelfInterpretableExtractor.extract_fsc(cloned_actor, env, memory_size, is_one_hot=use_one_hot)
         if DEBUG:
@@ -662,7 +664,7 @@ def parse_args_from_cmd():
     parser.add_argument("--prism-path", type=str, required=True)
     parser.add_argument("--memory-size", type=int, default=2)
     parser.add_argument("--num-data-steps", type=int, default=4001)
-    parser.add_argument("--num-training-steps", type=int, default=1001)
+    parser.add_argument("--num-training-steps", type=int, default=101)
     parser.add_argument("--specification-goal",
                         type=str, default="reachability")
     parser.add_argument("--optimization-goal", type=str, default="max")

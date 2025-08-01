@@ -29,7 +29,7 @@ def create_recurrent_value_net_demasked_tuned(tf_environment: tf_py_environment.
     return value_net
 
 
-def create_recurrent_value_net_demasked(tf_environment: tf_py_environment.TFPyEnvironment, rnn_less=False):
+def create_recurrent_value_net_demasked(tf_environment: tf_py_environment.TFPyEnvironment, rnn_less=False, width_of_lstm=32):
     preprocessing_layer = tf.keras.layers.Dense(64, activation='relu')
     layer_params = (64, )
     if rnn_less:
@@ -40,7 +40,7 @@ def create_recurrent_value_net_demasked(tf_environment: tf_py_environment.TFPyEn
             # preprocessing_layers=preprocessing_layers
         )
     else:
-        lstm_size = (32,)
+        lstm_size = (width_of_lstm,)
         value_net = tf_agents.networks.value_rnn_network.ValueRnnNetwork(
             tf_environment.observation_spec()["observation"],
             # preprocessing_layers=preprocessing_layer,

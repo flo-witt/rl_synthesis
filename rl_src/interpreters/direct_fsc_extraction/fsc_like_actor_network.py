@@ -27,11 +27,12 @@ class FSCLikeActorNetwork(models.Model):
         self.return_probs = False
         self.use_one_hot = use_one_hot
         self.gumbel_softmax_one_hot = gumbel_softmax_one_hot
+        self.temperature = 1.0
         if gumbel_softmax_one_hot:
             assert use_one_hot, "Gumbel softmax requires one-hot encoding."
             self.projection_network = layers.Dense(memory_len, activation='relu')
             self.memory_function = layers.Lambda(
-                lambda x: self.gumbel_softmax(x, temperature=1.0))
+                lambda x: self.gumbel_softmax(x, temperature=self.temperature))
             self.one_hot_constant = 1
             if stochastic_updates:
                 self.quantization_layer = layers.Lambda(lambda x: 
@@ -66,6 +67,12 @@ class FSCLikeActorNetwork(models.Model):
         """
         self.return_probs = return_probs
 
+    def set_gumbel_temperature(self, temperature: float):
+        """
+        Set the temperature for the Gumbel-Softmax distribution.
+        """
+        self.temperature = temperature
+
     def get_initial_state(self, batch_size):
         zeros_like = tf.zeros(
             (batch_size, self.memory_len - self.one_hot_constant))
@@ -84,7 +91,7 @@ class FSCLikeActorNetwork(models.Model):
         """
         gumbel_noise = self.sample_gumbel(tf.shape(logits))
         y = logits + gumbel_noise
-        y = tf.nn.softmax(y / temperature, axis=-1)
+        y = tf.nn.softmax(y / self.temperature, axis=-1)
         return y
     
     @tf.function
@@ -126,5 +133,7 @@ class FSCLikeActorNetwork(models.Model):
         # State-through estimation, where we ignore round(x).
         memory = memory + tf.stop_gradient(x_quantized - memory)
         action = self.action(x)
+        tf.where(step_type == StepType.LAST,
+                 tf.stop_gradient(action), action)
 
         return action, memory

@@ -95,6 +95,8 @@ class TableBasedPolicy(TFPolicy):
         if isinstance(action, tf.Tensor) and len(action.shape) > 1:
             action = tf.random.categorical(tf.math.log(action), num_samples=1, dtype=tf.int32)
             action = tf.squeeze(action, axis=-1)
+        else:
+            action = tf.cast(action, dtype=tf.int32)
         update = tf.gather_nd(self.tf_observation_to_update_table, indices)
         
         if isinstance(update, tf.Tensor) and len(update.shape) > 1:
@@ -103,6 +105,8 @@ class TableBasedPolicy(TFPolicy):
             update = tf.reshape(update, (-1, 1))
         else:
             update = tf.reshape(update, (-1, 1))
+            update = tf.cast(update, dtype=tf.int32)
+        print(f"Action: {action}, Update: {update}, Memory: {memory}")
         policy_step = PolicyStep(action, update)
         return policy_step
     

@@ -25,7 +25,7 @@ def create_recurrent_actor_net_demasked_tuned(tf_environment: tf_py_environment.
     return actor_net
 
 
-def create_recurrent_actor_net_demasked(tf_environment: tf_py_environment.TFPyEnvironment, action_spec, rnn_less=False):
+def create_recurrent_actor_net_demasked(tf_environment: tf_py_environment.TFPyEnvironment, action_spec, rnn_less=False, width_of_lstm=32):
     preprocessing_layer = tf.keras.layers.Dense(64, activation='relu')
     layer_params = (64, )
     if rnn_less:
@@ -38,7 +38,7 @@ def create_recurrent_actor_net_demasked(tf_environment: tf_py_environment.TFPyEn
             # conv_layer_params=None
         )
     else:
-        lstm_size = (32, )
+        lstm_size = (width_of_lstm,)
         actor_net = actor_distribution_rnn_network.ActorDistributionRnnNetwork(
             tf_environment.observation_spec()["observation"],
             action_spec,

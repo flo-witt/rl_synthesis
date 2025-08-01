@@ -41,7 +41,8 @@ class ClonedFSCActorPolicy(TFPolicy):
                  find_best_policy: bool = False,
                  max_episode_length: int = 1000,
                  observation_length: int = 0,
-                 orig_env_use_stacked_observations: bool = True):
+                 orig_env_use_stacked_observations: bool = True,
+                 use_gumbel_softmax: bool = False):
         self.original_policy = original_policy
         self.use_one_hot = use_one_hot
         policy_state_spec = BoundedArraySpec(
@@ -55,13 +56,15 @@ class ClonedFSCActorPolicy(TFPolicy):
             observation_length,
             original_policy.action_spec.maximum + 1,
             memory_size,
-            use_one_hot=use_one_hot)
+            use_one_hot=use_one_hot,
+            gumbel_softmax_one_hot=use_gumbel_softmax,)
         self.model_name = model_name
         self.optimization_specification = optimization_specification
         self.find_best_policy = find_best_policy
         self.max_episode_length = max_episode_length
         self.observation_length = observation_length
         self.orig_env_use_stacked_observations = orig_env_use_stacked_observations
+        self.use_gumbel_softmax = use_gumbel_softmax
 
     def set_probs_updates(self):
         self.fsc_actor.set_return_probs(True)
@@ -161,6 +164,18 @@ class ClonedFSCActorPolicy(TFPolicy):
             loss = -tf.reduce_sum(weighted_element_wise)
             return loss
         return weighted_cross_entropy_loss
+    
+    def schedule_gumbel_temperature(self, epoch : int, network : FSCLikeActorNetwork):
+        """Schedules the Gumbel temperature for the Gumbel-Softmax distribution.
+        Args:
+            epoch (int): The current epoch.
+            network (FSCLikeActorNetwork): The network to set the temperature for.
+        """
+        import math
+        if epoch % 500 == 0:
+            new_temperature = max(0.5, math.exp(-1e-4 * epoch))
+            network.set_gumbel_temperature(new_temperature)
+        
             
 
     def behavioral_clone_original_policy_to_fsc(self, buffer: TFUniformReplayBuffer, num_epochs: int,
@@ -258,10 +273,8 @@ class ClonedFSCActorPolicy(TFPolicy):
                 experience, _ = next(iterator)
 
             loss = train_step(experience) # train_step(experience)
-            # Change noise level
-            neural_fsc.set_noise_level(noise_level_scheduler(i))
-            if i % 500 == 0:
-                logger.info(noise_level_scheduler(i))
+            if True:
+                self.schedule_gumbel_temperature(i, neural_fsc)
             self.periodical_evaluation(i, loss_metric, accuracy_metric, cloned_actor,
                                        environment, tf_environment, extraction_stats,
                                        self.evaluation_result, specification_checker)

@@ -628,7 +628,7 @@ class FatherAgent(AbstractAgent):
         if self.args.go_explore:
             self.environment.unset_go_explore()
         # if self.args.prefer_stochastic:
-        self.set_agent_greedy()
+        self.set_agent_stochastic()
         self.set_policy_masking()
         # else:
         #     self.set_agent_greedy()

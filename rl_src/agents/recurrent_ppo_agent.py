@@ -64,12 +64,12 @@ class Recurrent_PPO_agent(FatherAgent):
             )
         else:
             self.actor_net = create_recurrent_actor_net_demasked(
-                tf_environment, action_spec, rnn_less=self.args.use_rnn_less)
+                tf_environment, action_spec, rnn_less=self.args.use_rnn_less, width_of_lstm=self.args.width_of_lstm)
         if critic_net is not None:
             self.value_net = critic_net
         else:
             self.value_net = create_recurrent_value_net_demasked(
-                tf_environment, rnn_less=self.args.use_rnn_less)
+                tf_environment, rnn_less=self.args.use_rnn_less, width_of_lstm=self.args.width_of_lstm)
 
         time_step_spec = tf_environment.time_step_spec()
         time_step_spec = time_step_spec._replace(
@@ -83,16 +83,15 @@ class Recurrent_PPO_agent(FatherAgent):
             num_epochs=3,
             train_step_counter=train_step_counter,
             greedy_eval=self.args.completely_greedy,
-            discount_factor=0.99,
+            discount_factor=self.args.discount_factor,
             use_gae=True,
             lambda_value=0.95,
-            # gradient_clipping=0.5,
             policy_l2_reg=0.0001,
             value_function_l2_reg=0.0001,
-            value_pred_loss_coef=0.45,
             entropy_regularization=0.02,
             normalize_rewards=True,
             normalize_observations=True,
+            importance_ratio_clipping=0.2,
         )
         self.agent.initialize()
         
