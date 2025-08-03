@@ -1,6 +1,6 @@
 source prerequisites/venv/bin/activate
 
-model_dir=./network_onlz
+model_dir=./models_robust_subset
 methods=("alergia" "si-g" "si-t" "bottleneck")
 batched_vec_storm=(True False)
 seeds=10
