@@ -1,0 +1,16 @@
+{
+    "number_of_pomdps_in_family": "81",
+    "num_training_steps_per_iteration": "301",
+    "average_rl_performance_subset_simulated": "[27.863665, 40.17495, 44.244038, 58.803772, 52.03631, 31.162567, 62.663193, 39.87082, 31.857956, 43.603996]",
+    "average_extracted_fsc_performance_subset_simulated": "[-40.662712, -99.59532, -110.23527, -136.53322, -143.26279, -113.655, -138.28403, -115.68151, -105.75251, -117.02631]",
+    "family_performance": "[142.53891177289083, 126.6384613746506, 123.41253310783765, 143.89385217912758, 147.89262672210432, 113.71186301447416, 142.71382226780463, 117.66777825431112, 106.58916492204368, 120.24298202412534]",
+    "available_nodes_in_fsc": "[array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True])]",
+    "worst_case_pomdp_values_simulated_rl": "[]",
+    "worst_case_pomdp_values_simulated_fsc": "[]",
+    "was_worst_case_same_as_simulated": "[]",
+    "worst_case_index_rl": "[]",
+    "worst_case_index_fsc": "[]",
+    "worst_case_index_paynt": "[]",
+    "environment_type": "batched_vec_storm",
+    "number_of_extraction_trajectories": "[]"
+}

@@ -59,7 +59,9 @@ class RobustTrainer:
         self.direct_extractor = self.init_extractor(latent_dim, self.autlearn_extraction)
         
         self.benchmark_stats = self.BenchmarkStats(
-            fsc_size=fsc_size, num_training_steps_per_iteration=301, batched_vec_storm=args.batched_vec_storm)
+            fsc_size=fsc_size, num_training_steps_per_iteration=301, 
+            batched_vec_storm=args.batched_vec_storm, extraction_type=args.extraction_type, 
+            lstm_width=args.lstm_width)
         self.agent = None
         
 
@@ -152,7 +154,7 @@ class RobustTrainer:
                                                         max_episode_len=self.args.max_steps,
                                                         family_quotient_numpy=self.family_quotient_numpy,
                                                         autlearn_extraction=autlearn_extraction,
-                                                        use_gumbel_softmax=self.use_gumbel_softmax,)
+                                                        use_gumbel_softmax=self.use_gumbel_softmax)
             return direct_extractor
         else:
             return None
