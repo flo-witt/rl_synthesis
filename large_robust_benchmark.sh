@@ -1,5 +1,3 @@
-source prerequisites/venv/bin/activate
-
 model_dir=./models_robust_subset
 methods=("alergia" "si-g" "si-t" "bottleneck")
 batched_vec_storm=(True False)
@@ -43,7 +41,7 @@ run_loop(){
                         fi
                         echo "Running: python3 robust_pomdps_rl.py --project-path $model_path $batched_vec_flag --extraction-method $method --lstm-width $width"
                         start_time=$(date +%s)
-                        python3 robust_pomdps_rl.py --project-path $model_path $batched_vec_flag --extraction-method $method --lstm-width $width > $log_file_name 2> $err_log_file_name
+                        timeout 7200 prerequisites/venv/bin/python3.10 robust_pomdps_rl.py --project-path $model_path $batched_vec_flag --extraction-method $method --lstm-width $width > $log_file_name 2> $err_log_file_name
                         end_time=$(date +%s)
                         elapsed_time=$(($end_time - $start_time))
                         echo "Finished running $model_name with method $method, width $width, batched_vec $batched_vec in $elapsed_time seconds"

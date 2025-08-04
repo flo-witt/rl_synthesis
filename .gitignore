@@ -36,4 +36,3 @@ build/
 drone-2-8-1-tanh.txt
 *.txt
 *.dot
-*stats*.json

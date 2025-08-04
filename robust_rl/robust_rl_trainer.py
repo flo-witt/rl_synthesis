@@ -427,7 +427,7 @@ class RobustTrainer:
         #     table_based_fsc, self.args, self.environment, self.tf_env, self.args.max_steps + 1)
         # exit(0)
         merged_results = None
-        nr_iterations = 1001
+        nr_iterations = 1401
         for i in range(20):
             logger.info(f"Iteration {i+1} of pure RL loop")
             # Train the agent on multiple POMDPs
