@@ -1,0 +1,616 @@
+2025-08-03 19:20:03,248 - sketch.py:80 - loading sketch from /home/ihudak/synthesis/models_robust_subset/avoid/sketch.templ ...
+2025-08-03 19:20:03,248 - sketch.py:84 - assuming sketch in PRISM format...
+2025-08-03 19:20:03,252 - prism_parser.py:31 - PRISM model type: POMDP
+2025-08-03 19:20:03,252 - prism_parser.py:40 - processing hole definitions...
+2025-08-03 19:20:03,252 - prism_parser.py:220 - loading properties from /home/ihudak/synthesis/models_robust_subset/avoid/sketch.props ...
+2025-08-03 19:20:03,253 - prism_parser.py:236 - found the following specification: optimality: R{"penalty"}min=? [F ((x = (5 - 1)) & (y = (5 - 1)))] 
+2025-08-03 19:20:03,253 - jani.py:41 - constructing JANI program...
+2025-08-03 19:20:03,257 - jani.py:61 - constructing the quotient...
+2025-08-03 19:20:03,530 - jani.py:66 - associating choices of the quotient with hole assignments...
+2025-08-03 19:20:03,906 - jani.py:75 - keeping 65660/171860 choices with non-conflicting hole assignments...
+2025-08-03 19:20:03,979 - sketch.py:135 - sketch parsing OK
+2025-08-03 19:20:03,999 - sketch.py:144 - WARNING: choice labeling for the quotient is not canonic
+2025-08-03 19:20:03,999 - sketch.py:148 - constructed explicit quotient having 17567 states and 61860 choices
+2025-08-03 19:20:03,999 - sketch.py:154 - found the following specification optimality: R{"rewardmodel_penalty"}min=? [F ((x = (5 - 1)) & (y = (5 - 1)))] 
+2025-08-03 19:20:04,316 - vectorized_sim_initializer.py:61 - Compiling model avoid...
+Hello <stormpy.storage.storage.StateValuation object at 0x7cbfe83c1070>
+2025-08-03 19:20:04,471 - storm_vec_env.py:70 - Computing row map
+2025-08-03 19:20:04,756 - storm_vec_env.py:97 - Computing transitions
+2025-08-03 19:20:05,310 - storm_vec_env.py:100 - Computing allowed actions
+2025-08-03 19:20:05,310 - storm_vec_env.py:114 - Computing sinks
+2025-08-03 19:20:05,310 - storm_vec_env.py:119 - Computing raw rewards
+2025-08-03 19:20:05,484 - storm_vec_env.py:143 - Computing labels
+2025-08-03 19:20:05,485 - storm_vec_env.py:152 - Computing scalarized rewards
+2025-08-03 19:20:05,485 - storm_vec_env.py:161 - Computing metalabels
+2025-08-03 19:20:05,485 - storm_vec_env.py:175 - Computing observations
+2025-08-03 19:20:05,562 - environment_wrapper_vec.py:146 - Grid-like renderer not possible to initialize.
+2025-08-03 19:20:05,676 - environment_wrapper_vec.py:153 - Vectorized simulator initialized with 256 environments.
+2025-08-03 19:20:05,899 - recurrent_ppo_agent.py:98 - Agent initialized
+2025-08-03 19:20:05,920 - recurrent_ppo_agent.py:100 - Replay buffer initialized
+Using unmasked training with policy wrapper.
+2025-08-03 19:20:05,929 - recurrent_ppo_agent.py:112 - Collector driver initialized
+2025-08-03 19:20:05,966 - robust_rl_trainer.py:432 - Iteration 1 of pure RL loop
+2025-08-03 19:20:06,099 - storm_vec_env.py:70 - Computing row map
+2025-08-03 19:20:06,375 - storm_vec_env.py:97 - Computing transitions
+2025-08-03 19:20:06,896 - storm_vec_env.py:100 - Computing allowed actions
+2025-08-03 19:20:06,896 - storm_vec_env.py:114 - Computing sinks
+2025-08-03 19:20:06,896 - storm_vec_env.py:119 - Computing raw rewards
+2025-08-03 19:20:07,058 - storm_vec_env.py:143 - Computing labels
+2025-08-03 19:20:07,058 - storm_vec_env.py:152 - Computing scalarized rewards
+2025-08-03 19:20:07,059 - storm_vec_env.py:161 - Computing metalabels
+2025-08-03 19:20:07,059 - storm_vec_env.py:175 - Computing observations
+2025-08-03 19:20:07,145 - father_agent.py:538 - Training agent with replay buffer option: 1
+2025-08-03 19:20:07,145 - father_agent.py:540 - Before training evaluation.
+2025-08-03 19:20:07,276 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:20:07,285 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:20:15,103 - evaluation_results_class.py:131 - Average Return = -716.772705078125
+2025-08-03 19:20:15,103 - evaluation_results_class.py:133 - Average Virtual Goal Value = -685.0172119140625
+2025-08-03 19:20:15,104 - evaluation_results_class.py:135 - Average Discounted Reward = -137.03128051757812
+2025-08-03 19:20:15,104 - evaluation_results_class.py:137 - Goal Reach Probability = 0.6959247648902821
+2025-08-03 19:20:15,104 - evaluation_results_class.py:139 - Trap Reach Probability = 0.0
+2025-08-03 19:20:15,104 - evaluation_results_class.py:141 - Variance of Return = 438602.71875
+2025-08-03 19:20:15,104 - evaluation_results_class.py:143 - Current Best Return = -716.772705078125
+2025-08-03 19:20:15,104 - evaluation_results_class.py:145 - Current Best Reach Probability = 0.6959247648902821
+2025-08-03 19:20:15,104 - evaluation_results_class.py:147 - Average Episode Length = 395.6269592476489
+2025-08-03 19:20:15,104 - evaluation_results_class.py:149 - Counted Episodes = 638
+2025-08-03 19:20:15,246 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:20:15,257 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:20:15,363 - father_agent.py:436 - Training agent on-policy
+2025-08-03 19:20:29,679 - father_agent.py:386 - Step: 0, Training loss: 477.61212158203125
+2025-08-03 19:20:31,305 - father_agent.py:386 - Step: 5, Training loss: 9.402433395385742
+2025-08-03 19:20:32,920 - father_agent.py:386 - Step: 10, Training loss: 6.119334697723389
+2025-08-03 19:20:34,533 - father_agent.py:386 - Step: 15, Training loss: 4.0608134269714355
+2025-08-03 19:20:36,144 - father_agent.py:386 - Step: 20, Training loss: 7.3820672035217285
+2025-08-03 19:20:37,747 - father_agent.py:386 - Step: 25, Training loss: 5.0862884521484375
+2025-08-03 19:20:39,342 - father_agent.py:386 - Step: 30, Training loss: 8.106595993041992
+2025-08-03 19:20:40,947 - father_agent.py:386 - Step: 35, Training loss: 5.965047359466553
+2025-08-03 19:20:42,539 - father_agent.py:386 - Step: 40, Training loss: 7.308652877807617
+2025-08-03 19:20:44,153 - father_agent.py:386 - Step: 45, Training loss: 6.026913642883301
+2025-08-03 19:20:45,759 - father_agent.py:386 - Step: 50, Training loss: 5.803015232086182
+2025-08-03 19:20:47,370 - father_agent.py:386 - Step: 55, Training loss: 7.57212495803833
+2025-08-03 19:20:48,989 - father_agent.py:386 - Step: 60, Training loss: 9.111498832702637
+2025-08-03 19:20:50,587 - father_agent.py:386 - Step: 65, Training loss: 5.621429920196533
+2025-08-03 19:20:52,200 - father_agent.py:386 - Step: 70, Training loss: 3.6356406211853027
+2025-08-03 19:20:53,830 - father_agent.py:386 - Step: 75, Training loss: 5.980462074279785
+2025-08-03 19:20:55,432 - father_agent.py:386 - Step: 80, Training loss: 4.262657642364502
+2025-08-03 19:20:57,050 - father_agent.py:386 - Step: 85, Training loss: 6.279201507568359
+2025-08-03 19:20:58,676 - father_agent.py:386 - Step: 90, Training loss: 4.302964210510254
+2025-08-03 19:21:00,285 - father_agent.py:386 - Step: 95, Training loss: 3.300874710083008
+2025-08-03 19:21:01,872 - father_agent.py:386 - Step: 100, Training loss: 4.044211387634277
+2025-08-03 19:21:02,036 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:21:02,039 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:21:09,324 - evaluation_results_class.py:131 - Average Return = -354.88671875
+2025-08-03 19:21:09,324 - evaluation_results_class.py:133 - Average Virtual Goal Value = -363.83203125
+2025-08-03 19:21:09,324 - evaluation_results_class.py:135 - Average Discounted Reward = -53.85440444946289
+2025-08-03 19:21:09,324 - evaluation_results_class.py:137 - Goal Reach Probability = 0.017578125
+2025-08-03 19:21:09,324 - evaluation_results_class.py:139 - Trap Reach Probability = 0.0
+2025-08-03 19:21:09,324 - evaluation_results_class.py:141 - Variance of Return = 112034.6484375
+2025-08-03 19:21:09,324 - evaluation_results_class.py:143 - Current Best Return = -354.88671875
+2025-08-03 19:21:09,324 - evaluation_results_class.py:145 - Current Best Reach Probability = 0.6959247648902821
+2025-08-03 19:21:09,324 - evaluation_results_class.py:147 - Average Episode Length = 644.091796875
+2025-08-03 19:21:09,324 - evaluation_results_class.py:149 - Counted Episodes = 512
+2025-08-03 19:21:09,482 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:21:09,490 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:21:19,160 - father_agent.py:386 - Step: 105, Training loss: 2.44419264793396
+2025-08-03 19:21:20,758 - father_agent.py:386 - Step: 110, Training loss: 1.9438807964324951
+2025-08-03 19:21:22,307 - father_agent.py:386 - Step: 115, Training loss: 0.8453159928321838
+2025-08-03 19:21:23,852 - father_agent.py:386 - Step: 120, Training loss: 0.2900046706199646
+2025-08-03 19:21:25,400 - father_agent.py:386 - Step: 125, Training loss: 1.4492157697677612
+2025-08-03 19:21:26,967 - father_agent.py:386 - Step: 130, Training loss: 0.36655062437057495
+2025-08-03 19:21:28,543 - father_agent.py:386 - Step: 135, Training loss: 0.4125755727291107
+2025-08-03 19:21:30,092 - father_agent.py:386 - Step: 140, Training loss: 0.2089453786611557
+2025-08-03 19:21:31,618 - father_agent.py:386 - Step: 145, Training loss: 0.144971564412117
+2025-08-03 19:21:33,148 - father_agent.py:386 - Step: 150, Training loss: 0.5120954513549805
+2025-08-03 19:21:34,704 - father_agent.py:386 - Step: 155, Training loss: 0.45242559909820557
+2025-08-03 19:21:36,297 - father_agent.py:386 - Step: 160, Training loss: 0.09684553742408752
+2025-08-03 19:21:37,851 - father_agent.py:386 - Step: 165, Training loss: 0.19782298803329468
+2025-08-03 19:21:39,406 - father_agent.py:386 - Step: 170, Training loss: 0.09298688918352127
+2025-08-03 19:21:40,997 - father_agent.py:386 - Step: 175, Training loss: 0.300954669713974
+2025-08-03 19:21:42,577 - father_agent.py:386 - Step: 180, Training loss: 0.17359992861747742
+2025-08-03 19:21:44,162 - father_agent.py:386 - Step: 185, Training loss: 0.20708464086055756
+2025-08-03 19:21:45,738 - father_agent.py:386 - Step: 190, Training loss: 0.07454176992177963
+2025-08-03 19:21:47,306 - father_agent.py:386 - Step: 195, Training loss: 0.10025373101234436
+2025-08-03 19:21:48,862 - father_agent.py:386 - Step: 200, Training loss: 0.37346023321151733
+2025-08-03 19:21:49,040 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:21:49,043 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:21:56,015 - evaluation_results_class.py:131 - Average Return = -166.20703125
+2025-08-03 19:21:56,015 - evaluation_results_class.py:133 - Average Virtual Goal Value = -175.97265625
+2025-08-03 19:21:56,015 - evaluation_results_class.py:135 - Average Discounted Reward = -25.89371681213379
+2025-08-03 19:21:56,015 - evaluation_results_class.py:137 - Goal Reach Probability = 0.00390625
+2025-08-03 19:21:56,015 - evaluation_results_class.py:139 - Trap Reach Probability = 0.0
+2025-08-03 19:21:56,015 - evaluation_results_class.py:141 - Variance of Return = 364.8594970703125
+2025-08-03 19:21:56,015 - evaluation_results_class.py:143 - Current Best Return = -166.20703125
+2025-08-03 19:21:56,015 - evaluation_results_class.py:145 - Current Best Reach Probability = 0.6959247648902821
+2025-08-03 19:21:56,016 - evaluation_results_class.py:147 - Average Episode Length = 649.54296875
+2025-08-03 19:21:56,016 - evaluation_results_class.py:149 - Counted Episodes = 512
+2025-08-03 19:21:56,178 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:21:56,187 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:21:58,575 - father_agent.py:386 - Step: 205, Training loss: 0.08608665317296982
+2025-08-03 19:22:00,106 - father_agent.py:386 - Step: 210, Training loss: 0.10682409256696701
+2025-08-03 19:22:01,629 - father_agent.py:386 - Step: 215, Training loss: 0.09835080802440643
+2025-08-03 19:22:03,144 - father_agent.py:386 - Step: 220, Training loss: 0.1276591569185257
+2025-08-03 19:22:04,670 - father_agent.py:386 - Step: 225, Training loss: 0.11013074219226837
+2025-08-03 19:22:06,215 - father_agent.py:386 - Step: 230, Training loss: 0.09516732394695282
+2025-08-03 19:22:07,749 - father_agent.py:386 - Step: 235, Training loss: 0.0917176902294159
+2025-08-03 19:22:09,297 - father_agent.py:386 - Step: 240, Training loss: 0.06351662427186966
+2025-08-03 19:22:10,861 - father_agent.py:386 - Step: 245, Training loss: 0.09484252333641052
+2025-08-03 19:22:12,410 - father_agent.py:386 - Step: 250, Training loss: 0.35822582244873047
+2025-08-03 19:22:13,981 - father_agent.py:386 - Step: 255, Training loss: 0.1876450479030609
+2025-08-03 19:22:15,522 - father_agent.py:386 - Step: 260, Training loss: 0.06700830906629562
+2025-08-03 19:22:17,065 - father_agent.py:386 - Step: 265, Training loss: 0.059141114354133606
+2025-08-03 19:22:18,620 - father_agent.py:386 - Step: 270, Training loss: 0.1562245637178421
+2025-08-03 19:22:20,167 - father_agent.py:386 - Step: 275, Training loss: 0.06617933511734009
+2025-08-03 19:22:21,744 - father_agent.py:386 - Step: 280, Training loss: 0.09407718479633331
+2025-08-03 19:22:23,293 - father_agent.py:386 - Step: 285, Training loss: 0.06297653913497925
+2025-08-03 19:22:24,844 - father_agent.py:386 - Step: 290, Training loss: 0.5220827460289001
+2025-08-03 19:22:26,380 - father_agent.py:386 - Step: 295, Training loss: 0.35801392793655396
+2025-08-03 19:22:27,946 - father_agent.py:386 - Step: 300, Training loss: 0.08503971248865128
+2025-08-03 19:22:28,114 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:22:28,116 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:22:34,994 - evaluation_results_class.py:131 - Average Return = -164.953125
+2025-08-03 19:22:34,994 - evaluation_results_class.py:133 - Average Virtual Goal Value = -174.953125
+2025-08-03 19:22:34,994 - evaluation_results_class.py:135 - Average Discounted Reward = -24.995643615722656
+2025-08-03 19:22:34,994 - evaluation_results_class.py:137 - Goal Reach Probability = 0.0
+2025-08-03 19:22:34,994 - evaluation_results_class.py:139 - Trap Reach Probability = 0.0
+2025-08-03 19:22:34,994 - evaluation_results_class.py:141 - Variance of Return = 230.560302734375
+2025-08-03 19:22:34,994 - evaluation_results_class.py:143 - Current Best Return = -164.953125
+2025-08-03 19:22:34,994 - evaluation_results_class.py:145 - Current Best Reach Probability = 0.6959247648902821
+2025-08-03 19:22:34,994 - evaluation_results_class.py:147 - Average Episode Length = 650.0
+2025-08-03 19:22:34,994 - evaluation_results_class.py:149 - Counted Episodes = 512
+2025-08-03 19:22:35,157 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:22:35,166 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:22:37,566 - father_agent.py:386 - Step: 305, Training loss: 0.05304242670536041
+2025-08-03 19:22:39,127 - father_agent.py:386 - Step: 310, Training loss: 0.17788651585578918
+2025-08-03 19:22:40,681 - father_agent.py:386 - Step: 315, Training loss: 0.28890788555145264
+2025-08-03 19:22:42,216 - father_agent.py:386 - Step: 320, Training loss: 0.48338082432746887
+2025-08-03 19:22:43,784 - father_agent.py:386 - Step: 325, Training loss: 0.04944925755262375
+2025-08-03 19:22:45,351 - father_agent.py:386 - Step: 330, Training loss: 0.2724685072898865
+2025-08-03 19:22:46,884 - father_agent.py:386 - Step: 335, Training loss: 0.22136884927749634
+2025-08-03 19:22:48,412 - father_agent.py:386 - Step: 340, Training loss: 0.04713377729058266
+2025-08-03 19:22:49,949 - father_agent.py:386 - Step: 345, Training loss: 0.24441534280776978
+2025-08-03 19:22:51,492 - father_agent.py:386 - Step: 350, Training loss: 0.12553094327449799
+2025-08-03 19:22:53,045 - father_agent.py:386 - Step: 355, Training loss: 0.3197559714317322
+2025-08-03 19:22:54,581 - father_agent.py:386 - Step: 360, Training loss: 0.055004604160785675
+2025-08-03 19:22:56,121 - father_agent.py:386 - Step: 365, Training loss: 0.32000404596328735
+2025-08-03 19:22:57,663 - father_agent.py:386 - Step: 370, Training loss: 0.050878312438726425
+2025-08-03 19:22:59,201 - father_agent.py:386 - Step: 375, Training loss: 0.1329611837863922
+2025-08-03 19:23:00,746 - father_agent.py:386 - Step: 380, Training loss: 0.18270879983901978
+2025-08-03 19:23:02,272 - father_agent.py:386 - Step: 385, Training loss: 0.07437296211719513
+2025-08-03 19:23:03,800 - father_agent.py:386 - Step: 390, Training loss: 0.03934556245803833
+2025-08-03 19:23:05,337 - father_agent.py:386 - Step: 395, Training loss: 0.2060273289680481
+2025-08-03 19:23:06,894 - father_agent.py:386 - Step: 400, Training loss: 0.17590278387069702
+2025-08-03 19:23:07,063 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:23:07,065 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:23:14,094 - evaluation_results_class.py:131 - Average Return = -168.2734375
+2025-08-03 19:23:14,094 - evaluation_results_class.py:133 - Average Virtual Goal Value = -178.2734375
+2025-08-03 19:23:14,095 - evaluation_results_class.py:135 - Average Discounted Reward = -25.651473999023438
+2025-08-03 19:23:14,095 - evaluation_results_class.py:137 - Goal Reach Probability = 0.0
+2025-08-03 19:23:14,095 - evaluation_results_class.py:139 - Trap Reach Probability = 0.0
+2025-08-03 19:23:14,095 - evaluation_results_class.py:141 - Variance of Return = 733.9095458984375
+2025-08-03 19:23:14,095 - evaluation_results_class.py:143 - Current Best Return = -164.953125
+2025-08-03 19:23:14,095 - evaluation_results_class.py:145 - Current Best Reach Probability = 0.6959247648902821
+2025-08-03 19:23:14,095 - evaluation_results_class.py:147 - Average Episode Length = 650.0
+2025-08-03 19:23:14,095 - evaluation_results_class.py:149 - Counted Episodes = 512
+2025-08-03 19:23:14,256 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:23:14,265 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:23:16,655 - father_agent.py:386 - Step: 405, Training loss: 1.0696790218353271
+2025-08-03 19:23:18,221 - father_agent.py:386 - Step: 410, Training loss: 0.19603164494037628
+2025-08-03 19:23:19,806 - father_agent.py:386 - Step: 415, Training loss: 0.22633345425128937
+2025-08-03 19:23:21,403 - father_agent.py:386 - Step: 420, Training loss: 0.1587371677160263
+2025-08-03 19:23:22,998 - father_agent.py:386 - Step: 425, Training loss: 0.14265888929367065
+2025-08-03 19:23:24,577 - father_agent.py:386 - Step: 430, Training loss: 0.07030171900987625
+2025-08-03 19:23:26,166 - father_agent.py:386 - Step: 435, Training loss: 0.16050603985786438
+2025-08-03 19:23:27,767 - father_agent.py:386 - Step: 440, Training loss: 0.03374359756708145
+2025-08-03 19:23:29,402 - father_agent.py:386 - Step: 445, Training loss: 0.04223381727933884
+2025-08-03 19:23:31,018 - father_agent.py:386 - Step: 450, Training loss: 0.13643549382686615
+2025-08-03 19:23:32,576 - father_agent.py:386 - Step: 455, Training loss: 0.08285880088806152
+2025-08-03 19:23:34,123 - father_agent.py:386 - Step: 460, Training loss: 0.04318253695964813
+2025-08-03 19:23:35,664 - father_agent.py:386 - Step: 465, Training loss: 0.20851784944534302
+2025-08-03 19:23:37,214 - father_agent.py:386 - Step: 470, Training loss: 0.163328155875206
+2025-08-03 19:23:38,776 - father_agent.py:386 - Step: 475, Training loss: 0.2859228849411011
+2025-08-03 19:23:40,368 - father_agent.py:386 - Step: 480, Training loss: 0.026116907596588135
+2025-08-03 19:23:41,927 - father_agent.py:386 - Step: 485, Training loss: 0.1344747096300125
+2025-08-03 19:23:43,458 - father_agent.py:386 - Step: 490, Training loss: 0.10952159762382507
+2025-08-03 19:23:45,001 - father_agent.py:386 - Step: 495, Training loss: 0.038621656596660614
+2025-08-03 19:23:46,554 - father_agent.py:386 - Step: 500, Training loss: 0.13559380173683167
+2025-08-03 19:23:46,721 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:23:46,723 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:23:54,089 - evaluation_results_class.py:131 - Average Return = -166.90625
+2025-08-03 19:23:54,089 - evaluation_results_class.py:133 - Average Virtual Goal Value = -176.90625
+2025-08-03 19:23:54,089 - evaluation_results_class.py:135 - Average Discounted Reward = -25.881755828857422
+2025-08-03 19:23:54,089 - evaluation_results_class.py:137 - Goal Reach Probability = 0.0
+2025-08-03 19:23:54,090 - evaluation_results_class.py:139 - Trap Reach Probability = 0.0
+2025-08-03 19:23:54,090 - evaluation_results_class.py:141 - Variance of Return = 531.6162109375
+2025-08-03 19:23:54,090 - evaluation_results_class.py:143 - Current Best Return = -164.953125
+2025-08-03 19:23:54,090 - evaluation_results_class.py:145 - Current Best Reach Probability = 0.6959247648902821
+2025-08-03 19:23:54,090 - evaluation_results_class.py:147 - Average Episode Length = 650.0
+2025-08-03 19:23:54,090 - evaluation_results_class.py:149 - Counted Episodes = 512
+2025-08-03 19:23:54,253 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:23:54,262 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:23:56,762 - father_agent.py:386 - Step: 505, Training loss: 0.027182988822460175
+2025-08-03 19:23:58,372 - father_agent.py:386 - Step: 510, Training loss: 0.14679469168186188
+2025-08-03 19:24:00,035 - father_agent.py:386 - Step: 515, Training loss: 0.18269048631191254
+2025-08-03 19:24:01,656 - father_agent.py:386 - Step: 520, Training loss: 0.03819926828145981
+2025-08-03 19:24:03,194 - father_agent.py:386 - Step: 525, Training loss: 0.09744322299957275
+2025-08-03 19:24:04,757 - father_agent.py:386 - Step: 530, Training loss: 0.06199334189295769
+2025-08-03 19:24:06,308 - father_agent.py:386 - Step: 535, Training loss: 0.038412436842918396
+2025-08-03 19:24:07,852 - father_agent.py:386 - Step: 540, Training loss: 0.18856298923492432
+2025-08-03 19:24:09,393 - father_agent.py:386 - Step: 545, Training loss: 0.20764097571372986
+2025-08-03 19:24:10,926 - father_agent.py:386 - Step: 550, Training loss: 0.27482759952545166
+2025-08-03 19:24:12,486 - father_agent.py:386 - Step: 555, Training loss: 0.06343894451856613
+2025-08-03 19:24:14,027 - father_agent.py:386 - Step: 560, Training loss: 0.11253772675991058
+2025-08-03 19:24:15,567 - father_agent.py:386 - Step: 565, Training loss: 0.060896530747413635
+2025-08-03 19:24:17,111 - father_agent.py:386 - Step: 570, Training loss: 0.21032750606536865
+2025-08-03 19:24:18,668 - father_agent.py:386 - Step: 575, Training loss: 0.02290407568216324
+2025-08-03 19:24:20,218 - father_agent.py:386 - Step: 580, Training loss: 0.1635730117559433
+2025-08-03 19:24:21,763 - father_agent.py:386 - Step: 585, Training loss: 0.03465345501899719
+2025-08-03 19:24:23,300 - father_agent.py:386 - Step: 590, Training loss: 0.02207007072865963
+2025-08-03 19:24:24,839 - father_agent.py:386 - Step: 595, Training loss: 0.02462964504957199
+2025-08-03 19:24:26,368 - father_agent.py:386 - Step: 600, Training loss: 0.13662070035934448
+2025-08-03 19:24:26,535 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:24:26,538 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:24:33,533 - evaluation_results_class.py:131 - Average Return = -168.078125
+2025-08-03 19:24:33,533 - evaluation_results_class.py:133 - Average Virtual Goal Value = -178.078125
+2025-08-03 19:24:33,533 - evaluation_results_class.py:135 - Average Discounted Reward = -26.246761322021484
+2025-08-03 19:24:33,533 - evaluation_results_class.py:137 - Goal Reach Probability = 0.0
+2025-08-03 19:24:33,533 - evaluation_results_class.py:139 - Trap Reach Probability = 0.0
+2025-08-03 19:24:33,533 - evaluation_results_class.py:141 - Variance of Return = 716.400146484375
+2025-08-03 19:24:33,533 - evaluation_results_class.py:143 - Current Best Return = -164.953125
+2025-08-03 19:24:33,533 - evaluation_results_class.py:145 - Current Best Reach Probability = 0.6959247648902821
+2025-08-03 19:24:33,533 - evaluation_results_class.py:147 - Average Episode Length = 650.0
+2025-08-03 19:24:33,533 - evaluation_results_class.py:149 - Counted Episodes = 512
+2025-08-03 19:24:33,695 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:24:33,704 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:24:36,096 - father_agent.py:386 - Step: 605, Training loss: 0.07012316584587097
+2025-08-03 19:24:37,643 - father_agent.py:386 - Step: 610, Training loss: 0.21957582235336304
+2025-08-03 19:24:39,177 - father_agent.py:386 - Step: 615, Training loss: 0.2538387179374695
+2025-08-03 19:24:40,703 - father_agent.py:386 - Step: 620, Training loss: 0.13706016540527344
+2025-08-03 19:24:42,245 - father_agent.py:386 - Step: 625, Training loss: 0.01883893832564354
+2025-08-03 19:24:43,800 - father_agent.py:386 - Step: 630, Training loss: 0.0972152054309845
+2025-08-03 19:24:45,349 - father_agent.py:386 - Step: 635, Training loss: 0.4827009439468384
+2025-08-03 19:24:46,895 - father_agent.py:386 - Step: 640, Training loss: 0.13949622213840485
+2025-08-03 19:24:48,447 - father_agent.py:386 - Step: 645, Training loss: 0.14062507450580597
+2025-08-03 19:24:49,986 - father_agent.py:386 - Step: 650, Training loss: 0.05643085017800331
+2025-08-03 19:24:51,526 - father_agent.py:386 - Step: 655, Training loss: 0.2413140833377838
+2025-08-03 19:24:53,061 - father_agent.py:386 - Step: 660, Training loss: 0.08402431011199951
+2025-08-03 19:24:54,594 - father_agent.py:386 - Step: 665, Training loss: 0.2515120804309845
+2025-08-03 19:24:56,135 - father_agent.py:386 - Step: 670, Training loss: 0.025477534160017967
+2025-08-03 19:24:57,677 - father_agent.py:386 - Step: 675, Training loss: 0.01290174387395382
+2025-08-03 19:24:59,221 - father_agent.py:386 - Step: 680, Training loss: 0.055785566568374634
+2025-08-03 19:25:00,748 - father_agent.py:386 - Step: 685, Training loss: 0.028400644659996033
+2025-08-03 19:25:02,292 - father_agent.py:386 - Step: 690, Training loss: 0.13416987657546997
+2025-08-03 19:25:03,831 - father_agent.py:386 - Step: 695, Training loss: 0.0535905659198761
+2025-08-03 19:25:05,356 - father_agent.py:386 - Step: 700, Training loss: 0.11786164343357086
+2025-08-03 19:25:05,521 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:25:05,524 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:25:12,689 - evaluation_results_class.py:131 - Average Return = -166.7109375
+2025-08-03 19:25:12,689 - evaluation_results_class.py:133 - Average Virtual Goal Value = -176.7109375
+2025-08-03 19:25:12,689 - evaluation_results_class.py:135 - Average Discounted Reward = -25.329830169677734
+2025-08-03 19:25:12,689 - evaluation_results_class.py:137 - Goal Reach Probability = 0.0
+2025-08-03 19:25:12,689 - evaluation_results_class.py:139 - Trap Reach Probability = 0.0
+2025-08-03 19:25:12,689 - evaluation_results_class.py:141 - Variance of Return = 513.5726928710938
+2025-08-03 19:25:12,689 - evaluation_results_class.py:143 - Current Best Return = -164.953125
+2025-08-03 19:25:12,689 - evaluation_results_class.py:145 - Current Best Reach Probability = 0.6959247648902821
+2025-08-03 19:25:12,689 - evaluation_results_class.py:147 - Average Episode Length = 650.0
+2025-08-03 19:25:12,689 - evaluation_results_class.py:149 - Counted Episodes = 512
+2025-08-03 19:25:12,852 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:25:12,862 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:25:15,313 - father_agent.py:386 - Step: 705, Training loss: 0.20721742510795593
+2025-08-03 19:25:16,938 - father_agent.py:386 - Step: 710, Training loss: 0.00972752831876278
+2025-08-03 19:25:18,538 - father_agent.py:386 - Step: 715, Training loss: 0.09317024052143097
+2025-08-03 19:25:20,109 - father_agent.py:386 - Step: 720, Training loss: 0.23330819606781006
+2025-08-03 19:25:21,707 - father_agent.py:386 - Step: 725, Training loss: 0.011886091902852058
+2025-08-03 19:25:23,289 - father_agent.py:386 - Step: 730, Training loss: 0.05282614007592201
+2025-08-03 19:25:24,873 - father_agent.py:386 - Step: 735, Training loss: 0.07230177521705627
+2025-08-03 19:25:26,454 - father_agent.py:386 - Step: 740, Training loss: 0.13478222489356995
+2025-08-03 19:25:28,022 - father_agent.py:386 - Step: 745, Training loss: 0.09830179810523987
+2025-08-03 19:25:29,603 - father_agent.py:386 - Step: 750, Training loss: 0.06774862110614777
+2025-08-03 19:25:31,196 - father_agent.py:386 - Step: 755, Training loss: 0.13718178868293762
+2025-08-03 19:25:32,782 - father_agent.py:386 - Step: 760, Training loss: 0.05477450415492058
+2025-08-03 19:25:34,385 - father_agent.py:386 - Step: 765, Training loss: 0.054324813187122345
+2025-08-03 19:25:35,998 - father_agent.py:386 - Step: 770, Training loss: 0.02161112055182457
+2025-08-03 19:25:37,593 - father_agent.py:386 - Step: 775, Training loss: 0.011272582225501537
+2025-08-03 19:25:39,276 - father_agent.py:386 - Step: 780, Training loss: 0.05276374891400337
+2025-08-03 19:25:40,959 - father_agent.py:386 - Step: 785, Training loss: 0.2581363618373871
+2025-08-03 19:25:42,623 - father_agent.py:386 - Step: 790, Training loss: 0.11774228513240814
+2025-08-03 19:25:44,258 - father_agent.py:386 - Step: 795, Training loss: 0.11400214582681656
+2025-08-03 19:25:45,933 - father_agent.py:386 - Step: 800, Training loss: 0.12583331763744354
+2025-08-03 19:25:46,103 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:25:46,106 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:25:53,604 - evaluation_results_class.py:131 - Average Return = -164.3671875
+2025-08-03 19:25:53,605 - evaluation_results_class.py:133 - Average Virtual Goal Value = -174.3671875
+2025-08-03 19:25:53,605 - evaluation_results_class.py:135 - Average Discounted Reward = -25.01830291748047
+2025-08-03 19:25:53,605 - evaluation_results_class.py:137 - Goal Reach Probability = 0.0
+2025-08-03 19:25:53,605 - evaluation_results_class.py:139 - Trap Reach Probability = 0.0
+2025-08-03 19:25:53,605 - evaluation_results_class.py:141 - Variance of Return = 252.03697204589844
+2025-08-03 19:25:53,605 - evaluation_results_class.py:143 - Current Best Return = -164.3671875
+2025-08-03 19:25:53,605 - evaluation_results_class.py:145 - Current Best Reach Probability = 0.6959247648902821
+2025-08-03 19:25:53,605 - evaluation_results_class.py:147 - Average Episode Length = 650.0
+2025-08-03 19:25:53,605 - evaluation_results_class.py:149 - Counted Episodes = 512
+2025-08-03 19:25:53,767 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:25:53,777 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:25:56,231 - father_agent.py:386 - Step: 805, Training loss: 0.010243450291454792
+2025-08-03 19:25:57,822 - father_agent.py:386 - Step: 810, Training loss: 0.05427595227956772
+2025-08-03 19:25:59,532 - father_agent.py:386 - Step: 815, Training loss: 0.055932991206645966
+2025-08-03 19:26:01,227 - father_agent.py:386 - Step: 820, Training loss: 0.0702417716383934
+2025-08-03 19:26:02,958 - father_agent.py:386 - Step: 825, Training loss: 0.12451481819152832
+2025-08-03 19:26:04,669 - father_agent.py:386 - Step: 830, Training loss: 0.05295495688915253
+2025-08-03 19:26:06,355 - father_agent.py:386 - Step: 835, Training loss: 0.014981400221586227
+2025-08-03 19:26:08,036 - father_agent.py:386 - Step: 840, Training loss: 0.029838573187589645
+2025-08-03 19:26:09,728 - father_agent.py:386 - Step: 845, Training loss: 0.08628756552934647
+2025-08-03 19:26:11,411 - father_agent.py:386 - Step: 850, Training loss: 0.159621000289917
+2025-08-03 19:26:13,075 - father_agent.py:386 - Step: 855, Training loss: 0.1288180649280548
+2025-08-03 19:26:14,727 - father_agent.py:386 - Step: 860, Training loss: 0.052832696586847305
+2025-08-03 19:26:16,402 - father_agent.py:386 - Step: 865, Training loss: 0.08759497106075287
+2025-08-03 19:26:18,047 - father_agent.py:386 - Step: 870, Training loss: 0.0036023438442498446
+2025-08-03 19:26:19,668 - father_agent.py:386 - Step: 875, Training loss: 0.05673960968852043
+2025-08-03 19:26:21,267 - father_agent.py:386 - Step: 880, Training loss: -0.0004451773129403591
+2025-08-03 19:26:22,849 - father_agent.py:386 - Step: 885, Training loss: 7.563410326838493e-05
+2025-08-03 19:26:24,388 - father_agent.py:386 - Step: 890, Training loss: 0.12244860082864761
+2025-08-03 19:26:25,945 - father_agent.py:386 - Step: 895, Training loss: 0.0008926969021558762
+2025-08-03 19:26:27,489 - father_agent.py:386 - Step: 900, Training loss: 0.0017805674578994513
+2025-08-03 19:26:27,655 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:26:27,657 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:26:34,715 - evaluation_results_class.py:131 - Average Return = -163.1953125
+2025-08-03 19:26:34,715 - evaluation_results_class.py:133 - Average Virtual Goal Value = -173.1953125
+2025-08-03 19:26:34,715 - evaluation_results_class.py:135 - Average Discounted Reward = -24.861095428466797
+2025-08-03 19:26:34,715 - evaluation_results_class.py:137 - Goal Reach Probability = 0.0
+2025-08-03 19:26:34,715 - evaluation_results_class.py:139 - Trap Reach Probability = 0.0
+2025-08-03 19:26:34,715 - evaluation_results_class.py:141 - Variance of Return = 19.493101119995117
+2025-08-03 19:26:34,715 - evaluation_results_class.py:143 - Current Best Return = -163.1953125
+2025-08-03 19:26:34,715 - evaluation_results_class.py:145 - Current Best Reach Probability = 0.6959247648902821
+2025-08-03 19:26:34,715 - evaluation_results_class.py:147 - Average Episode Length = 650.0
+2025-08-03 19:26:34,715 - evaluation_results_class.py:149 - Counted Episodes = 512
+2025-08-03 19:26:34,877 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:26:34,886 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:26:37,271 - father_agent.py:386 - Step: 905, Training loss: 0.0028443345800042152
+2025-08-03 19:26:38,819 - father_agent.py:386 - Step: 910, Training loss: 0.10864867269992828
+2025-08-03 19:26:40,351 - father_agent.py:386 - Step: 915, Training loss: 0.050634678453207016
+2025-08-03 19:26:41,885 - father_agent.py:386 - Step: 920, Training loss: 0.008991796523332596
+2025-08-03 19:26:43,426 - father_agent.py:386 - Step: 925, Training loss: 0.002943221479654312
+2025-08-03 19:26:44,982 - father_agent.py:386 - Step: 930, Training loss: 0.055769164115190506
+2025-08-03 19:26:46,540 - father_agent.py:386 - Step: 935, Training loss: 0.10605081170797348
+2025-08-03 19:26:48,077 - father_agent.py:386 - Step: 940, Training loss: 0.0974840521812439
+2025-08-03 19:26:49,630 - father_agent.py:386 - Step: 945, Training loss: 0.08498424291610718
+2025-08-03 19:26:51,167 - father_agent.py:386 - Step: 950, Training loss: 0.12104867398738861
+2025-08-03 19:26:52,710 - father_agent.py:386 - Step: 955, Training loss: 0.09763409942388535
+2025-08-03 19:26:54,228 - father_agent.py:386 - Step: 960, Training loss: -0.0032345247454941273
+2025-08-03 19:26:55,766 - father_agent.py:386 - Step: 965, Training loss: 0.053373657166957855
+2025-08-03 19:26:57,281 - father_agent.py:386 - Step: 970, Training loss: 0.11791998147964478
+2025-08-03 19:26:58,806 - father_agent.py:386 - Step: 975, Training loss: -0.008778124116361141
+2025-08-03 19:27:00,351 - father_agent.py:386 - Step: 980, Training loss: 0.046107228845357895
+2025-08-03 19:27:01,947 - father_agent.py:386 - Step: 985, Training loss: 0.0017813933081924915
+2025-08-03 19:27:03,550 - father_agent.py:386 - Step: 990, Training loss: 0.1253742128610611
+2025-08-03 19:27:05,128 - father_agent.py:386 - Step: 995, Training loss: -0.0047719660215079784
+2025-08-03 19:27:06,702 - father_agent.py:386 - Step: 1000, Training loss: 0.053194984793663025
+2025-08-03 19:27:06,870 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:27:06,873 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:27:14,047 - evaluation_results_class.py:131 - Average Return = -165.734375
+2025-08-03 19:27:14,047 - evaluation_results_class.py:133 - Average Virtual Goal Value = -175.734375
+2025-08-03 19:27:14,047 - evaluation_results_class.py:135 - Average Discounted Reward = -25.099098205566406
+2025-08-03 19:27:14,047 - evaluation_results_class.py:137 - Goal Reach Probability = 0.0
+2025-08-03 19:27:14,047 - evaluation_results_class.py:139 - Trap Reach Probability = 0.0
+2025-08-03 19:27:14,047 - evaluation_results_class.py:141 - Variance of Return = 383.14813232421875
+2025-08-03 19:27:14,047 - evaluation_results_class.py:143 - Current Best Return = -163.1953125
+2025-08-03 19:27:14,047 - evaluation_results_class.py:145 - Current Best Reach Probability = 0.6959247648902821
+2025-08-03 19:27:14,047 - evaluation_results_class.py:147 - Average Episode Length = 650.0
+2025-08-03 19:27:14,047 - evaluation_results_class.py:149 - Counted Episodes = 512
+2025-08-03 19:27:14,213 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:27:14,222 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:27:16,756 - father_agent.py:386 - Step: 1005, Training loss: 0.07361246645450592
+2025-08-03 19:27:18,378 - father_agent.py:386 - Step: 1010, Training loss: -0.008480765856802464
+2025-08-03 19:27:20,079 - father_agent.py:386 - Step: 1015, Training loss: 0.2643437385559082
+2025-08-03 19:27:21,779 - father_agent.py:386 - Step: 1020, Training loss: -0.004683845676481724
+2025-08-03 19:27:23,410 - father_agent.py:386 - Step: 1025, Training loss: -0.00540782418102026
+2025-08-03 19:27:25,068 - father_agent.py:386 - Step: 1030, Training loss: 0.250080943107605
+2025-08-03 19:27:26,741 - father_agent.py:386 - Step: 1035, Training loss: -0.00025179423391819
+2025-08-03 19:27:28,468 - father_agent.py:386 - Step: 1040, Training loss: 0.02284788340330124
+2025-08-03 19:27:30,189 - father_agent.py:386 - Step: 1045, Training loss: 0.11680161952972412
+2025-08-03 19:27:31,823 - father_agent.py:386 - Step: 1050, Training loss: 0.04626566544175148
+2025-08-03 19:27:33,506 - father_agent.py:386 - Step: 1055, Training loss: 0.11098705232143402
+2025-08-03 19:27:35,145 - father_agent.py:386 - Step: 1060, Training loss: 0.10307660698890686
+2025-08-03 19:27:36,785 - father_agent.py:386 - Step: 1065, Training loss: 0.052670784294605255
+2025-08-03 19:27:38,402 - father_agent.py:386 - Step: 1070, Training loss: 0.0007425402291119099
+2025-08-03 19:27:40,029 - father_agent.py:386 - Step: 1075, Training loss: -0.00949483085423708
+2025-08-03 19:27:41,624 - father_agent.py:386 - Step: 1080, Training loss: 0.048287294805049896
+2025-08-03 19:27:43,165 - father_agent.py:386 - Step: 1085, Training loss: 0.07855306565761566
+2025-08-03 19:27:44,695 - father_agent.py:386 - Step: 1090, Training loss: 0.09009047597646713
+2025-08-03 19:27:46,237 - father_agent.py:386 - Step: 1095, Training loss: 0.06269592046737671
+2025-08-03 19:27:47,775 - father_agent.py:386 - Step: 1100, Training loss: 0.07459981739521027
+2025-08-03 19:27:47,947 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:27:47,949 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:27:54,916 - evaluation_results_class.py:131 - Average Return = -164.7578125
+2025-08-03 19:27:54,916 - evaluation_results_class.py:133 - Average Virtual Goal Value = -174.7578125
+2025-08-03 19:27:54,916 - evaluation_results_class.py:135 - Average Discounted Reward = -25.33083724975586
+2025-08-03 19:27:54,916 - evaluation_results_class.py:137 - Goal Reach Probability = 0.0
+2025-08-03 19:27:54,917 - evaluation_results_class.py:139 - Trap Reach Probability = 0.0
+2025-08-03 19:27:54,917 - evaluation_results_class.py:141 - Variance of Return = 250.81631469726562
+2025-08-03 19:27:54,917 - evaluation_results_class.py:143 - Current Best Return = -163.1953125
+2025-08-03 19:27:54,917 - evaluation_results_class.py:145 - Current Best Reach Probability = 0.6959247648902821
+2025-08-03 19:27:54,917 - evaluation_results_class.py:147 - Average Episode Length = 650.0
+2025-08-03 19:27:54,917 - evaluation_results_class.py:149 - Counted Episodes = 512
+2025-08-03 19:27:55,086 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:27:55,095 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:27:57,823 - father_agent.py:386 - Step: 1105, Training loss: -0.014434462413191795
+2025-08-03 19:27:59,353 - father_agent.py:386 - Step: 1110, Training loss: -0.01453109085559845
+2025-08-03 19:28:00,882 - father_agent.py:386 - Step: 1115, Training loss: 0.056762974709272385
+2025-08-03 19:28:02,418 - father_agent.py:386 - Step: 1120, Training loss: 0.07518603652715683
+2025-08-03 19:28:03,966 - father_agent.py:386 - Step: 1125, Training loss: -0.015457064844667912
+2025-08-03 19:28:05,501 - father_agent.py:386 - Step: 1130, Training loss: 0.06136327236890793
+2025-08-03 19:28:07,038 - father_agent.py:386 - Step: 1135, Training loss: 0.41303980350494385
+2025-08-03 19:28:08,567 - father_agent.py:386 - Step: 1140, Training loss: 0.3967397212982178
+2025-08-03 19:28:10,104 - father_agent.py:386 - Step: 1145, Training loss: -0.024717111140489578
+2025-08-03 19:28:11,630 - father_agent.py:386 - Step: 1150, Training loss: 0.11326864361763
+2025-08-03 19:28:13,163 - father_agent.py:386 - Step: 1155, Training loss: 0.0704696774482727
+2025-08-03 19:28:14,690 - father_agent.py:386 - Step: 1160, Training loss: 0.11432826519012451
+2025-08-03 19:28:16,251 - father_agent.py:386 - Step: 1165, Training loss: 0.07445266097784042
+2025-08-03 19:28:17,809 - father_agent.py:386 - Step: 1170, Training loss: 0.35313522815704346
+2025-08-03 19:28:19,346 - father_agent.py:386 - Step: 1175, Training loss: 0.13212203979492188
+2025-08-03 19:28:20,885 - father_agent.py:386 - Step: 1180, Training loss: 0.042634498327970505
+2025-08-03 19:28:22,418 - father_agent.py:386 - Step: 1185, Training loss: 0.4559229910373688
+2025-08-03 19:28:23,979 - father_agent.py:386 - Step: 1190, Training loss: 0.37759843468666077
+2025-08-03 19:28:25,514 - father_agent.py:386 - Step: 1195, Training loss: -0.025032004341483116
+2025-08-03 19:28:27,052 - father_agent.py:386 - Step: 1200, Training loss: 0.7762666940689087
+2025-08-03 19:28:27,219 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:28:27,221 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:28:34,142 - evaluation_results_class.py:131 - Average Return = -169.4453125
+2025-08-03 19:28:34,142 - evaluation_results_class.py:133 - Average Virtual Goal Value = -179.4453125
+2025-08-03 19:28:34,142 - evaluation_results_class.py:135 - Average Discounted Reward = -25.788787841796875
+2025-08-03 19:28:34,142 - evaluation_results_class.py:137 - Goal Reach Probability = 0.0
+2025-08-03 19:28:34,142 - evaluation_results_class.py:139 - Trap Reach Probability = 0.0
+2025-08-03 19:28:34,142 - evaluation_results_class.py:141 - Variance of Return = 798.3016357421875
+2025-08-03 19:28:34,142 - evaluation_results_class.py:143 - Current Best Return = -163.1953125
+2025-08-03 19:28:34,142 - evaluation_results_class.py:145 - Current Best Reach Probability = 0.6959247648902821
+2025-08-03 19:28:34,142 - evaluation_results_class.py:147 - Average Episode Length = 650.0
+2025-08-03 19:28:34,142 - evaluation_results_class.py:149 - Counted Episodes = 512
+2025-08-03 19:28:34,304 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:28:34,313 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:28:36,711 - father_agent.py:386 - Step: 1205, Training loss: 0.11643442511558533
+2025-08-03 19:28:38,254 - father_agent.py:386 - Step: 1210, Training loss: -0.0340072400867939
+2025-08-03 19:28:39,791 - father_agent.py:386 - Step: 1215, Training loss: 0.05952335149049759
+2025-08-03 19:28:41,319 - father_agent.py:386 - Step: 1220, Training loss: 0.12034305930137634
+2025-08-03 19:28:42,841 - father_agent.py:386 - Step: 1225, Training loss: 0.04381706193089485
+2025-08-03 19:28:44,384 - father_agent.py:386 - Step: 1230, Training loss: 0.16310566663742065
+2025-08-03 19:28:45,936 - father_agent.py:386 - Step: 1235, Training loss: 0.11860710382461548
+2025-08-03 19:28:47,482 - father_agent.py:386 - Step: 1240, Training loss: 0.014048974961042404
+2025-08-03 19:28:49,025 - father_agent.py:386 - Step: 1245, Training loss: -0.030412035062909126
+2025-08-03 19:28:50,588 - father_agent.py:386 - Step: 1250, Training loss: 0.25121575593948364
+2025-08-03 19:28:52,135 - father_agent.py:386 - Step: 1255, Training loss: 0.10001546144485474
+2025-08-03 19:28:53,680 - father_agent.py:386 - Step: 1260, Training loss: -0.03231434151530266
+2025-08-03 19:28:55,243 - father_agent.py:386 - Step: 1265, Training loss: 0.057766929268836975
+2025-08-03 19:28:56,775 - father_agent.py:386 - Step: 1270, Training loss: -0.022043747827410698
+2025-08-03 19:28:58,305 - father_agent.py:386 - Step: 1275, Training loss: 0.06384545564651489
+2025-08-03 19:28:59,852 - father_agent.py:386 - Step: 1280, Training loss: 0.053846731781959534
+2025-08-03 19:29:01,388 - father_agent.py:386 - Step: 1285, Training loss: -0.017824921756982803
+2025-08-03 19:29:02,916 - father_agent.py:386 - Step: 1290, Training loss: 0.18340642750263214
+2025-08-03 19:29:04,454 - father_agent.py:386 - Step: 1295, Training loss: 0.11738079786300659
+2025-08-03 19:29:05,983 - father_agent.py:386 - Step: 1300, Training loss: 0.05206873640418053
+2025-08-03 19:29:06,150 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:29:06,152 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:29:13,100 - evaluation_results_class.py:131 - Average Return = -165.734375
+2025-08-03 19:29:13,100 - evaluation_results_class.py:133 - Average Virtual Goal Value = -175.734375
+2025-08-03 19:29:13,100 - evaluation_results_class.py:135 - Average Discounted Reward = -25.665719985961914
+2025-08-03 19:29:13,101 - evaluation_results_class.py:137 - Goal Reach Probability = 0.0
+2025-08-03 19:29:13,101 - evaluation_results_class.py:139 - Trap Reach Probability = 0.0
+2025-08-03 19:29:13,101 - evaluation_results_class.py:141 - Variance of Return = 265.96063232421875
+2025-08-03 19:29:13,101 - evaluation_results_class.py:143 - Current Best Return = -163.1953125
+2025-08-03 19:29:13,101 - evaluation_results_class.py:145 - Current Best Reach Probability = 0.6959247648902821
+2025-08-03 19:29:13,101 - evaluation_results_class.py:147 - Average Episode Length = 650.0
+2025-08-03 19:29:13,101 - evaluation_results_class.py:149 - Counted Episodes = 512
+2025-08-03 19:29:13,263 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:29:13,272 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:29:15,641 - father_agent.py:386 - Step: 1305, Training loss: -0.04022317752242088
+2025-08-03 19:29:17,180 - father_agent.py:386 - Step: 1310, Training loss: -0.039222728461027145
+2025-08-03 19:29:18,715 - father_agent.py:386 - Step: 1315, Training loss: 0.2653231918811798
+2025-08-03 19:29:20,256 - father_agent.py:386 - Step: 1320, Training loss: 0.06818106770515442
+2025-08-03 19:29:21,801 - father_agent.py:386 - Step: 1325, Training loss: -0.03841638192534447
+2025-08-03 19:29:23,332 - father_agent.py:386 - Step: 1330, Training loss: 0.21403297781944275
+2025-08-03 19:29:24,869 - father_agent.py:386 - Step: 1335, Training loss: -0.027960773557424545
+2025-08-03 19:29:26,404 - father_agent.py:386 - Step: 1340, Training loss: 0.08221583813428879
+2025-08-03 19:29:27,931 - father_agent.py:386 - Step: 1345, Training loss: 0.0417560413479805
+2025-08-03 19:29:29,490 - father_agent.py:386 - Step: 1350, Training loss: 0.37513467669487
+2025-08-03 19:29:31,047 - father_agent.py:386 - Step: 1355, Training loss: 0.2887328565120697
+2025-08-03 19:29:32,587 - father_agent.py:386 - Step: 1360, Training loss: -0.04085250198841095
+2025-08-03 19:29:34,131 - father_agent.py:386 - Step: 1365, Training loss: 0.30626586079597473
+2025-08-03 19:29:35,680 - father_agent.py:386 - Step: 1370, Training loss: -0.026430826634168625
+2025-08-03 19:29:37,237 - father_agent.py:386 - Step: 1375, Training loss: -0.03671020269393921
+2025-08-03 19:29:38,780 - father_agent.py:386 - Step: 1380, Training loss: 0.06389594078063965
+2025-08-03 19:29:40,334 - father_agent.py:386 - Step: 1385, Training loss: -0.02854270674288273
+2025-08-03 19:29:41,884 - father_agent.py:386 - Step: 1390, Training loss: 0.05467063933610916
+2025-08-03 19:29:43,425 - father_agent.py:386 - Step: 1395, Training loss: 0.05847017839550972
+2025-08-03 19:29:44,962 - father_agent.py:386 - Step: 1400, Training loss: -0.01935700885951519
+2025-08-03 19:29:45,135 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:29:45,137 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:29:52,152 - evaluation_results_class.py:131 - Average Return = -167.6875
+2025-08-03 19:29:52,152 - evaluation_results_class.py:133 - Average Virtual Goal Value = -177.6875
+2025-08-03 19:29:52,152 - evaluation_results_class.py:135 - Average Discounted Reward = -26.13315200805664
+2025-08-03 19:29:52,152 - evaluation_results_class.py:137 - Goal Reach Probability = 0.0
+2025-08-03 19:29:52,152 - evaluation_results_class.py:139 - Trap Reach Probability = 0.0
+2025-08-03 19:29:52,152 - evaluation_results_class.py:141 - Variance of Return = 563.96484375
+2025-08-03 19:29:52,152 - evaluation_results_class.py:143 - Current Best Return = -163.1953125
+2025-08-03 19:29:52,152 - evaluation_results_class.py:145 - Current Best Reach Probability = 0.6959247648902821
+2025-08-03 19:29:52,152 - evaluation_results_class.py:147 - Average Episode Length = 650.0
+2025-08-03 19:29:52,152 - evaluation_results_class.py:149 - Counted Episodes = 512
+2025-08-03 19:29:52,318 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:29:52,326 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:29:52,437 - father_agent.py:547 - Training finished.
+2025-08-03 19:29:52,584 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:29:52,587 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:29:52,590 - father_agent.py:654 - Evaluating agent with greedy masked policy.
+2025-08-03 19:29:59,651 - evaluation_results_class.py:131 - Average Return = -166.3203125
+2025-08-03 19:29:59,651 - evaluation_results_class.py:133 - Average Virtual Goal Value = -176.3203125
+2025-08-03 19:29:59,651 - evaluation_results_class.py:135 - Average Discounted Reward = -25.53803253173828
+2025-08-03 19:29:59,651 - evaluation_results_class.py:137 - Goal Reach Probability = 0.0
+2025-08-03 19:29:59,651 - evaluation_results_class.py:139 - Trap Reach Probability = 0.0
+2025-08-03 19:29:59,651 - evaluation_results_class.py:141 - Variance of Return = 555.3817138671875
+2025-08-03 19:29:59,651 - evaluation_results_class.py:143 - Current Best Return = -163.1953125
+2025-08-03 19:29:59,651 - evaluation_results_class.py:145 - Current Best Reach Probability = 0.6959247648902821
+2025-08-03 19:29:59,651 - evaluation_results_class.py:147 - Average Episode Length = 650.0
+2025-08-03 19:29:59,651 - evaluation_results_class.py:149 - Counted Episodes = 512
+2025-08-03 19:29:59,827 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:29:59,831 - self_interpretable_extractor.py:286 - True
+2025-08-03 19:29:59,843 - environment_wrapper_vec.py:518 - Resetting the environment.
+2025-08-03 19:30:12,418 - evaluation_results_class.py:131 - Average Return = -175.109375
+2025-08-03 19:30:12,418 - evaluation_results_class.py:133 - Average Virtual Goal Value = -185.109375
+2025-08-03 19:30:12,418 - evaluation_results_class.py:135 - Average Discounted Reward = -26.740982055664062
+2025-08-03 19:30:12,418 - evaluation_results_class.py:137 - Goal Reach Probability = 0.0
+2025-08-03 19:30:12,418 - evaluation_results_class.py:139 - Trap Reach Probability = 0.0
+2025-08-03 19:30:12,418 - evaluation_results_class.py:141 - Variance of Return = 1493.988037109375
+2025-08-03 19:30:12,418 - evaluation_results_class.py:143 - Current Best Return = -175.109375
+2025-08-03 19:30:12,418 - evaluation_results_class.py:145 - Current Best Reach Probability = 0.0
+2025-08-03 19:30:12,418 - evaluation_results_class.py:147 - Average Episode Length = 650.5
+2025-08-03 19:30:12,418 - evaluation_results_class.py:149 - Counted Episodes = 512
+2025-08-03 19:30:12,418 - self_interpretable_extractor.py:295 - Sampling data with original policy
+Buffer 0
+2025-08-03 19:30:12,418 - environment_wrapper_vec.py:518 - Resetting the environment.
+Learned 2304 trajectories
+Learned trajectory lengths  {651}
+Buffer 1
+2025-08-03 19:31:09,234 - environment_wrapper_vec.py:518 - Resetting the environment.
+Learned 4608 trajectories
+Learned trajectory lengths  {651}
+Buffer 2
+2025-08-03 19:32:06,030 - environment_wrapper_vec.py:518 - Resetting the environment.
+Learned 6912 trajectories
+Learned trajectory lengths  {651}
+All trajectories collected
+2025-08-03 19:33:03,401 - self_interpretable_extractor.py:346 - Data sampled
+2025-08-03 19:33:03,401 - self_interpretable_extractor.py:349 - Learning FSC from original policy
+Learning from 6912 trajectories
+DOF: 0
+DOF: 0
+DOF: 0
+DOF: 0
+DOF: 4
+DOF: 0
+DOF: 0
+DOF: 0
+DOF: 0
+DOF: 0
+DOF: 0
+DOF: 0
+DOF: 0
+DOF: 0
+DOF: 0
+DOF: 0
+DOF: 0
+DOF: 0
+Learned Chi2 SMM of size 2
+Model saved to fsc_0.dot.
+Learned FSC of size 2
+2025-08-03 19:33:45,018 - environment_wrapper_vec.py:518 - Resetting the environment.
+Action: Tensor("Squeeze:0", shape=(256,), dtype=int32), Update: Tensor("Reshape:0", shape=(256, 1), dtype=int32), Memory: Tensor("policy_state:0", shape=(256, 1), dtype=int32)
+2025-08-03 19:33:56,916 - evaluation_results_class.py:131 - Average Return = -167.296875
+2025-08-03 19:33:56,916 - evaluation_results_class.py:133 - Average Virtual Goal Value = -177.296875
+2025-08-03 19:33:56,916 - evaluation_results_class.py:135 - Average Discounted Reward = -25.400197982788086
+2025-08-03 19:33:56,916 - evaluation_results_class.py:137 - Goal Reach Probability = 0.0
+2025-08-03 19:33:56,916 - evaluation_results_class.py:139 - Trap Reach Probability = 0.0
+2025-08-03 19:33:56,916 - evaluation_results_class.py:141 - Variance of Return = 450.286865234375
+2025-08-03 19:33:56,916 - evaluation_results_class.py:143 - Current Best Return = -167.296875
+2025-08-03 19:33:56,916 - evaluation_results_class.py:145 - Current Best Reach Probability = 0.0
+2025-08-03 19:33:56,916 - evaluation_results_class.py:147 - Average Episode Length = 650.5
+2025-08-03 19:33:56,916 - evaluation_results_class.py:149 - Counted Episodes = 512
+FSC Result: {'best_episode_return': -177.29688, 'best_return': -167.29688, 'goal_value': 0.0, 'returns_episodic': [-177.29688], 'returns': [-167.29688], 'reach_probs': [0.0], 'trap_reach_probs': [0.0], 'best_reach_prob': 0.0, 'losses': [], 'best_updated': True, 'each_episode_variance': [450.28687], 'each_episode_virtual_variance': [450.28687], 'combined_variance': [1801.1475], 'num_episodes': [512], 'paynt_bounds': [], 'last_from_interpretation': False, 'extracted_fsc_episode_return': -1.0, 'extracted_fsc_return': -1.0, 'extracted_fsc_reach_prob': -1.0, 'extracted_fsc_variance': -1.0, 'extracted_fsc_num_episodes': -1, 'extracted_fsc_virtual_variance': -1.0, 'extracted_fsc_combined_variance': -1.0, 'artificial_reward_means': [], 'artificial_reward_stds': [], 'average_episode_length': [650.5], 'counted_episodes': [512], 'discounted_rewards': [-25.400198], 'new_pomdp_iteration_numbers': []}
+[[6], [3, 4, 7, 8, 9], [5], [1], [2], [2], [3, 4, 7, 8, 9], [5], [1], [0], [0]]
+2025-08-03 19:33:57,069 - statistic.py:67 - synthesis initiated, design space: 1600
+2025-08-03 19:33:57,069 - synthesizer.py:186 - Synthesizer does not support timeout limiter. Running without timeout.

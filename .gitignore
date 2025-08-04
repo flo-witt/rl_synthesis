@@ -24,7 +24,8 @@ rl_src/models_paynt_experiments/
 PAYNT_*
 experiments_*
 !experiments_robust_*
-*.log
+
+
 .idea
 
 # OSX

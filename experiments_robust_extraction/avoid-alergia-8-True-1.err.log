@@ -1,0 +1,591 @@
+2025-08-03 19:20:00.903772: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2025-08-03 19:20:00.905758: I external/local_tsl/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+2025-08-03 19:20:00.935900: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:9261] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2025-08-03 19:20:00.935956: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:607] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2025-08-03 19:20:00.937417: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1515] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2025-08-03 19:20:00.943019: I external/local_tsl/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+2025-08-03 19:20:00.943198: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI AVX512_BF16 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2025-08-03 19:20:01.471674: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+INFO:paynt.parser.sketch:loading sketch from /home/ihudak/synthesis/models_robust_subset/avoid/sketch.templ ...
+INFO:paynt.parser.sketch:assuming sketch in PRISM format...
+DEBUG:paynt.parser.prism_parser:PRISM model type: POMDP
+INFO:paynt.parser.prism_parser:processing hole definitions...
+INFO:paynt.parser.prism_parser:loading properties from /home/ihudak/synthesis/models_robust_subset/avoid/sketch.props ...
+INFO:paynt.parser.prism_parser:found the following specification: optimality: R{"penalty"}min=? [F ((x = (5 - 1)) & (y = (5 - 1)))] 
+DEBUG:paynt.parser.jani:constructing JANI program...
+DEBUG:paynt.parser.jani:constructing the quotient...
+DEBUG:paynt.parser.jani:associating choices of the quotient with hole assignments...
+DEBUG:paynt.parser.jani:keeping 65660/171860 choices with non-conflicting hole assignments...
+INFO:paynt.parser.sketch:sketch parsing OK
+WARNING:paynt.parser.sketch:WARNING: choice labeling for the quotient is not canonic
+DEBUG:paynt.parser.sketch:constructed explicit quotient having 17567 states and 61860 choices
+INFO:paynt.parser.sketch:found the following specification optimality: R{"rewardmodel_penalty"}min=? [F ((x = (5 - 1)) & (y = (5 - 1)))] 
+INFO:environment.vectorized_sim_initializer:Compiling model avoid...
+INFO:vec_storm.storm_vec_env:Computing row map
+INFO:vec_storm.storm_vec_env:Computing transitions
+INFO:vec_storm.storm_vec_env:Computing allowed actions
+INFO:vec_storm.storm_vec_env:Computing sinks
+INFO:vec_storm.storm_vec_env:Computing raw rewards
+INFO:vec_storm.storm_vec_env:Computing labels
+INFO:vec_storm.storm_vec_env:Computing scalarized rewards
+INFO:vec_storm.storm_vec_env:Computing metalabels
+INFO:vec_storm.storm_vec_env:Computing observations
+ERROR:environment.environment_wrapper_vec:Grid-like renderer not possible to initialize.
+INFO:environment.environment_wrapper_vec:Vectorized simulator initialized with 256 environments.
+INFO:root:Agent initialized
+INFO:root:Replay buffer initialized
+INFO:root:Collector driver initialized
+INFO:robust_rl.robust_rl_trainer:Iteration 1 of pure RL loop
+INFO:vec_storm.storm_vec_env:Computing row map
+INFO:vec_storm.storm_vec_env:Computing transitions
+INFO:vec_storm.storm_vec_env:Computing allowed actions
+INFO:vec_storm.storm_vec_env:Computing sinks
+INFO:vec_storm.storm_vec_env:Computing raw rewards
+INFO:vec_storm.storm_vec_env:Computing labels
+INFO:vec_storm.storm_vec_env:Computing scalarized rewards
+INFO:vec_storm.storm_vec_env:Computing metalabels
+INFO:vec_storm.storm_vec_env:Computing observations
+INFO:agents.father_agent:Training agent with replay buffer option: 1
+INFO:agents.father_agent:Before training evaluation.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:tools.evaluation_results_class:Average Return = -716.772705078125
+INFO:tools.evaluation_results_class:Average Virtual Goal Value = -685.0172119140625
+INFO:tools.evaluation_results_class:Average Discounted Reward = -137.03128051757812
+INFO:tools.evaluation_results_class:Goal Reach Probability = 0.6959247648902821
+INFO:tools.evaluation_results_class:Trap Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Variance of Return = 438602.71875
+INFO:tools.evaluation_results_class:Current Best Return = -716.772705078125
+INFO:tools.evaluation_results_class:Current Best Reach Probability = 0.6959247648902821
+INFO:tools.evaluation_results_class:Average Episode Length = 395.6269592476489
+INFO:tools.evaluation_results_class:Counted Episodes = 638
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:agents.father_agent:Training agent on-policy
+INFO:agents.father_agent:Step: 0, Training loss: 477.61212158203125
+INFO:agents.father_agent:Step: 5, Training loss: 9.402433395385742
+INFO:agents.father_agent:Step: 10, Training loss: 6.119334697723389
+INFO:agents.father_agent:Step: 15, Training loss: 4.0608134269714355
+INFO:agents.father_agent:Step: 20, Training loss: 7.3820672035217285
+INFO:agents.father_agent:Step: 25, Training loss: 5.0862884521484375
+INFO:agents.father_agent:Step: 30, Training loss: 8.106595993041992
+INFO:agents.father_agent:Step: 35, Training loss: 5.965047359466553
+INFO:agents.father_agent:Step: 40, Training loss: 7.308652877807617
+INFO:agents.father_agent:Step: 45, Training loss: 6.026913642883301
+INFO:agents.father_agent:Step: 50, Training loss: 5.803015232086182
+INFO:agents.father_agent:Step: 55, Training loss: 7.57212495803833
+INFO:agents.father_agent:Step: 60, Training loss: 9.111498832702637
+INFO:agents.father_agent:Step: 65, Training loss: 5.621429920196533
+INFO:agents.father_agent:Step: 70, Training loss: 3.6356406211853027
+INFO:agents.father_agent:Step: 75, Training loss: 5.980462074279785
+INFO:agents.father_agent:Step: 80, Training loss: 4.262657642364502
+INFO:agents.father_agent:Step: 85, Training loss: 6.279201507568359
+INFO:agents.father_agent:Step: 90, Training loss: 4.302964210510254
+INFO:agents.father_agent:Step: 95, Training loss: 3.300874710083008
+INFO:agents.father_agent:Step: 100, Training loss: 4.044211387634277
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:tools.evaluation_results_class:Average Return = -354.88671875
+INFO:tools.evaluation_results_class:Average Virtual Goal Value = -363.83203125
+INFO:tools.evaluation_results_class:Average Discounted Reward = -53.85440444946289
+INFO:tools.evaluation_results_class:Goal Reach Probability = 0.017578125
+INFO:tools.evaluation_results_class:Trap Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Variance of Return = 112034.6484375
+INFO:tools.evaluation_results_class:Current Best Return = -354.88671875
+INFO:tools.evaluation_results_class:Current Best Reach Probability = 0.6959247648902821
+INFO:tools.evaluation_results_class:Average Episode Length = 644.091796875
+INFO:tools.evaluation_results_class:Counted Episodes = 512
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:agents.father_agent:Step: 105, Training loss: 2.44419264793396
+INFO:agents.father_agent:Step: 110, Training loss: 1.9438807964324951
+INFO:agents.father_agent:Step: 115, Training loss: 0.8453159928321838
+INFO:agents.father_agent:Step: 120, Training loss: 0.2900046706199646
+INFO:agents.father_agent:Step: 125, Training loss: 1.4492157697677612
+INFO:agents.father_agent:Step: 130, Training loss: 0.36655062437057495
+INFO:agents.father_agent:Step: 135, Training loss: 0.4125755727291107
+INFO:agents.father_agent:Step: 140, Training loss: 0.2089453786611557
+INFO:agents.father_agent:Step: 145, Training loss: 0.144971564412117
+INFO:agents.father_agent:Step: 150, Training loss: 0.5120954513549805
+INFO:agents.father_agent:Step: 155, Training loss: 0.45242559909820557
+INFO:agents.father_agent:Step: 160, Training loss: 0.09684553742408752
+INFO:agents.father_agent:Step: 165, Training loss: 0.19782298803329468
+INFO:agents.father_agent:Step: 170, Training loss: 0.09298688918352127
+INFO:agents.father_agent:Step: 175, Training loss: 0.300954669713974
+INFO:agents.father_agent:Step: 180, Training loss: 0.17359992861747742
+INFO:agents.father_agent:Step: 185, Training loss: 0.20708464086055756
+INFO:agents.father_agent:Step: 190, Training loss: 0.07454176992177963
+INFO:agents.father_agent:Step: 195, Training loss: 0.10025373101234436
+INFO:agents.father_agent:Step: 200, Training loss: 0.37346023321151733
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:tools.evaluation_results_class:Average Return = -166.20703125
+INFO:tools.evaluation_results_class:Average Virtual Goal Value = -175.97265625
+INFO:tools.evaluation_results_class:Average Discounted Reward = -25.89371681213379
+INFO:tools.evaluation_results_class:Goal Reach Probability = 0.00390625
+INFO:tools.evaluation_results_class:Trap Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Variance of Return = 364.8594970703125
+INFO:tools.evaluation_results_class:Current Best Return = -166.20703125
+INFO:tools.evaluation_results_class:Current Best Reach Probability = 0.6959247648902821
+INFO:tools.evaluation_results_class:Average Episode Length = 649.54296875
+INFO:tools.evaluation_results_class:Counted Episodes = 512
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:agents.father_agent:Step: 205, Training loss: 0.08608665317296982
+INFO:agents.father_agent:Step: 210, Training loss: 0.10682409256696701
+INFO:agents.father_agent:Step: 215, Training loss: 0.09835080802440643
+INFO:agents.father_agent:Step: 220, Training loss: 0.1276591569185257
+INFO:agents.father_agent:Step: 225, Training loss: 0.11013074219226837
+INFO:agents.father_agent:Step: 230, Training loss: 0.09516732394695282
+INFO:agents.father_agent:Step: 235, Training loss: 0.0917176902294159
+INFO:agents.father_agent:Step: 240, Training loss: 0.06351662427186966
+INFO:agents.father_agent:Step: 245, Training loss: 0.09484252333641052
+INFO:agents.father_agent:Step: 250, Training loss: 0.35822582244873047
+INFO:agents.father_agent:Step: 255, Training loss: 0.1876450479030609
+INFO:agents.father_agent:Step: 260, Training loss: 0.06700830906629562
+INFO:agents.father_agent:Step: 265, Training loss: 0.059141114354133606
+INFO:agents.father_agent:Step: 270, Training loss: 0.1562245637178421
+INFO:agents.father_agent:Step: 275, Training loss: 0.06617933511734009
+INFO:agents.father_agent:Step: 280, Training loss: 0.09407718479633331
+INFO:agents.father_agent:Step: 285, Training loss: 0.06297653913497925
+INFO:agents.father_agent:Step: 290, Training loss: 0.5220827460289001
+INFO:agents.father_agent:Step: 295, Training loss: 0.35801392793655396
+INFO:agents.father_agent:Step: 300, Training loss: 0.08503971248865128
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:tools.evaluation_results_class:Average Return = -164.953125
+INFO:tools.evaluation_results_class:Average Virtual Goal Value = -174.953125
+INFO:tools.evaluation_results_class:Average Discounted Reward = -24.995643615722656
+INFO:tools.evaluation_results_class:Goal Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Trap Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Variance of Return = 230.560302734375
+INFO:tools.evaluation_results_class:Current Best Return = -164.953125
+INFO:tools.evaluation_results_class:Current Best Reach Probability = 0.6959247648902821
+INFO:tools.evaluation_results_class:Average Episode Length = 650.0
+INFO:tools.evaluation_results_class:Counted Episodes = 512
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:agents.father_agent:Step: 305, Training loss: 0.05304242670536041
+INFO:agents.father_agent:Step: 310, Training loss: 0.17788651585578918
+INFO:agents.father_agent:Step: 315, Training loss: 0.28890788555145264
+INFO:agents.father_agent:Step: 320, Training loss: 0.48338082432746887
+INFO:agents.father_agent:Step: 325, Training loss: 0.04944925755262375
+INFO:agents.father_agent:Step: 330, Training loss: 0.2724685072898865
+INFO:agents.father_agent:Step: 335, Training loss: 0.22136884927749634
+INFO:agents.father_agent:Step: 340, Training loss: 0.04713377729058266
+INFO:agents.father_agent:Step: 345, Training loss: 0.24441534280776978
+INFO:agents.father_agent:Step: 350, Training loss: 0.12553094327449799
+INFO:agents.father_agent:Step: 355, Training loss: 0.3197559714317322
+INFO:agents.father_agent:Step: 360, Training loss: 0.055004604160785675
+INFO:agents.father_agent:Step: 365, Training loss: 0.32000404596328735
+INFO:agents.father_agent:Step: 370, Training loss: 0.050878312438726425
+INFO:agents.father_agent:Step: 375, Training loss: 0.1329611837863922
+INFO:agents.father_agent:Step: 380, Training loss: 0.18270879983901978
+INFO:agents.father_agent:Step: 385, Training loss: 0.07437296211719513
+INFO:agents.father_agent:Step: 390, Training loss: 0.03934556245803833
+INFO:agents.father_agent:Step: 395, Training loss: 0.2060273289680481
+INFO:agents.father_agent:Step: 400, Training loss: 0.17590278387069702
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:tools.evaluation_results_class:Average Return = -168.2734375
+INFO:tools.evaluation_results_class:Average Virtual Goal Value = -178.2734375
+INFO:tools.evaluation_results_class:Average Discounted Reward = -25.651473999023438
+INFO:tools.evaluation_results_class:Goal Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Trap Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Variance of Return = 733.9095458984375
+INFO:tools.evaluation_results_class:Current Best Return = -164.953125
+INFO:tools.evaluation_results_class:Current Best Reach Probability = 0.6959247648902821
+INFO:tools.evaluation_results_class:Average Episode Length = 650.0
+INFO:tools.evaluation_results_class:Counted Episodes = 512
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:agents.father_agent:Step: 405, Training loss: 1.0696790218353271
+INFO:agents.father_agent:Step: 410, Training loss: 0.19603164494037628
+INFO:agents.father_agent:Step: 415, Training loss: 0.22633345425128937
+INFO:agents.father_agent:Step: 420, Training loss: 0.1587371677160263
+INFO:agents.father_agent:Step: 425, Training loss: 0.14265888929367065
+INFO:agents.father_agent:Step: 430, Training loss: 0.07030171900987625
+INFO:agents.father_agent:Step: 435, Training loss: 0.16050603985786438
+INFO:agents.father_agent:Step: 440, Training loss: 0.03374359756708145
+INFO:agents.father_agent:Step: 445, Training loss: 0.04223381727933884
+INFO:agents.father_agent:Step: 450, Training loss: 0.13643549382686615
+INFO:agents.father_agent:Step: 455, Training loss: 0.08285880088806152
+INFO:agents.father_agent:Step: 460, Training loss: 0.04318253695964813
+INFO:agents.father_agent:Step: 465, Training loss: 0.20851784944534302
+INFO:agents.father_agent:Step: 470, Training loss: 0.163328155875206
+INFO:agents.father_agent:Step: 475, Training loss: 0.2859228849411011
+INFO:agents.father_agent:Step: 480, Training loss: 0.026116907596588135
+INFO:agents.father_agent:Step: 485, Training loss: 0.1344747096300125
+INFO:agents.father_agent:Step: 490, Training loss: 0.10952159762382507
+INFO:agents.father_agent:Step: 495, Training loss: 0.038621656596660614
+INFO:agents.father_agent:Step: 500, Training loss: 0.13559380173683167
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:tools.evaluation_results_class:Average Return = -166.90625
+INFO:tools.evaluation_results_class:Average Virtual Goal Value = -176.90625
+INFO:tools.evaluation_results_class:Average Discounted Reward = -25.881755828857422
+INFO:tools.evaluation_results_class:Goal Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Trap Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Variance of Return = 531.6162109375
+INFO:tools.evaluation_results_class:Current Best Return = -164.953125
+INFO:tools.evaluation_results_class:Current Best Reach Probability = 0.6959247648902821
+INFO:tools.evaluation_results_class:Average Episode Length = 650.0
+INFO:tools.evaluation_results_class:Counted Episodes = 512
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:agents.father_agent:Step: 505, Training loss: 0.027182988822460175
+INFO:agents.father_agent:Step: 510, Training loss: 0.14679469168186188
+INFO:agents.father_agent:Step: 515, Training loss: 0.18269048631191254
+INFO:agents.father_agent:Step: 520, Training loss: 0.03819926828145981
+INFO:agents.father_agent:Step: 525, Training loss: 0.09744322299957275
+INFO:agents.father_agent:Step: 530, Training loss: 0.06199334189295769
+INFO:agents.father_agent:Step: 535, Training loss: 0.038412436842918396
+INFO:agents.father_agent:Step: 540, Training loss: 0.18856298923492432
+INFO:agents.father_agent:Step: 545, Training loss: 0.20764097571372986
+INFO:agents.father_agent:Step: 550, Training loss: 0.27482759952545166
+INFO:agents.father_agent:Step: 555, Training loss: 0.06343894451856613
+INFO:agents.father_agent:Step: 560, Training loss: 0.11253772675991058
+INFO:agents.father_agent:Step: 565, Training loss: 0.060896530747413635
+INFO:agents.father_agent:Step: 570, Training loss: 0.21032750606536865
+INFO:agents.father_agent:Step: 575, Training loss: 0.02290407568216324
+INFO:agents.father_agent:Step: 580, Training loss: 0.1635730117559433
+INFO:agents.father_agent:Step: 585, Training loss: 0.03465345501899719
+INFO:agents.father_agent:Step: 590, Training loss: 0.02207007072865963
+INFO:agents.father_agent:Step: 595, Training loss: 0.02462964504957199
+INFO:agents.father_agent:Step: 600, Training loss: 0.13662070035934448
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:tools.evaluation_results_class:Average Return = -168.078125
+INFO:tools.evaluation_results_class:Average Virtual Goal Value = -178.078125
+INFO:tools.evaluation_results_class:Average Discounted Reward = -26.246761322021484
+INFO:tools.evaluation_results_class:Goal Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Trap Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Variance of Return = 716.400146484375
+INFO:tools.evaluation_results_class:Current Best Return = -164.953125
+INFO:tools.evaluation_results_class:Current Best Reach Probability = 0.6959247648902821
+INFO:tools.evaluation_results_class:Average Episode Length = 650.0
+INFO:tools.evaluation_results_class:Counted Episodes = 512
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:agents.father_agent:Step: 605, Training loss: 0.07012316584587097
+INFO:agents.father_agent:Step: 610, Training loss: 0.21957582235336304
+INFO:agents.father_agent:Step: 615, Training loss: 0.2538387179374695
+INFO:agents.father_agent:Step: 620, Training loss: 0.13706016540527344
+INFO:agents.father_agent:Step: 625, Training loss: 0.01883893832564354
+INFO:agents.father_agent:Step: 630, Training loss: 0.0972152054309845
+INFO:agents.father_agent:Step: 635, Training loss: 0.4827009439468384
+INFO:agents.father_agent:Step: 640, Training loss: 0.13949622213840485
+INFO:agents.father_agent:Step: 645, Training loss: 0.14062507450580597
+INFO:agents.father_agent:Step: 650, Training loss: 0.05643085017800331
+INFO:agents.father_agent:Step: 655, Training loss: 0.2413140833377838
+INFO:agents.father_agent:Step: 660, Training loss: 0.08402431011199951
+INFO:agents.father_agent:Step: 665, Training loss: 0.2515120804309845
+INFO:agents.father_agent:Step: 670, Training loss: 0.025477534160017967
+INFO:agents.father_agent:Step: 675, Training loss: 0.01290174387395382
+INFO:agents.father_agent:Step: 680, Training loss: 0.055785566568374634
+INFO:agents.father_agent:Step: 685, Training loss: 0.028400644659996033
+INFO:agents.father_agent:Step: 690, Training loss: 0.13416987657546997
+INFO:agents.father_agent:Step: 695, Training loss: 0.0535905659198761
+INFO:agents.father_agent:Step: 700, Training loss: 0.11786164343357086
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:tools.evaluation_results_class:Average Return = -166.7109375
+INFO:tools.evaluation_results_class:Average Virtual Goal Value = -176.7109375
+INFO:tools.evaluation_results_class:Average Discounted Reward = -25.329830169677734
+INFO:tools.evaluation_results_class:Goal Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Trap Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Variance of Return = 513.5726928710938
+INFO:tools.evaluation_results_class:Current Best Return = -164.953125
+INFO:tools.evaluation_results_class:Current Best Reach Probability = 0.6959247648902821
+INFO:tools.evaluation_results_class:Average Episode Length = 650.0
+INFO:tools.evaluation_results_class:Counted Episodes = 512
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:agents.father_agent:Step: 705, Training loss: 0.20721742510795593
+INFO:agents.father_agent:Step: 710, Training loss: 0.00972752831876278
+INFO:agents.father_agent:Step: 715, Training loss: 0.09317024052143097
+INFO:agents.father_agent:Step: 720, Training loss: 0.23330819606781006
+INFO:agents.father_agent:Step: 725, Training loss: 0.011886091902852058
+INFO:agents.father_agent:Step: 730, Training loss: 0.05282614007592201
+INFO:agents.father_agent:Step: 735, Training loss: 0.07230177521705627
+INFO:agents.father_agent:Step: 740, Training loss: 0.13478222489356995
+INFO:agents.father_agent:Step: 745, Training loss: 0.09830179810523987
+INFO:agents.father_agent:Step: 750, Training loss: 0.06774862110614777
+INFO:agents.father_agent:Step: 755, Training loss: 0.13718178868293762
+INFO:agents.father_agent:Step: 760, Training loss: 0.05477450415492058
+INFO:agents.father_agent:Step: 765, Training loss: 0.054324813187122345
+INFO:agents.father_agent:Step: 770, Training loss: 0.02161112055182457
+INFO:agents.father_agent:Step: 775, Training loss: 0.011272582225501537
+INFO:agents.father_agent:Step: 780, Training loss: 0.05276374891400337
+INFO:agents.father_agent:Step: 785, Training loss: 0.2581363618373871
+INFO:agents.father_agent:Step: 790, Training loss: 0.11774228513240814
+INFO:agents.father_agent:Step: 795, Training loss: 0.11400214582681656
+INFO:agents.father_agent:Step: 800, Training loss: 0.12583331763744354
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:tools.evaluation_results_class:Average Return = -164.3671875
+INFO:tools.evaluation_results_class:Average Virtual Goal Value = -174.3671875
+INFO:tools.evaluation_results_class:Average Discounted Reward = -25.01830291748047
+INFO:tools.evaluation_results_class:Goal Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Trap Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Variance of Return = 252.03697204589844
+INFO:tools.evaluation_results_class:Current Best Return = -164.3671875
+INFO:tools.evaluation_results_class:Current Best Reach Probability = 0.6959247648902821
+INFO:tools.evaluation_results_class:Average Episode Length = 650.0
+INFO:tools.evaluation_results_class:Counted Episodes = 512
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:agents.father_agent:Step: 805, Training loss: 0.010243450291454792
+INFO:agents.father_agent:Step: 810, Training loss: 0.05427595227956772
+INFO:agents.father_agent:Step: 815, Training loss: 0.055932991206645966
+INFO:agents.father_agent:Step: 820, Training loss: 0.0702417716383934
+INFO:agents.father_agent:Step: 825, Training loss: 0.12451481819152832
+INFO:agents.father_agent:Step: 830, Training loss: 0.05295495688915253
+INFO:agents.father_agent:Step: 835, Training loss: 0.014981400221586227
+INFO:agents.father_agent:Step: 840, Training loss: 0.029838573187589645
+INFO:agents.father_agent:Step: 845, Training loss: 0.08628756552934647
+INFO:agents.father_agent:Step: 850, Training loss: 0.159621000289917
+INFO:agents.father_agent:Step: 855, Training loss: 0.1288180649280548
+INFO:agents.father_agent:Step: 860, Training loss: 0.052832696586847305
+INFO:agents.father_agent:Step: 865, Training loss: 0.08759497106075287
+INFO:agents.father_agent:Step: 870, Training loss: 0.0036023438442498446
+INFO:agents.father_agent:Step: 875, Training loss: 0.05673960968852043
+INFO:agents.father_agent:Step: 880, Training loss: -0.0004451773129403591
+INFO:agents.father_agent:Step: 885, Training loss: 7.563410326838493e-05
+INFO:agents.father_agent:Step: 890, Training loss: 0.12244860082864761
+INFO:agents.father_agent:Step: 895, Training loss: 0.0008926969021558762
+INFO:agents.father_agent:Step: 900, Training loss: 0.0017805674578994513
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:tools.evaluation_results_class:Average Return = -163.1953125
+INFO:tools.evaluation_results_class:Average Virtual Goal Value = -173.1953125
+INFO:tools.evaluation_results_class:Average Discounted Reward = -24.861095428466797
+INFO:tools.evaluation_results_class:Goal Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Trap Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Variance of Return = 19.493101119995117
+INFO:tools.evaluation_results_class:Current Best Return = -163.1953125
+INFO:tools.evaluation_results_class:Current Best Reach Probability = 0.6959247648902821
+INFO:tools.evaluation_results_class:Average Episode Length = 650.0
+INFO:tools.evaluation_results_class:Counted Episodes = 512
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:agents.father_agent:Step: 905, Training loss: 0.0028443345800042152
+INFO:agents.father_agent:Step: 910, Training loss: 0.10864867269992828
+INFO:agents.father_agent:Step: 915, Training loss: 0.050634678453207016
+INFO:agents.father_agent:Step: 920, Training loss: 0.008991796523332596
+INFO:agents.father_agent:Step: 925, Training loss: 0.002943221479654312
+INFO:agents.father_agent:Step: 930, Training loss: 0.055769164115190506
+INFO:agents.father_agent:Step: 935, Training loss: 0.10605081170797348
+INFO:agents.father_agent:Step: 940, Training loss: 0.0974840521812439
+INFO:agents.father_agent:Step: 945, Training loss: 0.08498424291610718
+INFO:agents.father_agent:Step: 950, Training loss: 0.12104867398738861
+INFO:agents.father_agent:Step: 955, Training loss: 0.09763409942388535
+INFO:agents.father_agent:Step: 960, Training loss: -0.0032345247454941273
+INFO:agents.father_agent:Step: 965, Training loss: 0.053373657166957855
+INFO:agents.father_agent:Step: 970, Training loss: 0.11791998147964478
+INFO:agents.father_agent:Step: 975, Training loss: -0.008778124116361141
+INFO:agents.father_agent:Step: 980, Training loss: 0.046107228845357895
+INFO:agents.father_agent:Step: 985, Training loss: 0.0017813933081924915
+INFO:agents.father_agent:Step: 990, Training loss: 0.1253742128610611
+INFO:agents.father_agent:Step: 995, Training loss: -0.0047719660215079784
+INFO:agents.father_agent:Step: 1000, Training loss: 0.053194984793663025
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:tools.evaluation_results_class:Average Return = -165.734375
+INFO:tools.evaluation_results_class:Average Virtual Goal Value = -175.734375
+INFO:tools.evaluation_results_class:Average Discounted Reward = -25.099098205566406
+INFO:tools.evaluation_results_class:Goal Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Trap Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Variance of Return = 383.14813232421875
+INFO:tools.evaluation_results_class:Current Best Return = -163.1953125
+INFO:tools.evaluation_results_class:Current Best Reach Probability = 0.6959247648902821
+INFO:tools.evaluation_results_class:Average Episode Length = 650.0
+INFO:tools.evaluation_results_class:Counted Episodes = 512
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:agents.father_agent:Step: 1005, Training loss: 0.07361246645450592
+INFO:agents.father_agent:Step: 1010, Training loss: -0.008480765856802464
+INFO:agents.father_agent:Step: 1015, Training loss: 0.2643437385559082
+INFO:agents.father_agent:Step: 1020, Training loss: -0.004683845676481724
+INFO:agents.father_agent:Step: 1025, Training loss: -0.00540782418102026
+INFO:agents.father_agent:Step: 1030, Training loss: 0.250080943107605
+INFO:agents.father_agent:Step: 1035, Training loss: -0.00025179423391819
+INFO:agents.father_agent:Step: 1040, Training loss: 0.02284788340330124
+INFO:agents.father_agent:Step: 1045, Training loss: 0.11680161952972412
+INFO:agents.father_agent:Step: 1050, Training loss: 0.04626566544175148
+INFO:agents.father_agent:Step: 1055, Training loss: 0.11098705232143402
+INFO:agents.father_agent:Step: 1060, Training loss: 0.10307660698890686
+INFO:agents.father_agent:Step: 1065, Training loss: 0.052670784294605255
+INFO:agents.father_agent:Step: 1070, Training loss: 0.0007425402291119099
+INFO:agents.father_agent:Step: 1075, Training loss: -0.00949483085423708
+INFO:agents.father_agent:Step: 1080, Training loss: 0.048287294805049896
+INFO:agents.father_agent:Step: 1085, Training loss: 0.07855306565761566
+INFO:agents.father_agent:Step: 1090, Training loss: 0.09009047597646713
+INFO:agents.father_agent:Step: 1095, Training loss: 0.06269592046737671
+INFO:agents.father_agent:Step: 1100, Training loss: 0.07459981739521027
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:tools.evaluation_results_class:Average Return = -164.7578125
+INFO:tools.evaluation_results_class:Average Virtual Goal Value = -174.7578125
+INFO:tools.evaluation_results_class:Average Discounted Reward = -25.33083724975586
+INFO:tools.evaluation_results_class:Goal Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Trap Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Variance of Return = 250.81631469726562
+INFO:tools.evaluation_results_class:Current Best Return = -163.1953125
+INFO:tools.evaluation_results_class:Current Best Reach Probability = 0.6959247648902821
+INFO:tools.evaluation_results_class:Average Episode Length = 650.0
+INFO:tools.evaluation_results_class:Counted Episodes = 512
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:agents.father_agent:Step: 1105, Training loss: -0.014434462413191795
+INFO:agents.father_agent:Step: 1110, Training loss: -0.01453109085559845
+INFO:agents.father_agent:Step: 1115, Training loss: 0.056762974709272385
+INFO:agents.father_agent:Step: 1120, Training loss: 0.07518603652715683
+INFO:agents.father_agent:Step: 1125, Training loss: -0.015457064844667912
+INFO:agents.father_agent:Step: 1130, Training loss: 0.06136327236890793
+INFO:agents.father_agent:Step: 1135, Training loss: 0.41303980350494385
+INFO:agents.father_agent:Step: 1140, Training loss: 0.3967397212982178
+INFO:agents.father_agent:Step: 1145, Training loss: -0.024717111140489578
+INFO:agents.father_agent:Step: 1150, Training loss: 0.11326864361763
+INFO:agents.father_agent:Step: 1155, Training loss: 0.0704696774482727
+INFO:agents.father_agent:Step: 1160, Training loss: 0.11432826519012451
+INFO:agents.father_agent:Step: 1165, Training loss: 0.07445266097784042
+INFO:agents.father_agent:Step: 1170, Training loss: 0.35313522815704346
+INFO:agents.father_agent:Step: 1175, Training loss: 0.13212203979492188
+INFO:agents.father_agent:Step: 1180, Training loss: 0.042634498327970505
+INFO:agents.father_agent:Step: 1185, Training loss: 0.4559229910373688
+INFO:agents.father_agent:Step: 1190, Training loss: 0.37759843468666077
+INFO:agents.father_agent:Step: 1195, Training loss: -0.025032004341483116
+INFO:agents.father_agent:Step: 1200, Training loss: 0.7762666940689087
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:tools.evaluation_results_class:Average Return = -169.4453125
+INFO:tools.evaluation_results_class:Average Virtual Goal Value = -179.4453125
+INFO:tools.evaluation_results_class:Average Discounted Reward = -25.788787841796875
+INFO:tools.evaluation_results_class:Goal Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Trap Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Variance of Return = 798.3016357421875
+INFO:tools.evaluation_results_class:Current Best Return = -163.1953125
+INFO:tools.evaluation_results_class:Current Best Reach Probability = 0.6959247648902821
+INFO:tools.evaluation_results_class:Average Episode Length = 650.0
+INFO:tools.evaluation_results_class:Counted Episodes = 512
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:agents.father_agent:Step: 1205, Training loss: 0.11643442511558533
+INFO:agents.father_agent:Step: 1210, Training loss: -0.0340072400867939
+INFO:agents.father_agent:Step: 1215, Training loss: 0.05952335149049759
+INFO:agents.father_agent:Step: 1220, Training loss: 0.12034305930137634
+INFO:agents.father_agent:Step: 1225, Training loss: 0.04381706193089485
+INFO:agents.father_agent:Step: 1230, Training loss: 0.16310566663742065
+INFO:agents.father_agent:Step: 1235, Training loss: 0.11860710382461548
+INFO:agents.father_agent:Step: 1240, Training loss: 0.014048974961042404
+INFO:agents.father_agent:Step: 1245, Training loss: -0.030412035062909126
+INFO:agents.father_agent:Step: 1250, Training loss: 0.25121575593948364
+INFO:agents.father_agent:Step: 1255, Training loss: 0.10001546144485474
+INFO:agents.father_agent:Step: 1260, Training loss: -0.03231434151530266
+INFO:agents.father_agent:Step: 1265, Training loss: 0.057766929268836975
+INFO:agents.father_agent:Step: 1270, Training loss: -0.022043747827410698
+INFO:agents.father_agent:Step: 1275, Training loss: 0.06384545564651489
+INFO:agents.father_agent:Step: 1280, Training loss: 0.053846731781959534
+INFO:agents.father_agent:Step: 1285, Training loss: -0.017824921756982803
+INFO:agents.father_agent:Step: 1290, Training loss: 0.18340642750263214
+INFO:agents.father_agent:Step: 1295, Training loss: 0.11738079786300659
+INFO:agents.father_agent:Step: 1300, Training loss: 0.05206873640418053
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:tools.evaluation_results_class:Average Return = -165.734375
+INFO:tools.evaluation_results_class:Average Virtual Goal Value = -175.734375
+INFO:tools.evaluation_results_class:Average Discounted Reward = -25.665719985961914
+INFO:tools.evaluation_results_class:Goal Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Trap Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Variance of Return = 265.96063232421875
+INFO:tools.evaluation_results_class:Current Best Return = -163.1953125
+INFO:tools.evaluation_results_class:Current Best Reach Probability = 0.6959247648902821
+INFO:tools.evaluation_results_class:Average Episode Length = 650.0
+INFO:tools.evaluation_results_class:Counted Episodes = 512
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:agents.father_agent:Step: 1305, Training loss: -0.04022317752242088
+INFO:agents.father_agent:Step: 1310, Training loss: -0.039222728461027145
+INFO:agents.father_agent:Step: 1315, Training loss: 0.2653231918811798
+INFO:agents.father_agent:Step: 1320, Training loss: 0.06818106770515442
+INFO:agents.father_agent:Step: 1325, Training loss: -0.03841638192534447
+INFO:agents.father_agent:Step: 1330, Training loss: 0.21403297781944275
+INFO:agents.father_agent:Step: 1335, Training loss: -0.027960773557424545
+INFO:agents.father_agent:Step: 1340, Training loss: 0.08221583813428879
+INFO:agents.father_agent:Step: 1345, Training loss: 0.0417560413479805
+INFO:agents.father_agent:Step: 1350, Training loss: 0.37513467669487
+INFO:agents.father_agent:Step: 1355, Training loss: 0.2887328565120697
+INFO:agents.father_agent:Step: 1360, Training loss: -0.04085250198841095
+INFO:agents.father_agent:Step: 1365, Training loss: 0.30626586079597473
+INFO:agents.father_agent:Step: 1370, Training loss: -0.026430826634168625
+INFO:agents.father_agent:Step: 1375, Training loss: -0.03671020269393921
+INFO:agents.father_agent:Step: 1380, Training loss: 0.06389594078063965
+INFO:agents.father_agent:Step: 1385, Training loss: -0.02854270674288273
+INFO:agents.father_agent:Step: 1390, Training loss: 0.05467063933610916
+INFO:agents.father_agent:Step: 1395, Training loss: 0.05847017839550972
+INFO:agents.father_agent:Step: 1400, Training loss: -0.01935700885951519
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:tools.evaluation_results_class:Average Return = -167.6875
+INFO:tools.evaluation_results_class:Average Virtual Goal Value = -177.6875
+INFO:tools.evaluation_results_class:Average Discounted Reward = -26.13315200805664
+INFO:tools.evaluation_results_class:Goal Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Trap Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Variance of Return = 563.96484375
+INFO:tools.evaluation_results_class:Current Best Return = -163.1953125
+INFO:tools.evaluation_results_class:Current Best Reach Probability = 0.6959247648902821
+INFO:tools.evaluation_results_class:Average Episode Length = 650.0
+INFO:tools.evaluation_results_class:Counted Episodes = 512
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:agents.father_agent:Training finished.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:agents.father_agent:Evaluating agent with greedy masked policy.
+INFO:tools.evaluation_results_class:Average Return = -166.3203125
+INFO:tools.evaluation_results_class:Average Virtual Goal Value = -176.3203125
+INFO:tools.evaluation_results_class:Average Discounted Reward = -25.53803253173828
+INFO:tools.evaluation_results_class:Goal Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Trap Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Variance of Return = 555.3817138671875
+INFO:tools.evaluation_results_class:Current Best Return = -163.1953125
+INFO:tools.evaluation_results_class:Current Best Reach Probability = 0.6959247648902821
+INFO:tools.evaluation_results_class:Average Episode Length = 650.0
+INFO:tools.evaluation_results_class:Counted Episodes = 512
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+ERROR:paynt.rl_extension.self_interpretable_interface.self_interpretable_extractor:True
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:tools.evaluation_results_class:Average Return = -175.109375
+INFO:tools.evaluation_results_class:Average Virtual Goal Value = -185.109375
+INFO:tools.evaluation_results_class:Average Discounted Reward = -26.740982055664062
+INFO:tools.evaluation_results_class:Goal Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Trap Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Variance of Return = 1493.988037109375
+INFO:tools.evaluation_results_class:Current Best Return = -175.109375
+INFO:tools.evaluation_results_class:Current Best Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Average Episode Length = 650.5
+INFO:tools.evaluation_results_class:Counted Episodes = 512
+INFO:paynt.rl_extension.self_interpretable_interface.self_interpretable_extractor:Sampling data with original policy
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:paynt.rl_extension.self_interpretable_interface.self_interpretable_extractor:Data sampled
+INFO:paynt.rl_extension.self_interpretable_interface.self_interpretable_extractor:Learning FSC from original policy
+INFO:environment.environment_wrapper_vec:Resetting the environment.
+INFO:tools.evaluation_results_class:Average Return = -167.296875
+INFO:tools.evaluation_results_class:Average Virtual Goal Value = -177.296875
+INFO:tools.evaluation_results_class:Average Discounted Reward = -25.400197982788086
+INFO:tools.evaluation_results_class:Goal Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Trap Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Variance of Return = 450.286865234375
+INFO:tools.evaluation_results_class:Current Best Return = -167.296875
+INFO:tools.evaluation_results_class:Current Best Reach Probability = 0.0
+INFO:tools.evaluation_results_class:Average Episode Length = 650.5
+INFO:tools.evaluation_results_class:Counted Episodes = 512
+INFO:paynt.synthesizer.statistic:synthesis initiated, design space: 1600
+INFO:paynt.synthesizer.synthesizer:Synthesizer does not support timeout limiter. Running without timeout.

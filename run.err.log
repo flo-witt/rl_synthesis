@@ -1,0 +1,2 @@
+nohup: ignoring input
+./large_robust_benchmark.sh: line 26: 128909 Killed                  timeout 7200 prerequisites/venv/bin/python3.10 robust_pomdps_rl.py --project-path $model_path $batched_vec_flag --extraction-method $method --lstm-width $width > $log_file_name 2> $err_log_file_name
