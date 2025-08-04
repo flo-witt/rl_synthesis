@@ -1,0 +1,35 @@
+2025-08-04 07:51:43.866363: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2025-08-04 07:51:43.868192: I external/local_tsl/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+2025-08-04 07:51:43.897298: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:9261] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2025-08-04 07:51:43.897338: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:607] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2025-08-04 07:51:43.898543: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1515] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2025-08-04 07:51:43.904050: I external/local_tsl/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+2025-08-04 07:51:43.904223: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI AVX512_BF16 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2025-08-04 07:51:44.429807: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+INFO:paynt.parser.sketch:loading sketch from /home/ihudak/synthesis/models_robust_subset/obstacles-8-5/sketch.templ ...
+INFO:paynt.parser.sketch:assuming sketch in PRISM format...
+DEBUG:paynt.parser.prism_parser:PRISM model type: POMDP
+INFO:paynt.parser.prism_parser:processing hole definitions...
+INFO:paynt.parser.prism_parser:loading properties from /home/ihudak/synthesis/models_robust_subset/obstacles-8-5/sketch.props ...
+INFO:paynt.parser.prism_parser:found the following specification: optimality: R{"penalty"}min=? [F ((x = 8) & (y = 8))] 
+DEBUG:paynt.parser.jani:constructing JANI program...
+DEBUG:paynt.parser.jani:constructing the quotient...
+DEBUG:paynt.parser.jani:associating choices of the quotient with hole assignments...
+INFO:paynt.parser.sketch:sketch parsing OK
+WARNING:paynt.parser.sketch:WARNING: choice labeling for the quotient is not canonic
+DEBUG:paynt.parser.sketch:constructed explicit quotient having 468 states and 975 choices
+INFO:paynt.parser.sketch:found the following specification optimality: R{"rewardmodel_penalty"}min=? [F ((x = 8) & (y = 8))] 
+Traceback (most recent call last):
+  File "/home/ihudak/synthesis/robust_pomdps_rl.py", line 184, in <module>
+    main()
+  File "/home/ihudak/synthesis/robust_pomdps_rl.py", line 71, in main
+    extractor = initialize_extractor(pomdp_sketch, args_emulated, family_quotient_numpy)
+  File "/home/ihudak/synthesis/robust_rl/robust_rl_trainer.py", line 477, in initialize_extractor
+    extractor = RobustTrainer(args_emulated, use_one_hot_memory=use_one_hot_memory, latent_dim=latent_dim, quotient_state_valuations=quotient_sv,
+  File "/home/ihudak/synthesis/robust_rl/robust_rl_trainer.py", line 64, in __init__
+    lstm_width=args.lstm_width)
+AttributeError: 'ArgsEmulator' object has no attribute 'lstm_width'
