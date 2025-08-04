@@ -62,7 +62,7 @@ def main():
     args_emulated.batched_vec_storm = args_cmd.batched_vec_storm
     args_emulated.extraction_type = args_cmd.extraction_method
     args_emulated.model_name = project_path.split("/")[-1]
-    args_emulated.max_steps = 651
+    args_emulated.max_steps = 801
     # pomdp = initialize_prism_model(prism_path, properties_path, constants="")
 
     hole_assignment = pomdp_sketch.family.pick_any()
