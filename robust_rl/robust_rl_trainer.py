@@ -61,7 +61,7 @@ class RobustTrainer:
         self.benchmark_stats = self.BenchmarkStats(
             fsc_size=fsc_size, num_training_steps_per_iteration=301, 
             batched_vec_storm=args.batched_vec_storm, extraction_type=args.extraction_type, 
-            lstm_width=args.lstm_width)
+            lstm_width=args.width_of_lstm)
         self.agent = None
         
 
