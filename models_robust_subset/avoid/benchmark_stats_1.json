@@ -1,0 +1,20 @@
+{
+    "number_of_pomdps_in_family": "1600",
+    "num_training_steps_per_iteration": "301",
+    "average_rl_return_subset_simulated": "[69.74756, 107.40708, 72.848076, 83.12361]",
+    "average_rl_reachability_subset_simulated": "[1.0, 1.0, 0.9894771456757645, 1.0]",
+    "average_extracted_fsc_return_subset_simulated": "[-109.81969, -295.1444, -268.56854, -169.59665]",
+    "average_extracted_fsc_reachability_subset_simulated": "[1.0, 1.0, 1.0, 1.0]",
+    "family_performance": "[279.15043035181316, 347.35931151754994, 416.90227007112264, 316.77817050429036]",
+    "available_nodes_in_fsc": "[array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True])]",
+    "worst_case_pomdp_values_simulated_rl": "[]",
+    "worst_case_pomdp_values_simulated_fsc": "[]",
+    "was_worst_case_same_as_simulated": "[]",
+    "worst_case_index_rl": "[]",
+    "worst_case_index_fsc": "[]",
+    "worst_case_index_paynt": "[]",
+    "environment_type": "batched_vec_storm",
+    "number_of_extraction_trajectories": "[]",
+    "extraction_type": "alergia",
+    "lstm_width": 32
+}

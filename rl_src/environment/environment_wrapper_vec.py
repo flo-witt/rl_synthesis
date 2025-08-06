@@ -322,7 +322,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         self.antigoal_values_vector = tf.constant(
             [self.args.evaluation_antigoal * 2] * self.num_envs, dtype=tf.float32)
         self.goal_values_vector = tf.constant(
-            [self.args.evaluation_goal * 5] * self.num_envs, dtype=tf.float32)
+            [self.args.evaluation_goal * 10] * self.num_envs, dtype=tf.float32)
         self.truncation_values_vector = tf.constant(
             [-10.0] * self.num_envs, dtype=tf.float32)
 

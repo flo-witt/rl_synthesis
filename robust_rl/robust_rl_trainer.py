@@ -429,12 +429,12 @@ class RobustTrainer:
         #     table_based_fsc, self.args, self.environment, self.tf_env, self.args.max_steps + 1)
         # exit(0)
         merged_results = None
-        nr_iterations = 1401
-        for i in range(20):
+        nr_iterations = 301
+        for i in range(200):
             logger.info(f"Iteration {i+1} of pure RL loop")
             # Train the agent on multiple POMDPs
             self.train_on_new_pomdp(pomdp, self.agent, nr_iterations=nr_iterations)
-            nr_iterations = 501
+            nr_iterations = 201
             # Evaluate the agent on all POMDPs
             # merged_results, worst_case_index_rl = self.perform_overall_evaluation(merged_results, self.agent.get_policy(False, True), 
             #                                                      environments, tf_environments, all_hole_assignments, save=True,

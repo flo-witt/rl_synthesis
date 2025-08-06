@@ -1,0 +1,20 @@
+{
+    "number_of_pomdps_in_family": "1600",
+    "num_training_steps_per_iteration": "301",
+    "average_rl_return_subset_simulated": "[47.936787, 63.357685, 75.67232, 83.27464, 44.694695, 113.36543, 50.62847, 85.395676, 32.340626, 34.173447, 32.075794, 60.45037, 46.054657, 109.28893, 50.397854, 68.47821, 458.59662, 272.16025, 244.31636, 325.49722, 89.20608, 846.7172, 544.43945, 367.92578, 237.90018]",
+    "average_rl_reachability_subset_simulated": "[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9795021961932651, 0.7752341311134235, 0.9922680412371134, 0.9351851851851852, 1.0, 0.7978142076502732, 0.001953125, 0.0234375, 1.0]",
+    "average_extracted_fsc_return_subset_simulated": "[-183.03465, -208.29572, -280.81705, -287.79825, -278.7539, -428.478, -292.12372, -320.19916, -266.5071, -265.26343, -276.78397, -286.25552, -299.15167, -300.3318, -195.76485, -188.77113, -686.247, -1765.0311, -796.5307, -1032.5682, -264.63092, -1491.5714, -488.08594, -331.83594, -409.41837]",
+    "average_extracted_fsc_reachability_subset_simulated": "[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9524617996604414, 0.13618677042801555, 0.8528389339513326, 0.5949764521193093, 1.0, 0.4939759036144578, 0.0, 0.0, 0.9975510204081632]",
+    "family_performance": "[229.8372709593453, 242.8325639905126, 319.0189331491525, 309.72557369291627, 289.8215128089339, 418.331854039259, 302.65316916091115, 325.33055765753863, 283.5990377372123, 268.21771144189086, 277.05717265876564, 287.67448596166486, 300.30312547719217, 317.0989268696166, 237.354778158677, 205.91606560733757, 1101.6332585660452, 18006.410557480627, 1786.8743351096093, 2297.735621974704, 364.3951436759437, 3497.424915967258, 518789.922467983, 321774.98856765596, 454.2281808160249]",
+    "available_nodes_in_fsc": "[array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True]), array([ True,  True,  True]), array([ True,  True]), array([ True,  True,  True])]",
+    "worst_case_pomdp_values_simulated_rl": "[]",
+    "worst_case_pomdp_values_simulated_fsc": "[]",
+    "was_worst_case_same_as_simulated": "[]",
+    "worst_case_index_rl": "[]",
+    "worst_case_index_fsc": "[]",
+    "worst_case_index_paynt": "[]",
+    "environment_type": "batched_vec_storm",
+    "number_of_extraction_trajectories": "[]",
+    "extraction_type": "alergia",
+    "lstm_width": 32
+}
