@@ -45,7 +45,6 @@ python3.10 -m venv ${PREREQUISITES}/venv
 source ${PREREQUISITES}/venv/bin/activate
 pip3 install wheel
 
-
 # build stormpy
 cd ${PREREQUISITES}
 git clone https://github.com/moves-rwth/stormpy.git stormpy
