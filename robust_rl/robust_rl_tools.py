@@ -144,7 +144,7 @@ def parse_args():
         "--extraction-method",
         type=str,
         choices=["alergia", "si-t", "si-g", "bottleneck"],
-        default=["alergia"],
+        default="alergia",
         help="Method to use for extraction. Default is 'alergia'.")
     parser.add_argument(
         "--use-best-policy",
