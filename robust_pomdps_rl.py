@@ -44,7 +44,7 @@ def main():
     json_path = create_json_file_name(project_path)
 
 
-    num_samples_learn = 6001
+    num_samples_learn = 802
     nr_pomdps = 10
     autlearn_extraction = False
 

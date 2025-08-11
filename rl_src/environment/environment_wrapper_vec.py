@@ -329,7 +329,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
 
     def set_dpm_rewards(self):
         """Sets the rewards for the DPM states."""
-        self.reward_multiplier = 0.1
+        self.reward_multiplier = 1.0
         self.antigoal_values_vector = tf.constant(
             [self.args.evaluation_antigoal] * self.num_envs, dtype=tf.float32)
         self.goal_values_vector = tf.constant(
@@ -799,6 +799,12 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
     def action_spec(self) -> ts.tensor_spec:
         return self._action_spec
 
+    def add_noise_to_observation(self, observation: tf.Tensor, noise_level: float = 0.1) -> tf.Tensor:
+        """Adds noise to the observation tensor."""
+        noise = tf.random.normal(shape=tf.shape(observation), mean=0.0, stddev=noise_level, dtype=tf.float32)
+        noisy_observation = observation + noise
+        return noisy_observation
+
     def get_observation(self) -> dict[str: tf.Tensor]:
         encoded_observation = self.last_observation if not self.use_stacked_observations else self.stacked_observations
         mask = self.allowed_actions
@@ -820,6 +826,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
             encoded_observation = tf.concat(
                 [encoded_observation, predicate_automata_obs], axis=1)
         encoded_observation = tf.cast(encoded_observation, dtype=tf.float32)
+        encoded_observation = self.add_noise_to_observation(encoded_observation, 0.1)
         return {"observation": encoded_observation, "mask": tf.constant(mask, dtype=tf.bool),
                 "integer": integers}
 

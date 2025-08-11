@@ -4,7 +4,7 @@ import tensorflow as tf
 from rl_src.interpreters.extracted_fsc.table_based_policy import TableBasedPolicy
 from rl_src.environment.environment_wrapper_vec import EnvironmentWrapperVec
 
-from paynt.quotient.fsc import FSC
+from paynt.quotient.fsc import FscFactored
 from paynt.quotient.pomdp import PomdpQuotient
 from paynt.rl_extension.robust_rl.family_quotient_numpy import FamilyQuotientNumpy
 
@@ -97,7 +97,7 @@ class ConstructorFSC:
         pomdp_quotient: PomdpQuotient,
         family_quotient_numpy: FamilyQuotientNumpy,
 
-        ) -> FSC:
+        ) -> FscFactored:
         """Constructs a Finite State Controller (FSC) from a table-based policy.
         Args:
             table_based_policy (TableBasedPolicy): The table-based policy to be converted into an FSC.
@@ -119,7 +119,7 @@ class ConstructorFSC:
         num_nodes = len(action_function)
 
         # Create the FSC
-        fsc = FSC(
+        fsc = FscFactored(
             action_function=action_function,
             update_function=update_function,
             observation_labels=observation_labels,

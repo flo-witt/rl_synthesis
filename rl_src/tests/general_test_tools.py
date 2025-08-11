@@ -16,8 +16,8 @@ def init_args(prism_path, properties_path, nr_runs=101, goal_value_multiplier = 
     args = ArgsEmulator(prism_model=prism_path, prism_properties=properties_path, learning_rate=1.6e-4,
                             restart_weights=0, learning_method="PPO", prefer_stochastic=False,
                             nr_runs=nr_runs, agent_name="Testus", load_agent=False,
-                            evaluate_random_policy=False, max_steps=401, evaluation_goal=50.0, evaluation_antigoal=-0.0,
-                            trajectory_num_steps=25, discount_factor=0.99, num_environments=256,
+                            evaluate_random_policy=False, max_steps=401, evaluation_goal=30.0, evaluation_antigoal=-0.0,
+                            trajectory_num_steps=25, discount_factor=0.999, num_environments=256,
                             normalize_simulator_rewards=False, buffer_size=1000, random_start_simulator=False,
                             batch_size=256, vectorized_envs_flag=True, perform_interpretation=False, use_rnn_less=False, model_memory_size=0,
                             stacked_observations=False, batched_vec_storm=batched_vec_storm, masked_training=masked_training)

@@ -100,7 +100,7 @@ class FscFactored:
     def from_json(cls, json):
         num_nodes = json["num_nodes"]
         num_observations = json["num_observations"]
-        fsc = FSC(num_nodes,num_observations)
+        fsc = FscFactored(num_nodes,num_observations)
         fsc.action_function = json["action_function"]
         fsc.update_function = json["update_function"]
         return fsc
@@ -170,13 +170,20 @@ class FscFactored:
     def check_update_function(self):
         assert len(self.update_function) == self.num_nodes, "FSC update function is not defined for all memory nodes"
         for node in range(self.num_nodes):
-            assert len(self.update_function[node]) == self.num_observations, \
-                "in memory node {}, FSC update function is not defined for all observations".format(node)
+            try:
+                assert len(self.update_function[node]) == self.num_observations, \
+                    "in memory node {}, FSC update function is not defined for all observations".format(node)
+            except:
+                print("len(self.update_function[{}]) = {}".format(node, len(self.update_function[node])))
+                print("self.action_function[{}] = {}".format(node, len(self.action_function[node])))
+                print("update_function[{}] = {}".format(node, self.update_function[node]))
+                print("self.num_observations = {}".format(self.num_observations))
+                raise AssertionError("in memory node {}, FSC update function is not defined for all observations".format(node))
             for obs in range(self.num_observations):
                 update = self.update_function[node][obs]
                 continue # skipping check due to inconsistency in our FSC definition
                 assert 0 <= update and update < self.num_nodes, "invalid FSC memory update {}".format(update)
-            if len(self.update_function[node]) < self.action_function[node]:
+            if len(self.update_function[node]) < len(self.action_function[node]):
                 self.update_function[node].append({0 : 1.0} if not self.is_deterministic else 0)
 
 
@@ -220,7 +227,7 @@ class FscFactored:
                     self.update_function[node][obs] = self.update_function[0][obs]
 
     def copy(self):
-        fsc = FSC(self.num_nodes, self.num_observations, self.is_deterministic)
+        fsc = FscFactored(self.num_nodes, self.num_observations, self.is_deterministic)
         fsc.action_function = [ [action for action in node] for node in self.action_function ]
         fsc.update_function = [ [update for update in node] for node in self.update_function ]
         fsc.observation_labels = self.observation_labels

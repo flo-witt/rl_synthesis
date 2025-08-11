@@ -33,6 +33,9 @@ from agents.alternative_training.active_pretraining import EntropyRewardGenerato
 
 from tools.args_emulator import ArgsEmulator
 
+from keras.optimizers import Adam
+import keras
+
 
 import sys
 sys.path.append("../")
@@ -48,8 +51,8 @@ class Recurrent_PPO_agent(FatherAgent):
                  critic_net: ValueRnnNetwork = None, discrete_actor_memory: bool = False):
         self.common_init(environment, tf_environment, args, load, agent_folder)
         train_step_counter = tf.Variable(0)
-        optimizer = tf.keras.optimizers.Adam(
-            learning_rate=args.learning_rate, clipnorm=1.0)
+        optimizer = Adam(
+            learning_rate=args.learning_rate, beta_1=0.99, beta_2=0.99, weight_decay=0.001)
         tf_environment = self.tf_environment
         action_spec = tf_environment.action_spec()
         if actor_net is not None:
@@ -86,8 +89,8 @@ class Recurrent_PPO_agent(FatherAgent):
             discount_factor=self.args.discount_factor,
             use_gae=True,
             lambda_value=0.95,
-            policy_l2_reg=0.0001,
-            value_function_l2_reg=0.0001,
+            # policy_l2_reg=0.001,
+            # value_function_l2_reg=0.001,
             entropy_regularization=0.02,
             normalize_rewards=True,
             normalize_observations=True,
@@ -144,15 +147,21 @@ class Recurrent_PPO_agent(FatherAgent):
         self.wrapper.unset_policy_masker()
 
     def reset_weights(self):
-        for net_type in [self.agent._value_net, self.agent._actor_net]:
-            for layer in net_type.layers:
-                if isinstance(layer, tf.keras.layers.LSTM):
-                    for w in layer.trainable_weights:
-                        w.assign(tf.random.normal(w.shape, stddev=0.05))
-                        # glorlot_uniform
-                        w.assign(tf.random.normal(w.shape, stddev=0.05))
-                elif isinstance(layer, tf.keras.layers.Dense):
-                    for w in layer.trainable_weights:
-                        w.assign(tf.random.normal(w.shape, stddev=0.05))
-            net_type.built = False
-            net_type.build(self.tf_environment.observation_spec())
+        for var in self.agent.variables:
+            if "kernel" in var.name:
+                if "dynamic_unroll" in var.name:  # Rekurentní vrstvy
+                    # Použití Glorot Uniform pro RNN váhy
+                    glorot_stddev = tf.sqrt(2.0 / (var.shape[0] + var.shape[1]))
+                    var.assign(tf.random.uniform(var.shape, minval=-glorot_stddev, maxval=glorot_stddev))
+                else:  # Dense vrstvy
+                    # Použití Variance Scaling s truncated normal pro Dense váhy
+                    scale = 2.0
+                    stddev = tf.sqrt(scale / var.shape[0])
+                    var.assign(tf.random.truncated_normal(var.shape, stddev=stddev))
+            elif "bias" in var.name:
+                # Inicializace biasů na nulu
+                var.assign(tf.zeros(var.shape))
+        self.agent.initialize()
+
+
+

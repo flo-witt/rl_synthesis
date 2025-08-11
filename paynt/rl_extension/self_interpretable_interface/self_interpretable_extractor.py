@@ -170,10 +170,12 @@ class SelfInterpretableExtractor:
         print(f"Learned FSC of size {len(model.states)}")
         self.iteration += 1
         fsc_actions, fsc_updates, initial_state = self.aalpy_to_fsc(model,env,probs)
-
+        print(f"FSC actions shape: {fsc_actions.shape}, updates shape: {fsc_updates.shape}, initial state: {initial_state}")
         table_based_policy = TableBasedPolicy(
             original_policy, fsc_actions, fsc_updates, initial_memory=initial_state, action_keywords=env.action_keywords, 
             nr_observations=len(self.family_quotient_numpy.observation_to_legal_action_mask))
+        print(f"New FSC actions shape: {table_based_policy.tf_observation_to_action_table.shape}, updates shape: {table_based_policy.tf_observation_to_update_table.shape}, initial state: {table_based_policy.initial_memory}")
+
         return table_based_policy,model
 
     def aalpy_to_fsc(self, model : Union[MealyMachine,Onfsm,StochasticMealyMachine],

@@ -1,5 +1,5 @@
 from rl_src.tools.encoding_methods import *
-from paynt.quotient.fsc import FSC
+from paynt.quotient.fsc import FscFactored
 
 import paynt.quotient.storm_pomdp_control as Storm_POMDP_Control
 import paynt.quotient.pomdp as POMDP
@@ -12,7 +12,7 @@ import tf_agents.trajectories as Trajectories
 
 from rl_src.environment import tf_py_environment
 
-from paynt.quotient.fsc import FSC
+from paynt.quotient.fsc import FscFactored
 
 import tensorflow as tf
 
@@ -31,7 +31,7 @@ class SAYNT_Driver:
     def __init__(self, observers: list = [], storm_control: Storm_POMDP_Control.StormPOMDPControl = None,
                  quotient: POMDP.PomdpQuotient = None, tf_action_labels: list = None,
                  encoding_method: EncodingMethods = EncodingMethods.VALUATIONS,
-                 discount=0.99, fsc: FSC = None, q_values=None, model_reward_multiplier=-1.0):
+                 discount=0.99, fsc: FscFactored = None, q_values=None, model_reward_multiplier=-1.0):
         """Initialization of SAYNT driver.
 
         Args:

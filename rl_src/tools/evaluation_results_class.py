@@ -43,6 +43,7 @@ class EvaluationResults:
         self.counted_episodes = []
         self.discounted_rewards = []
         self.new_pomdp_iteration_numbers = []
+        self.dormant_neurons_percentages = []
 
     def add_artificial_reward(self, artificial_rewards_buffer : list[np.ndarray]):
         """Add artificial rewards to the evaluation results."""
@@ -52,6 +53,10 @@ class EvaluationResults:
         else:
             self.artificial_reward_means.append(float("nan"))
             self.artificial_reward_stds.append(float("nan"))
+    
+    def add_dormant_neurons_percentage(self, percentage: float):
+        """Add percentage of dormant neurons to the evaluation results."""
+        self.dormant_neurons_percentages.append(percentage)
 
     def set_experiment_settings(self, learning_algorithm: str = "", learning_rate: float = float("nan"),
                                 nn_details: dict = {}, max_steps: int = float("nan")):

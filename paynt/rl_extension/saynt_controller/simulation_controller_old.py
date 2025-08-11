@@ -16,7 +16,7 @@ import re
 import tensorflow as tf
 from tf_agents.trajectories import StepType
 
-from paynt.quotient.fsc import FSC
+from paynt.quotient.fsc import FscFactored
 
 from paynt.rl_extension.saynt_controller.saynt_step import SAYNT_Step
 from paynt.rl_extension.saynt_controller.saynt_modes import SAYNT_Modes
@@ -35,7 +35,7 @@ class SAYNT_Simulation_Controller:
 
     def __init__(self, storm_control: Storm_POMDP_Control.StormPOMDPControl, quotient: POMDP.PomdpQuotient,
                  tf_action_labels: list = None, max_step_limit: int = 1600, goal_reward: float = 100,
-                 fsc: FSC = None, model_reward_multiplier: float = -1, paynt_q_values = None):
+                 fsc: FscFactored = None, model_reward_multiplier: float = -1, paynt_q_values = None):
         """Initialization of the controller.
         Args:
             storm_control: Result of the SAYNT algorithm.

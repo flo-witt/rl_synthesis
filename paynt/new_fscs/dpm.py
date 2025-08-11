@@ -1,7 +1,7 @@
-from paynt.quotient.fsc import FSC
+from paynt.quotient.fsc import FscFactored
 
-def get_dpm_fsc(action_labels) -> FSC:
-    fsc = FSC(
+def get_dpm_fsc(action_labels) -> FscFactored:
+    fsc = FscFactored(
         num_nodes=4,
         num_observations=3,
         is_deterministic=False)

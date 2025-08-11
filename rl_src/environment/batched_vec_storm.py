@@ -40,11 +40,12 @@ class BatchedVecStorm(StormVecEnv):
     def recompute_num_envs(self, exponential_simulator_distribution=True):
         """Recomputes the number of environments per simulator based on the current state of the simulators."""
         num_simulators = len(self.simulators)
+        exponent = 0.8  # Exponential distribution factor
         assert num_simulators > 0, "No simulators available."
         if exponential_simulator_distribution:
-            a1 = self.num_envs * (1 - 0.4)
-            a1 = a1 / (1 - 0.4 ** num_simulators)
-            self.num_envs_per_simulator_reversed = [int(a1 * (0.4 ** i)) for i in range(num_simulators)]
+            a1 = self.num_envs * (1 - exponent)
+            a1 = a1 / (1 - exponent ** num_simulators)
+            self.num_envs_per_simulator_reversed = [int(a1 * (exponent ** i)) for i in range(num_simulators)]
             self.num_envs_per_simulator = self.num_envs_per_simulator_reversed[::-1]
             # Ensure the total number of environments matches the original number
             total_envs = sum(self.num_envs_per_simulator)

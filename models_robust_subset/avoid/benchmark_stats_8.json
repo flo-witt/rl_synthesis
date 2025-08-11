@@ -1,0 +1,20 @@
+{
+    "number_of_pomdps_in_family": "1600",
+    "num_training_steps_per_iteration": "301",
+    "average_rl_return_subset_simulated": "[89.38212, 58.639614, 33.26674, 82.57821, 91.81046, 89.44267, 32.080376, 98.12582, 95.56714, 90.09503, 31.313105, 112.239365, 117.00663]",
+    "average_rl_reachability_subset_simulated": "[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9804169298799748]",
+    "average_extracted_fsc_return_subset_simulated": "[-90.19033, -92.37415, -119.671196, -93.14892, -527.4499, -99.35662, -105.30898, -98.1847, -111.497116, -118.719246, -175.11761, -119.8093, -297.4899]",
+    "average_extracted_fsc_reachability_subset_simulated": "[1.0, 1.0, 1.0, 1.0, 0.981029810298103, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9743968488429345]",
+    "family_performance": "[200.96287920039936, 174.41602122049864, 251.35269829160043, 172.47544840755603, 989.4881386047872, 198.5697028193963, 221.2365874048029, 166.37350899085249, 182.3636662994957, 170.21673990387987, 289.5614200545411, 155.9378189786054, 3432.9277982372323]",
+    "available_nodes_in_fsc": "[array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True])]",
+    "worst_case_pomdp_values_simulated_rl": "[]",
+    "worst_case_pomdp_values_simulated_fsc": "[]",
+    "was_worst_case_same_as_simulated": "[]",
+    "worst_case_index_rl": "[]",
+    "worst_case_index_fsc": "[]",
+    "worst_case_index_paynt": "[]",
+    "environment_type": "batched_vec_storm",
+    "number_of_extraction_trajectories": "[]",
+    "extraction_type": "alergia",
+    "lstm_width": 32
+}

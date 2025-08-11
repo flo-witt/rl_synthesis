@@ -392,6 +392,8 @@ class FatherAgent(AbstractAgent):
             
             self.environment.set_random_starts_simulation(randomized)
             self.tf_environment.reset()
+        if train_iteration % 50 == 0:
+            self.store_percent_of_dormant_neurons()
 
         return train_loss
 
@@ -816,3 +818,24 @@ class FatherAgent(AbstractAgent):
                                      policy_state_spec=(), info_spec=(), observation_and_action_constraint_splitter=fsc_action_constraint_splitter)
         evaluate_policy_in_model(
             fsc_policy, self.args, self.environment, self.tf_environment)
+
+    def store_percent_of_dormant_neurons(self):
+        """Returns the percentage of dormant neurons in the actor network."""
+        
+        # Run loop for a few steps to gather statistics
+        policy_state = self.agent.actor_net.get_initial_state(self.tf_environment.batch_size)
+        for _ in range(100):
+            time_step = self.tf_environment.current_time_step()
+            action, policy_state = self.agent.actor_net.call(
+                time_step.observation["observation"], time_step.step_type, policy_state, training=False, analyze_dormant_neurons=True
+            )
+            self.tf_environment.step(action.sample())
+        
+        num_neurons = self.agent.actor_net.neuron_activations.shape[1]
+        nominator = np.average(self.agent.actor_net.neuron_activations, axis=0)
+        denominator = (1 / num_neurons) * np.sum(nominator)
+        scores = nominator / denominator
+        dormant_neurons = np.sum(scores < 0.01)
+        percent_dormant_neurons = (dormant_neurons / num_neurons)
+        self.evaluation_result.add_dormant_neurons_percentage(percent_dormant_neurons * 100)
+        logger.info(f"Percentage of dormant neurons in actor network: {percent_dormant_neurons * 100:.2f}%")

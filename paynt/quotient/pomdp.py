@@ -13,7 +13,8 @@ import re
 import collections
 
 import numpy as np
-from paynt.quotient.fsc import FSC
+from paynt.quotient.fsc import Fsc
+from paynt.quotient.fsc import FscFactored
 
 import time
 
@@ -729,10 +730,10 @@ class PomdpQuotient(paynt.quotient.quotient.Quotient):
         return pomdp
 
 
-    def assignment_to_fsc(self, assignment) -> paynt.quotient.fsc.FSC:
+    def assignment_to_fsc(self, assignment) -> paynt.quotient.fsc.Fsc:
         assert assignment.size == 1, "expected family of size 1"
         num_nodes = max(self.observation_memory_size)
-        fsc = paynt.quotient.fsc.FSC(num_nodes, self.observations, is_deterministic=True)
+        fsc = paynt.quotient.fsc.Fsc(num_nodes, self.observations, is_deterministic=True)
         fsc.observation_labels = self.observation_labels
 
         # collect action labels
@@ -1046,7 +1047,7 @@ class PomdpQuotient(paynt.quotient.quotient.Quotient):
             
         return dtmc_states_map_flag, dtmc_state_memory_product, model_state_action_rewards, model_reward_names
 
-    def get_induced_dtmc_from_fsc_vec(self, fsc : FSC) -> stormpy.storage.SparseDtmc:
+    def get_induced_dtmc_from_fsc_vec(self, fsc : FscFactored) -> stormpy.storage.SparseDtmc:
         if fsc.is_deterministic:
             fsc_copy = fsc.copy()
             fsc_copy.make_stochastic()

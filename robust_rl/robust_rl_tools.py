@@ -20,12 +20,12 @@ import logging
 from paynt.parser.prism_parser import PrismParser
 from paynt.verification.property import construct_property
 
-from paynt.quotient.fsc import FSC
+from paynt.quotient.fsc import FscFactored
 
 logger = logging.getLogger(__name__)
 
 
-def convert_all_fsc_keys_to_int(fsc: FSC):
+def convert_all_fsc_keys_to_int(fsc: FscFactored):
     """
     Converts all keys in the FSC to integers.
     This is necessary for compatibility with the PAYNT library.
@@ -39,7 +39,7 @@ def convert_all_fsc_keys_to_int(fsc: FSC):
     return fsc
 
 
-def generate_table_based_fsc_from_paynt_fsc(paynt_fsc: FSC, original_action_space: str, agent: Recurrent_PPO_agent):
+def generate_table_based_fsc_from_paynt_fsc(paynt_fsc: FscFactored, original_action_space: str, agent: Recurrent_PPO_agent):
     from rl_src.interpreters.extracted_fsc.table_based_policy import TableBasedPolicy
     # Convert [[{}]] to [[[]]] format
     minusor = 0
@@ -106,7 +106,7 @@ def assignment_to_pomdp(pomdp_sketch, assignment):
 
 def random_fsc(pomdp_sketch, num_nodes):
     num_obs = pomdp_sketch.num_observations
-    fsc = paynt.quotient.fsc.FSC(num_nodes, num_obs)
+    fsc = paynt.quotient.fsc.FscFactored(num_nodes, num_obs)
     # action function if of type NxZ -> Distr(Act)
     for n in range(num_nodes):
         for z in range(num_obs):

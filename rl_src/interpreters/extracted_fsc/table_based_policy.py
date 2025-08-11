@@ -54,7 +54,7 @@ class TableBasedPolicy(TFPolicy):
                 self.tf_observation_to_action_table = tf.concat([self.tf_observation_to_action_table, zeros], axis=1)
         if self.tf_observation_to_action_table.shape[-1] != self.tf_observation_to_update_table.shape[-1]:
             # Fill the update table with zeros for the missing updates
-            missing_updates = self.tf_observation_to_action_table.shape[-1] - self.tf_observation_to_update_table.shape[-1]
+            missing_updates = self.tf_observation_to_action_table.shape[1] - self.tf_observation_to_update_table.shape[1]
             if missing_updates > 0:
                 zeros = tf.zeros((self.tf_observation_to_update_table.shape[0], missing_updates, self.tf_observation_to_update_table.shape[2]), dtype=tf.float32)
                 self.tf_observation_to_update_table = tf.concat([self.tf_observation_to_update_table, zeros], axis=1)

@@ -439,7 +439,6 @@ class PPOAgent(tf_agent.TFAgent):
     self._as_trajectory = data_converter.AsTrajectory(
         self.data_context, sequence_length=None
     )
-
     
 
   @property

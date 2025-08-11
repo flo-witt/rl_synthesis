@@ -16,7 +16,7 @@ from paynt.synthesizer.synthesizer_rl import SynthesizerRL
 
 import stormpy
 
-from paynt.quotient.fsc import FSC
+from paynt.quotient.fsc import FscFactored
 
 from threading import Thread
 from queue import Queue
@@ -196,7 +196,7 @@ class SynthesizerPomdp:
         if self.storm_control.is_rl_better:
             self.storm_control.paynt_export = self.storm_control.rl_export
 
-    def assign_rl_export_result(self, rl_export, value, rl_fsc : FSC):
+    def assign_rl_export_result(self, rl_export, value, rl_fsc : FscFactored):
 
         self.storm_control.latest_rl_result = None
         if self.storm_control.paynt_bounds is None or value > self.storm_control.paynt_bounds:
