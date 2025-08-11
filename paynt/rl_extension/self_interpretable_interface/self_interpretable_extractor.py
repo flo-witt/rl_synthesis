@@ -281,57 +281,29 @@ class SelfInterpretableExtractor:
         for t in smm_trajs:
             print(t)
         return smm_trajs
-
-    def clone_and_generate_fsc_from_policy(self, original_policy : TFPolicy, 
-                                           env : EnvironmentWrapperVec = None, 
-                                           tf_env : TFPyEnvironment = None) -> tuple[TableBasedPolicy, ExtractionStats]:
-        logger.error(str(self.autlearn_extraction))
-        if self.autlearn_extraction:
-
-            orig_eval_result = evaluate_policy_in_model(original_policy, environment=env, tf_environment=tf_env,
+    
+    def aalpy_extraction(self, original_policy : TFPolicy, 
+                         env : EnvironmentWrapperVec, tf_env : TFPyEnvironment = None) -> tuple[TableBasedPolicy, ExtractionStats]:
+        orig_eval_result = evaluate_policy_in_model(original_policy, environment=env, tf_environment=tf_env,
                                                         max_steps=(self.max_episode_len + 1) * 2)
 
-            # if isinstance(original_policy, PolicyMaskWrapper):
-            original_policy.set_policy_masker()
-            # original_policy.set_greedy(True)
-            logger.info("Sampling data with original policy")
-            get_both = False
-            use_replay_buffer = True
-            if get_both:
-                all_trajectories_1 = []
-                all_trajectories_2 = []
-            else:
-                all_trajectories = []
-            num_samples = self.num_data_steps
-            for i in range(3):
-                print(f"Buffer {i}")
+        # if isinstance(original_policy, PolicyMaskWrapper):
+        original_policy.set_policy_masker()
+        # original_policy.set_greedy(True)
+        logger.info("Sampling data with original policy")
+        use_replay_buffer = True
+        all_trajectories = []
+        num_samples = self.num_data_steps
+        for i in range(3):
                 buffer = sample_data_with_policy(
                     original_policy, num_samples=num_samples, environment=env, tf_environment=tf_env,
-                    use_replay_buffer=use_replay_buffer, get_both=get_both)
-                if get_both:
-                    # print(f"Buffer size: {len(buffer)}")
-                    replay_buffer: TFUniformReplayBuffer = buffer[1]
-
-                    observations, actions = MealyAutomataLearner.convert_trajectories_to_episodes(replay_buffer.gather_all())
-                    for obs_sequence, action_sequence in zip(observations, actions):
-                        trajectory = list(zip(obs_sequence.tolist(), action_sequence.tolist()))
-                        all_trajectories_1.append(trajectory)
-                    # print(all_trajectories)
-                    print(f"Learned {len(all_trajectories_1)} trajectories")
-                    print("Learned trajectory lengths ", set(map(len, all_trajectories_1)))
-                    aut_learn_data = buffer[0]
-                    n_envs = env.num_envs
-                    all_trajectories_2.extend(create_trajectories(aut_learn_data, mealy=True, n_envs=n_envs))
-                    print(f"Learned {len(all_trajectories_2)} trajectories")
-                    print("Learn trajectory lengths ", set(map(len, all_trajectories_2)))
-                    del buffer
-                elif use_replay_buffer:
+                    use_replay_buffer=use_replay_buffer, get_both=False)
+                if use_replay_buffer:
                     replay_buffer: TFUniformReplayBuffer = buffer
                     observations, actions = MealyAutomataLearner.convert_trajectories_to_episodes(replay_buffer.gather_all())
                     for obs_sequence, action_sequence in zip(observations, actions):
                         trajectory = list(zip(obs_sequence.tolist(), action_sequence.tolist()))
                         all_trajectories.append(trajectory)
-                    # print(all_trajectories)
                     print(f"Learned {len(all_trajectories)} trajectories")
                     print("Learned trajectory lengths ", set(map(len, all_trajectories)))
                     del buffer
@@ -343,82 +315,77 @@ class SelfInterpretableExtractor:
                     print(f"Learned {len(all_trajectories)} trajectories")
                     print("Learn trajectory lengths ",set(map(len,all_trajectories)))
                     del buffer
-            print("All trajectories collected")
-            # original_policy.set_greedy(False)
-            logger.info("Data sampled")
-            if isinstance(original_policy, PolicyMaskWrapper):
-                original_policy.unset_policy_masker()
-            logger.info("Learning FSC from original policy")
+        print("All trajectories collected")
+        # original_policy.set_greedy(False)
+        logger.info("Data sampled")
+        if isinstance(original_policy, PolicyMaskWrapper):
+            original_policy.unset_policy_masker()
+        logger.info("Learning FSC from original policy")
 
-            if get_both:
-                fsc, aalpy_model = self.learn_fsc(all_trajectories_1, original_policy, env)
-                evaluate_policy_in_model(fsc, environment=env, tf_environment=tf_env,
-                                         max_steps=(self.max_episode_len + 1) * 2)
-                fsc_2, aalpy_model_2 = self.learn_fsc(all_trajectories_2, original_policy, env)
-                evaluate_policy_in_model(fsc_2, environment=env, tf_environment=tf_env,
-                                         max_steps=(self.max_episode_len + 1) * 2)
-                
-
-            else:
-                fsc, aalpy_model = self.learn_fsc(all_trajectories, original_policy, env)
+        fsc, aalpy_model = self.learn_fsc(all_trajectories, original_policy, env)
             
-            extraction_stats = ExtractionStats(
+        extraction_stats = ExtractionStats(
                 original_policy_reachability=0,
                 original_policy_reward=0,
                 use_one_hot=False,
                 number_of_samples=0,
                 memory_size=len(aalpy_model.states),
                 residual_connection=False
-            )
-            # extraction_stats = self.cloned_actor.behavioral_clone_original_policy_to_fsc(
-            #     buffer, num_epochs=self.training_epochs, specification_checker=self.specification_checker,
-            #     environment=env, tf_environment=tf_env, args=None, extraction_stats=self.extraction_stats)
-            # # if self.get_best_policy_flag:
-            # #     self.cloned_actor.load_best_policy()
-            # fsc, _, _ = SelfInterpretableExtractor.extract_fsc(self.cloned_actor, env, self.memory_len,
-            #                                                    is_one_hot=self.is_one_hot, non_deterministic=True,
-            #                                                    family_quotient_numpy=self.family_quotient_numpy)
-            fsc_res = evaluate_policy_in_model(fsc, environment=env, tf_environment=tf_env,
+        )
+        fsc_res = evaluate_policy_in_model(fsc, environment=env, tf_environment=tf_env,
                                                max_steps=(self.max_episode_len + 1) * 2)
 
-            print(f"FSC Result: {fsc_res}")
-            extraction_stats.add_fsc_result(fsc_res.reach_probs[-1], fsc_res.returns[-1])
-            extraction_stats.add_number_of_training_trajectories(len(all_trajectories) if not get_both else len(all_trajectories_1) + len(all_trajectories_2))
-            del all_trajectories
-            return fsc, extraction_stats
+        extraction_stats.add_fsc_result(fsc_res.reach_probs[-1], fsc_res.returns[-1])
+        extraction_stats.add_number_of_training_trajectories(len(all_trajectories))
+        del all_trajectories
+        return fsc, extraction_stats
+    
+    def self_interpretable_extraction(self, original_policy : TFPolicy,
+                                        env : EnvironmentWrapperVec, 
+                                        tf_env : TFPyEnvironment = None) -> tuple[TableBasedPolicy, ExtractionStats]:
+        orig_eval_result = evaluate_policy_in_model(original_policy, environment=env, tf_environment=tf_env, max_steps=(self.max_episode_len + 1) * 2)
+        if self.specification_checker is not None:
+            self.specification_checker.set_optimal_value_from_evaluation_results(orig_eval_result)
+
+        if self.regenerate_fsc_network_flag or self.cloned_actor is None:
+            self.reset_cloned_actor(original_policy, orig_eval_result, env)
+
+        # if isinstance(original_policy, PolicyMaskWrapper):
+        original_policy.set_policy_masker()
+        #     original_policy.set_greedy(True)
+        logger.info("Sampling data with original policy")
+        buffer = sample_data_with_policy(
+            original_policy, num_samples=self.num_data_steps, environment=env, tf_environment=tf_env)
+        logger.info("Data sampled")
+        if isinstance(original_policy, PolicyMaskWrapper):
+            original_policy.unset_policy_masker()
+        logger.info("Cloning original policy to FSC")
+        extraction_stats = self.cloned_actor.behavioral_clone_original_policy_to_fsc(
+            buffer, num_epochs=self.training_epochs, specification_checker=self.specification_checker,
+            environment=env, tf_environment=tf_env, args=None, extraction_stats=self.extraction_stats)
+        self.cloned_actor.set_probs_updates()
+        # if self.get_best_policy_flag:
+        #     self.cloned_actor.load_best_policy()
+        fsc, fsc_actions, fsc_updates = SelfInterpretableExtractor.extract_fsc(self.cloned_actor, env, self.memory_len, 
+                                                                               is_one_hot=self.is_one_hot, non_deterministic=self.non_deterministic,
+                                                                               family_quotient_numpy=self.family_quotient_numpy,
+                                                                               complete_probs=self.complete_probs)
+        self.cloned_actor.unset_probs_updates()
+        fsc_res = evaluate_policy_in_model(fsc, environment=env, tf_environment=tf_env, max_steps=(self.max_episode_len + 1) * 2)
+        extraction_stats.add_fsc_result(fsc_res.reach_probs[-1], fsc_res.returns[-1])
+
+        return fsc, extraction_stats
+
+    def clone_and_generate_fsc_from_policy(self, original_policy : TFPolicy, 
+                                           env : EnvironmentWrapperVec = None, 
+                                           tf_env : TFPyEnvironment = None) -> tuple[TableBasedPolicy, ExtractionStats]:
+        logger.error(str(self.autlearn_extraction))
+        if self.autlearn_extraction:
+            return self.aalpy_extraction(
+                original_policy, env, tf_env)
         else:
-            orig_eval_result = evaluate_policy_in_model(original_policy, environment=env, tf_environment=tf_env, max_steps=(self.max_episode_len + 1) * 2)
-            if self.specification_checker is not None:
-                self.specification_checker.set_optimal_value_from_evaluation_results(orig_eval_result)
-
-            if self.regenerate_fsc_network_flag or self.cloned_actor is None:
-                self.reset_cloned_actor(original_policy, orig_eval_result, env)
-
-            # if isinstance(original_policy, PolicyMaskWrapper):
-            original_policy.set_policy_masker()
-            #     original_policy.set_greedy(True)
-            logger.info("Sampling data with original policy")
-            buffer = sample_data_with_policy(
-                original_policy, num_samples=self.num_data_steps, environment=env, tf_environment=tf_env)
-            logger.info("Data sampled")
-            if isinstance(original_policy, PolicyMaskWrapper):
-                original_policy.unset_policy_masker()
-            logger.info("Cloning original policy to FSC")
-            extraction_stats = self.cloned_actor.behavioral_clone_original_policy_to_fsc(
-                buffer, num_epochs=self.training_epochs, specification_checker=self.specification_checker,
-                environment=env, tf_environment=tf_env, args=None, extraction_stats=self.extraction_stats)
-            self.cloned_actor.set_probs_updates()
-            # if self.get_best_policy_flag:
-            #     self.cloned_actor.load_best_policy()
-            fsc, fsc_actions, fsc_updates = SelfInterpretableExtractor.extract_fsc(self.cloned_actor, env, self.memory_len, 
-                                                                                   is_one_hot=self.is_one_hot, non_deterministic=self.non_deterministic,
-                                                                                   family_quotient_numpy=self.family_quotient_numpy,
-                                                                                   complete_probs=self.complete_probs)
-            self.cloned_actor.unset_probs_updates()
-            fsc_res = evaluate_policy_in_model(fsc, environment=env, tf_environment=tf_env, max_steps=(self.max_episode_len + 1) * 2)
-            extraction_stats.add_fsc_result(fsc_res.reach_probs[-1], fsc_res.returns[-1])
-
-            return fsc, extraction_stats
+            return self.self_interpretable_extraction(
+                original_policy, env, tf_env)
 
 
     @staticmethod

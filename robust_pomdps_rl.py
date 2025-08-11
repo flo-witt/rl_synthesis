@@ -45,7 +45,7 @@ def main():
 
 
     num_samples_learn = 802
-    nr_pomdps = 10
+    nr_pomdps = 1
     autlearn_extraction = False
 
     family_quotient_numpy = FamilyQuotientNumpy(pomdp_sketch) # This can be useful for extraction and some other stuff.

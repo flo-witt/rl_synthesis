@@ -32,6 +32,21 @@ class Fsc:
         assert self.num_nodes > 0, "FSC must have at least 1 node"
         self.check_transitions(observation_to_actions)
 
+    def compute_available_updates(self, initial_memory=0):
+        """ Computes the set of available updates for whole FSC starting with initial memory state.
+        """
+        available_updates = np.zeros((self.num_nodes,), dtype=bool)
+        available_updates[initial_memory] = True
+        active_nodes = [initial_memory]
+        while len(active_nodes) > 0:
+            node = active_nodes.pop()
+            for obs in range(self.num_observations):
+                for action,update in self.transitions[node][obs].keys():
+                    if not available_updates[update]:
+                        available_updates[update] = True
+                        active_nodes.append(update)
+        return available_updates
+
 
 class FscFactored:
     '''

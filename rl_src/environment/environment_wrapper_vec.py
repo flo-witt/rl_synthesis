@@ -826,7 +826,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
             encoded_observation = tf.concat(
                 [encoded_observation, predicate_automata_obs], axis=1)
         encoded_observation = tf.cast(encoded_observation, dtype=tf.float32)
-        encoded_observation = self.add_noise_to_observation(encoded_observation, 0.1)
+        # encoded_observation = self.add_noise_to_observation(encoded_observation, 0.1)
         return {"observation": encoded_observation, "mask": tf.constant(mask, dtype=tf.bool),
                 "integer": integers}
 

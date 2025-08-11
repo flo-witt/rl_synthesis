@@ -160,7 +160,7 @@ class RobustTrainer:
             return None
         
 
-    def extract_fsc(self, agent: Recurrent_PPO_agent, environment, quotient, num_data_steps=4001, training_epochs=10001, get_dict = False) -> paynt.quotient.fsc.FscFactored:
+    def extract_fsc(self, agent: Recurrent_PPO_agent, environment : EnvironmentWrapperVec, quotient, num_data_steps=4001, training_epochs=10001, get_dict = False) -> paynt.quotient.fsc.FscFactored:
         # agent.set_agent_greedy()
         # agent.set_policy_masking()
         agent.set_policy_masking()
@@ -168,6 +168,15 @@ class RobustTrainer:
         
         policy = agent.get_policy(False, True)
         tf_environment = TFPyEnvironment(environment)
+        # if True:
+        #     from rl_src.interpreters.extracted_fsc.table_based_policy import TableBasedPolicy, initialize_random_joint_fsc_function
+        #     
+        #     action_function, update_function = initialize_random_joint_fsc_function(
+        #         environment.action_keywords, len(self.family_quotient_numpy.observation_to_legal_action_mask), 3)
+        #     fsc = TableBasedPolicy(
+        #         original_policy=policy, action_function=action_function, update_function=update_function,
+        #         action_keywords=environment.action_keywords, nr_observations=len(self.family_quotient_numpy.observation_to_legal_action_mask))
+
         if self.extraction_type == "bottleneck" or self.direct_extractor is None:
             extractor = BottleneckExtractor(
                 tf_environment, 64, 4
@@ -195,7 +204,6 @@ class RobustTrainer:
                 extraction_stats.extracted_fsc_reachability[-1])
 
 
-        print(f"Action shape before construction: {fsc.tf_observation_to_action_table.shape}, updates shape: {fsc.tf_observation_to_update_table.shape}, initial state: {fsc.initial_memory}")
         paynt_fsc = ConstructorFSC.construct_fsc_from_table_based_policy(
             fsc, quotient, family_quotient_numpy=self.family_quotient_numpy)
         available_nodes = paynt_fsc.compute_available_updates(0)
@@ -416,30 +424,17 @@ class RobustTrainer:
             hole_assignment = pomdp_sketch.family.pick_random()
             pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
 
-        if True: # Add 10 random POMDPs to the environment
+        if True: # Add nr_initial_pomdps random POMDPs to the environment
             for _ in range(nr_initial_pomdps):
                 hole_assignment = pomdp_sketch.family.pick_random()
                 pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
                 self.add_new_pomdp(pomdp, self.agent)
-        # from paynt.new_fscs.dpm import get_dpm_fsc
-        # from paynt.new_fscs.avoid import get_avoid_fsc
-        # fsc = get_avoid_fsc(self.family_quotient_numpy.action_labels.tolist())    
-        # fsc = convert_all_fsc_keys_to_int(fsc)
-        # dtmc_sketch = pomdp_sketch.build_dtmc_sketch(fsc, negate_specification=True)
-        # synthesizer = paynt.synthesizer.synthesizer_ar.SynthesizerAR(dtmc_sketch)
-        # hole_assignment = synthesizer.synthesize(keep_optimum=True)
-        # table_based_fsc = generate_table_based_fsc_from_paynt_fsc(fsc, self.environment.action_keywords, self.agent)
-
-        # evaluate_policy_in_model(
-        #     table_based_fsc, self.args, self.environment, self.tf_env, self.args.max_steps + 1)
-        # exit(0)
-        merged_results = None
-        nr_iterations = 2001
+        nr_iterations = 301
         for i in range(200):
             logger.info(f"Iteration {i+1} of extraction RL loop")
             # Train the agent on multiple POMDPs
             self.train_on_new_pomdp(pomdp, self.agent, nr_iterations=nr_iterations)
-            nr_iterations = 401
+            nr_iterations = 301
             # Evaluate the agent on all POMDPs
             # merged_results, worst_case_index_rl = self.perform_overall_evaluation(merged_results, self.agent.get_policy(False, True), 
             #                                                      environments, tf_environments, all_hole_assignments, save=True,
@@ -465,10 +460,9 @@ class RobustTrainer:
             # Perform heatmap evaluation
             # heatmap_evaluations, hole_assignments_to_test = self.perform_heatmap_evaluation(paynt_fsc, pomdp_sketch, save=True, project_path=project_path)
 
-            # Get the worst-case pomdp
             pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
-            if i % 2 == 0:
-                self.agent.reset_weights() 
+            # if i % 2 == 0:
+            #     self.agent.reset_weights() 
 
 def initialize_extractor(pomdp_sketch, args_emulated : ArgsEmulator, family_quotient_numpy : FamilyQuotientNumpy):
     quotient_sv = pomdp_sketch.quotient_mdp.state_valuations

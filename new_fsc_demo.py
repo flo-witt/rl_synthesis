@@ -50,8 +50,8 @@ def random_fsc(pomdp_sketch, num_nodes):
             actions = pomdp_sketch.observation_to_actions[z]
             updates = list(range(num_nodes))
             transitions = list(itertools.product(actions, updates))
+            print(transitions)
             fsc.transitions[n][z] = { tr:1/len(transitions) for tr in transitions }
-    print("FSC transitions:", fsc.transitions)
     return fsc
 
 def random_fsc_factored(pomdp_sketch, num_nodes):

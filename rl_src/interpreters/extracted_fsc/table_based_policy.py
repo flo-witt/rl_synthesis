@@ -30,19 +30,54 @@ class TableBasedPolicy(TFPolicy):
             update_function (np.ndarray): The update function table. It has shape (nr_model_states, nr_observations)."""
         policy_state_spec = TensorSpec(shape=(), dtype=tf.int32)
         super(TableBasedPolicy, self).__init__(original_policy.time_step_spec, original_policy.action_spec, policy_state_spec=policy_state_spec)
-        self.tf_observation_to_action_table = tf.constant(action_function, dtype=tf.float32)
-        self.tf_observation_to_update_table = tf.constant(update_function, dtype=tf.float32)
+        self.nr_actions = len(action_keywords)
         self.nr_observations = nr_observations if nr_observations is not None else action_function.shape[1]
-        self.fix_action_table_probs()
-        if descending_actions is not None: # This array contains actions for a given memory and observation in descending order
+        self.mem_size = action_function.shape[0]
+        self.joint_transition_function = None
+        if (action_function is not None) and (update_function is None): # Only one of the functions is provided, and thus the action and update depends on each other
+            self.is_joint = True
+            self.joint_transition_function = action_function if action_function is not None else update_function # shape (nr_model_states, nr_observations, nr_actions * nr_model_states)
+            self.joint_transition_function = tf.constant(self.joint_transition_function, dtype=tf.float32)
+            self.fix_joint_transition_probs()
+        elif action_function is not None and update_function is not None: # Both functions are provided, and thus the action and update are independent
+            self.is_joint = False
+            self.tf_observation_to_action_table = tf.constant(action_function, dtype=tf.float32)
+            self.tf_observation_to_update_table = tf.constant(update_function, dtype=tf.float32)
+            self.fix_action_table_probs()
+            if descending_actions is not None: # This array contains actions for a given memory and observation in descending order
                                            # The first action is the most likely one, but it could be illegal in some cases
                                            # This array is used to get the most likely legal action, when combined mask
-            self.descending_actions = tf.constant(descending_actions, dtype=tf.int32)
+                self.descending_actions = tf.constant(descending_actions, dtype=tf.int32)
+            else:
+                self.descending_actions = None
+
         else:
-            self.descending_actions = None
-        
+            raise ValueError("Both action_function and update_function cannot be None.")
+
         self.action_keywords = action_keywords
         self.initial_memory = initial_memory
+
+    def fix_joint_transition_probs(self):
+        if self.nr_observations is not None and self.nr_observations != self.joint_transition_function.shape[1]:
+            # Fill the joint transition function with zeros for the missing observations
+            missing_observations = self.nr_observations - self.joint_transition_function.shape[1]
+            if missing_observations > 0:
+                zeros = tf.zeros((self.joint_transition_function.shape[0], missing_observations, self.joint_transition_function.shape[-1]), dtype=tf.float32)
+                self.joint_transition_function = tf.concat([self.joint_transition_function, zeros], axis=1)
+        if self.joint_transition_function.shape[-1] != self.nr_actions * self.joint_transition_function.shape[0]:
+            # Fill the joint transition function with zeros for the missing actions
+            missing_actions = self.joint_transition_function.shape[-1] - self.nr_actions * self.joint_transition_function.shape[0]
+            if missing_actions > 0:
+                zeros = tf.zeros((self.joint_transition_function.shape[0], self.joint_transition_function.shape[1], missing_actions), dtype=tf.float32)
+                self.joint_transition_function = tf.concat([self.joint_transition_function, zeros], axis=-1)
+        # Normalize the joint transition function to ensure that it is a valid probability distribution
+        normalizers = tf.reduce_sum(self.joint_transition_function, axis=-1, keepdims=True)
+        self.joint_transition_function = tf.math.divide_no_nan(self.joint_transition_function, normalizers)
+        # Repair the joint transition function to ensure that it is a valid probability distribution
+        self.joint_transition_function = tf.where(normalizers > 0,
+                                                  self.joint_transition_function, 
+                                                  tf.ones_like(self.joint_transition_function) / tf.cast(tf.shape(self.joint_transition_function)[-1], 
+                                                                                                          dtype=tf.float32))
 
     def fix_action_table_probs(self):
         """Fixes the action table probabilities to sum to 1 for each observation."""
@@ -77,11 +112,8 @@ class TableBasedPolicy(TFPolicy):
 
     def _get_initial_state(self, batch_size):
         return tf.constant(self.initial_memory, shape=(batch_size, 1), dtype=tf.int32)
-
-    @tf.function
-    def _action(self, time_step, policy_state, seed):
-        observation = time_step.observation["integer"]
-        mask = time_step.observation["mask"]
+    
+    def _action_independents(self, observation, mask, policy_state):
         memory = policy_state
         indices = tf.concat([memory, observation], axis=1)
         if self.descending_actions is not None:
@@ -106,9 +138,51 @@ class TableBasedPolicy(TFPolicy):
         else:
             update = tf.reshape(update, (-1, 1))
             update = tf.cast(update, dtype=tf.int32)
-        print(f"Action: {action}, Update: {update}, Memory: {memory}")
         policy_step = PolicyStep(action, update)
         return policy_step
+
+    def _joint_action(self, observation, mask, policy_state):
+        """Joint action function that uses the joint transition function."""
+        memory = policy_state
+        indices = tf.concat([memory, observation], axis=1)
+        joint_transition_probs = tf.gather_nd(self.joint_transition_function, indices)
+        # Sample from the joint transition probabilities
+        joint_action = tf.random.categorical(tf.math.log(joint_transition_probs), num_samples=1, dtype=tf.int32)
+        joint_action = tf.squeeze(joint_action, axis=-1)
+        action = joint_action // self.mem_size
+        update = joint_action % self.mem_size
+        action = tf.cast(action, dtype=tf.int32)
+        action = tf.reshape(action, (-1,))
+        update = tf.cast(update, dtype=tf.int32)
+        update = tf.reshape(update, (-1, 1))
+        policy_step = PolicyStep(action, update)
+        return policy_step
+
+
+    @tf.function
+    def _action(self, time_step, policy_state, seed):
+        observation = time_step.observation["integer"]
+        mask = time_step.observation["mask"]
+        if not self.is_joint:
+            policy_step = self._action_independents(observation, mask, policy_state)
+        else:
+            policy_step = self._joint_action(observation, mask, policy_state)
+        return policy_step
+    
+def initialize_random_independent_fsc_function(action_keywords, nr_observations, num_fsc_states):
+    action_function = np.random.uniform(0.1, 1.0, (num_fsc_states, nr_observations, len(action_keywords)))
+    update_function = np.random.uniform(0.1, 1.0, (num_fsc_states, nr_observations, num_fsc_states))
+    action_function = action_function / np.sum(action_function, axis=-1, keepdims=True) 
+    update_function = update_function / np.sum(update_function, axis=-1, keepdims=True)
+    return action_function, update_function
+
+def initialize_random_joint_fsc_function(action_keywords, nr_observations, num_fsc_states):
+    """Initialize a random joint FSC."""
+    action_function = np.random.uniform(0.1, 1.0, (num_fsc_states, nr_observations, num_fsc_states * len(action_keywords)))
+    action_function = action_function.reshape((num_fsc_states, nr_observations, num_fsc_states * len(action_keywords)))
+    action_function = action_function / np.sum(action_function, axis=-1, keepdims=True) 
+
+    return action_function, None
     
 if __name__ == "__main__":
     args = init_args("models/evade/sketch.templ", "models/evade/sketch.props")
@@ -118,12 +192,10 @@ if __name__ == "__main__":
     nr_observations = environment.stormpy_model.nr_observations
     num_fsc_states = 3
 
-    action_function = np.random.uniform(0.1, 1.0, (num_fsc_states, nr_observations, len(action_keywords)))
-    update_function = np.random.uniform(0.1, 1.0, (num_fsc_states, nr_observations, num_fsc_states))
-    action_function = action_function / np.sum(action_function, axis=-1, keepdims=True) 
-    update_function = update_function / np.sum(update_function, axis=-1, keepdims=True)
-    
+    # action_function, update_function = initialize_random_independent_fsc(action_keywords, nr_observations, num_fsc_states)
+
     recurrent_ppo = Recurrent_PPO_agent(environment, tf_env, args)
+    action_function, update_function = initialize_random_joint_fsc_function(action_keywords, nr_observations, num_fsc_states)
 
     policy = TableBasedPolicy(
         original_policy=recurrent_ppo.get_policy(False, True),
