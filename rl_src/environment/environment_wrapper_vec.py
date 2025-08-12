@@ -108,7 +108,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
             stormpy_model=stormpy_model, get_scalarized_reward=generate_reward_selection_function, num_envs=num_envs,
             max_steps=args.max_steps, metalabels=metalabels, model_path=args.prism_model, enforce_recompilation=enforce_compilation,
             obs_evaluator=obs_evaluator, quotient_state_valuations=quotient_state_valuations, observation_to_actions=observation_to_actions,
-            batched_vec_storm=args.batched_vec_storm)
+            batched_vec_storm=args.batched_vec_storm, args=args)
         
         try:
             self.state_to_observation_map = tf.constant(

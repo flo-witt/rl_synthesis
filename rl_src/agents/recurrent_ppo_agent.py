@@ -95,7 +95,8 @@ class Recurrent_PPO_agent(FatherAgent):
             importance_ratio_clipping=0.2,
         )
         self.agent.initialize()
-        
+        print("Agent initialized with actor net:", self.agent.actor_net.summary())
+        print("Agent initialized with value net:", self.agent._value_net.summary())
         logging.info("Agent initialized")
         self.init_replay_buffer()
         logging.info("Replay buffer initialized")

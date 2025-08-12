@@ -31,7 +31,7 @@ def create_recurrent_value_net_demasked_tuned(tf_environment: tf_py_environment.
 
 def create_recurrent_value_net_demasked(tf_environment: tf_py_environment.TFPyEnvironment, rnn_less=False, width_of_lstm=32):
     preprocessing_layer = tf.keras.layers.Dense(64, activation='relu')
-    layer_params = (64, )
+    layer_params = (32, )
     if rnn_less:
         lstm_size = None
         preprocessing_layers = [preprocessing_layer]
@@ -46,7 +46,7 @@ def create_recurrent_value_net_demasked(tf_environment: tf_py_environment.TFPyEn
             # preprocessing_layers=preprocessing_layer,
             input_fc_layer_params=layer_params,
             lstm_size=lstm_size,
-            # output_fc_layer_params=(64,),
+            output_fc_layer_params=(64,),
             conv_layer_params=None
         )
     return value_net

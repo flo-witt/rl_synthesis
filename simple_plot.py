@@ -76,7 +76,7 @@ def load_single_family_performance(file_path):
     returns_numpy = np.abs(returns_numpy)  # Ensure all returns are positive
     return returns_numpy
 
-def main():
+def plot_family_performance():
     file_path = "models_robust_subset/avoid/benchmark_stats_6.json"
     returns_numpy = load_single_family_performance(file_path)
     file_path = "models_robust_subset/avoid/benchmark_stats_7.json"
@@ -88,6 +88,29 @@ def main():
         constant_return=161.0
     )
 
+def plot_some_metric(metric_numpy, metric_name, period=50):
+    """Plot a specific metric."""
+    df = pd.DataFrame({
+        metric_name: metric_numpy,
+    })
+    plt.figure(figsize=(6, 6))
+    sns.lineplot(data=df[metric_name], label=metric_name)
+    plt.title(f"{metric_name} Plot")
+    plt.xlabel(f'i-th {period} training steps')
+    plt.ylabel('Values')
+    plt.legend([metric_name])
+    plt.grid(True)
+    plt.savefig(f'{metric_name.lower()}.png')
+
+def get_and_plot_some_metric(file_path, metric):
+    """Load a specific metric from a JSON file and plot it."""
+    result = load_result_from_json(file_path)
+    metric_numbers = ast.literal_eval(result[metric])
+    metric_numpy = np.array(metric_numbers, dtype=np.float32)
+    plot_some_metric(metric_numpy, metric_name=metric)
+
+def main():
+    get_and_plot_some_metric("models_robust_subset/avoid/benchmark_stats_13_training.json", "dormant_neurons_percentages")
     # reach_probs_numbers = ast.literal_eval(result["reach_probs"])
     # reach_probs_numpy = np.array(reach_probs_numbers, dtype=np.float32)
     # plot_reach_probabilities(reach_probs_numpy)

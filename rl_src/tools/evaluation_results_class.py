@@ -6,10 +6,12 @@ logger = logging.getLogger(__name__)
 
 import numpy as np
 
+from tools.args_emulator import ArgsEmulator
+
 class EvaluationResults:
     """Class for storing evaluation results."""
 
-    def __init__(self, goal_value: tf.Tensor = tf.constant(0.0)):
+    def __init__(self, goal_value: tf.Tensor = tf.constant(0.0), args: ArgsEmulator = None):
         self.best_episode_return = tf.float32.min
         self.best_return = tf.float32.min
         self.goal_value = goal_value.numpy()
@@ -44,6 +46,7 @@ class EvaluationResults:
         self.discounted_rewards = []
         self.new_pomdp_iteration_numbers = []
         self.dormant_neurons_percentages = []
+        self.args = args
 
     def add_artificial_reward(self, artificial_rewards_buffer : list[np.ndarray]):
         """Add artificial rewards to the evaluation results."""
@@ -71,10 +74,10 @@ class EvaluationResults:
 
     def save_to_json(self, filename, evaluation_time: float = float("nan"), split_iteration = -1, new_pomdp=False):
         import json
-        filename = filename.replace(".json", "_training.json")
+        filename_training = filename.replace(".json", "_training.json")
         if new_pomdp:
             self.new_pomdp_iteration_numbers.append(len(self.returns))
-        with open(filename, "w") as file:
+        with open(filename_training, "w") as file:
             _dict_ = self.__dict__.copy()
             del _dict_["best_updated"]
             for key in _dict_:
@@ -82,6 +85,14 @@ class EvaluationResults:
             _dict_["evaluation_time"] = evaluation_time
             _dict_["split_iteration"] = split_iteration
             json.dump(_dict_, file)
+        filename_args = filename.replace(".json", "_args.json")
+        if self.args is not None:
+            with open(filename_args, "w") as file_args:
+                args_dict = self.args.__dict__.copy()
+                for key in args_dict:
+                    if isinstance(args_dict[key], np.ndarray):
+                        args_dict[key] = args_dict[key].tolist()
+                json.dump(args_dict, file_args)
 
     def load_from_json(self, filename):
         import json  # TODO probably not working with float32 conversion

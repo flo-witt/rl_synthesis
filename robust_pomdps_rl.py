@@ -38,8 +38,8 @@ def main():
     pomdp_sketch = load_sketch(project_path)
     json_path = create_json_file_name(project_path)
 
-    num_samples_learn = 802
-    nr_pomdps = 1
+    num_samples_learn = 602
+    nr_pomdps = 10
 
     # This can be useful for extraction and some other stuff.
     family_quotient_numpy = FamilyQuotientNumpy(pomdp_sketch)
@@ -56,7 +56,10 @@ def main():
     args_emulated.batched_vec_storm = args_cmd.batched_vec_storm
     args_emulated.extraction_type = args_cmd.extraction_method
     args_emulated.model_name = project_path.split("/")[-1]
-    args_emulated.max_steps = 801
+    args_emulated.max_steps = 601
+    args_emulated.geometric_batched_vec_storm = args_cmd.geometric_batched_vec_storm
+    args_emulated.without_extraction = args_cmd.without_extraction
+    args_emulated.periodic_restarts = args_cmd.periodic_restarts
     # pomdp = initialize_prism_model(prism_path, properties_path, constants="")
 
     hole_assignment = pomdp_sketch.family.pick_any()

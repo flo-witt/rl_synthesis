@@ -150,6 +150,18 @@ def parse_args():
         "--use-best-policy",
         action="store_true",
         help="Use the best policy found during training for extraction.")
+    parser.add_argument(
+        "--geometric-batched-vec-storm",
+        action="store_true",
+        help="Use geometric distribution for batched vectorized Storm environment.")
+    parser.add_argument(
+        "--without-extraction",
+        action="store_true",
+        help="Run the experiment without extraction.")
+    parser.add_argument(
+        "--periodic-restarts",
+        action="store_true",
+        help="Use periodic restarts during training.")
     args = parser.parse_args()
     return args
 

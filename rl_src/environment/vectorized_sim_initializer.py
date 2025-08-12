@@ -13,6 +13,8 @@ logger = logging.getLogger(__name__)
 
 storm_vec_env_constructor = vec_storm.StormVecEnv
 
+from tools.args_emulator import ArgsEmulator
+
 
 class SimulatorInitializer:
     @staticmethod
@@ -26,7 +28,8 @@ class SimulatorInitializer:
                                  obs_evaluator = None,
                                  quotient_state_valuations = None,
                                  observation_to_actions = None,
-                                 batched_vec_storm = False) -> vec_storm.StormVecEnv | BatchedVecStorm:
+                                 batched_vec_storm = False,
+                                 args : ArgsEmulator = None) -> vec_storm.StormVecEnv | BatchedVecStorm:
         """ Load the simulator for the environment. If the model was not compiled previously, the model is compiled from scratch and saved. Otherwise, the model is loaded from the file.
 
         Args:
@@ -64,7 +67,9 @@ class SimulatorInitializer:
                 stormpy_model, get_scalarized_reward, num_envs=num_envs, max_steps=max_steps, metalabels=metalabels,
                 obs_evaluator=obs_evaluator,
                 quotient_state_valuations=quotient_state_valuations,
-                observation_to_actions=observation_to_actions)
+                observation_to_actions=observation_to_actions, seed=args.seed if args is not None else int.from_bytes(os.urandom(4), "big"))
+            if batched_vec_storm:
+                simulator.set_args(args)
             return simulator
         
         simulator = SimulatorInitializer.try_load_simulator_by_name_from_pickle(
@@ -75,7 +80,7 @@ class SimulatorInitializer:
                 stormpy_model, get_scalarized_reward, num_envs=num_envs, max_steps=max_steps, metalabels=metalabels,
                 obs_evaluator=obs_evaluator,
                 quotient_state_valuations=quotient_state_valuations,
-                observation_to_actions=observation_to_actions)
+                observation_to_actions=observation_to_actions, seed=args.seed if args is not None else int.from_bytes(os.urandom(4), "big"))
             simulator.save(f"{compiled_models_path}/{name}.pkl")
         return simulator
 
