@@ -8,8 +8,8 @@ import os
 
 from tf_agents.policies import TFPolicy
 
-from environment.environment_wrapper_vec import EnvironmentWrapperVec
-from environment.tf_py_environment import TFPyEnvironment
+from rl_src.environment.environment_wrapper_vec import EnvironmentWrapperVec
+from rl_src.environment.tf_py_environment import TFPyEnvironment
 
 from paynt.rl_extension.self_interpretable_interface.self_interpretable_extractor import SelfInterpretableExtractor
 
@@ -18,15 +18,15 @@ from paynt.rl_extension.family_extractors.direct_fsc_construction import Constru
 from paynt.rl_extension.robust_rl.family_quotient_numpy import FamilyQuotientNumpy
 
 
-from agents.recurrent_ppo_agent import Recurrent_PPO_agent
-from tools.args_emulator import ArgsEmulator
-from tools.evaluators import evaluate_policy_in_model
+from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_agent
+from rl_src.tools.args_emulator import ArgsEmulator
+from rl_src.tools.evaluators import evaluate_policy_in_model
 
 import numpy as np
 
 import logging
 
-from tools.evaluators import evaluate_policy_in_model
+from rl_src.tools.evaluators import evaluate_policy_in_model
 
 from paynt.quotient.fsc import FscFactored
 

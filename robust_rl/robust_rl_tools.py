@@ -10,7 +10,7 @@ import os
 
 import paynt.synthesizer.synthesizer_onebyone
 
-from agents.recurrent_ppo_agent import Recurrent_PPO_agent
+from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_agent
 
 
 import numpy as np
