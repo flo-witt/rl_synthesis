@@ -211,6 +211,8 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
 
         self.current_num_steps = tf.constant(
             [0] * self.num_envs, dtype=tf.float32)
+        self.noisy_observations = args.noisy_observations
+
         
     def add_new_pomdp(self, pomdp: storage.SparsePomdp):
         """Adds a new POMDP to the environment. This is used with BatchedVecStorm to add new POMDPs to the batch of simulators.
@@ -694,6 +696,8 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
                 observations, rewards, done, truncated, allowed_actions, metalabels = self._go_explore_resets(
                     prev_dones=self.prev_dones)
         # if there any truncated episodes, we should set the done flag to True
+        if self.noisy_observations:
+            observations = self.add_noise_to_observation(observations, noise_level=0.1)
         self.last_observation = observations
         self.states = self.vectorized_simulator.simulator_states
         self.allowed_actions = allowed_actions

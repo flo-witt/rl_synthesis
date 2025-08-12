@@ -34,7 +34,7 @@ class ArgsEmulator:
                  use_entropy_reward : bool = False, full_observable_entropy_reward: bool = False, 
                  use_binary_entropy_reward: bool = False, batched_vec_storm : bool = False, enforce_recompilation: bool = False,
                  width_of_lstm: int = 32, extraction_type: str = "alergia", geometric_batched_vec_storm: bool = False,
-                 without_extraction: bool = False, periodic_restarts: bool = False):
+                 without_extraction: bool = False, periodic_restarts: bool = False, noisy_observations: bool = False):
         """Args emulator for the RL parser. This class is used to emulate the args object from the RL parser for the RL initializer and other stuff.
         Args:
             prism_model (str): The path to the prism model file. Defaults to None -- must be set, if not used inside of Paynt.
@@ -103,6 +103,8 @@ class ArgsEmulator:
             extraction_type (str, optional): The type of extraction method to use. Defaults to "alergia". Other options are "si-t", "si-g", and "bottleneck".
             geometric_batched_vec_storm (bool, optional): Whether to use geometric batched vectorized Storm environment. Defaults to False.
             without_extraction (bool, optional): Whether to run the experiment without extraction. Defaults to False.
+            periodic_restarts (bool, optional): Whether to use periodic restarts of the agent. Defaults to False.
+            noisy_observations (bool, optional): Whether to use noisy observations during training. Defaults to False.
 
         """
         self.prism_model = prism_model
@@ -172,3 +174,4 @@ class ArgsEmulator:
         self.geometric_batched_vec_storm = geometric_batched_vec_storm
         self.without_extraction = without_extraction
         self.periodic_restarts = periodic_restarts
+        self.noisy_observations = noisy_observations

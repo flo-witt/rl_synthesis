@@ -162,6 +162,10 @@ def parse_args():
         "--periodic-restarts",
         action="store_true",
         help="Use periodic restarts during training.")
+    parser.add_argument(
+        "--noisy-observations",
+        action="store_true",
+        help="Use noisy observations during training.")
     args = parser.parse_args()
     return args
 
