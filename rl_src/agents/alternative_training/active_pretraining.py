@@ -5,12 +5,6 @@ import numpy as np
 
 import tensorflow as tf
 
-from environment.environment_wrapper_vec import EnvironmentWrapperVec
-from environment.tf_py_environment import TFPyEnvironment
-
-
-from tf_agents.networks.actor_distribution_rnn_network import ActorDistributionRnnNetwork
-
 class EntropyRewardGenerator:
     """Generates entropy rewards for the agent based on the observations."""
 

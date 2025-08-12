@@ -1,8 +1,8 @@
 # Description: This file contains the function to create the actor network for the recurrent agent.
 # Author: David Hudák
 
-from tf_agents.networks import actor_distribution_rnn_network
-from tf_agents.networks import actor_distribution_network
+from agents.tf_agents_modif import actor_distribution_rnn_network
+from agents.tf_agents_modif import actor_distribution_network
 from environment import tf_py_environment
 
 import tensorflow as tf

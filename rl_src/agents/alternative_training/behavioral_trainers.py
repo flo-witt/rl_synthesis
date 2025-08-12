@@ -11,7 +11,7 @@ from tf_agents.drivers.dynamic_step_driver import DynamicStepDriver
 
 from agents.networks.actor_networks import create_recurrent_actor_net_demasked
 from agents.networks.value_networks import create_recurrent_value_net_demasked
-from tf_agents.networks.actor_distribution_rnn_network import ActorDistributionRnnNetwork
+from agents.tf_agents_modif.actor_distribution_rnn_network import ActorDistributionRnnNetwork
 from tf_agents.policies.actor_policy import ActorPolicy
 from tf_agents.networks.value_rnn_network import ValueRnnNetwork
 

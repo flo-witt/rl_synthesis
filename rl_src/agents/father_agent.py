@@ -821,7 +821,10 @@ class FatherAgent(AbstractAgent):
 
     def store_percent_of_dormant_neurons(self):
         """Returns the percentage of dormant neurons in the actor network."""
-        
+        # Check, whether the actor_net has neuron_activations attribute
+        if not hasattr(self.agent.actor_net, "neuron_activations"):
+            logger.info("Actor network does not have neuron activations. Skipping dormant neurons analysis.")
+            return
         # Run loop for a few steps to gather statistics
         policy_state = self.agent.actor_net.get_initial_state(self.tf_environment.batch_size)
         for _ in range(100):

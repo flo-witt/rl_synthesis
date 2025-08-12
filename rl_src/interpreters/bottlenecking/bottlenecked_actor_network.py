@@ -3,7 +3,7 @@ import tf_agents.networks as Network
 
 import gin
 
-from tf_agents.networks.actor_distribution_rnn_network import ActorDistributionRnnNetwork
+from agents.tf_agents_modif.actor_distribution_rnn_network import ActorDistributionRnnNetwork
 
 from interpreters.bottlenecking.bottleneck_autoencoder import Autoencoder
 

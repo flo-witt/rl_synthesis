@@ -12,7 +12,6 @@ import tensorflow as tf
 from environment import tf_py_environment
 # from tf_agents.agents.ppo import ppo_agent
 from agents.tf_agents_modif import ppo_agent
-from tf_agents.trajectories import trajectory
 
 
 
@@ -25,7 +24,7 @@ from agents.networks.actor_networks import create_recurrent_actor_net_demasked
 from agents.networks.fsc_like_network import FSCLikeNetwork
 
 from tf_agents.networks.value_rnn_network import ValueRnnNetwork
-from tf_agents.networks.actor_distribution_rnn_network import ActorDistributionRnnNetwork
+from agents.tf_agents_modif.actor_distribution_rnn_network import ActorDistributionRnnNetwork
 
 from tf_agents.policies.py_tf_eager_policy import PyTFEagerPolicy
 
@@ -34,7 +33,6 @@ from agents.alternative_training.active_pretraining import EntropyRewardGenerato
 from tools.args_emulator import ArgsEmulator
 
 from keras.optimizers import Adam
-import keras
 
 
 import sys
