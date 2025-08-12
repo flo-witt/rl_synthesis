@@ -36,8 +36,6 @@ from tf_agents.drivers.dynamic_step_driver import DynamicStepDriver
 
 from agents.reward_driver import DynamicRewardDriver
 
-from reward_machines.predicate_automata import PredicateAutomata, create_dummy_predicate_automata
-
 import logging
 
 from collections.abc import Callable
@@ -842,3 +840,4 @@ class FatherAgent(AbstractAgent):
         percent_dormant_neurons = (dormant_neurons / num_neurons)
         self.evaluation_result.add_dormant_neurons_percentage(percent_dormant_neurons * 100)
         logger.info(f"Percentage of dormant neurons in actor network: {percent_dormant_neurons * 100:.2f}%")
+        self.agent.actor_net.neuron_activations = None
