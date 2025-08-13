@@ -1,4 +1,5 @@
 from collections import defaultdict
+from enum import Enum
 from typing import Union, Dict, List
 
 import numpy as np
@@ -50,6 +51,12 @@ logger = logging.getLogger(__name__)
 
 DEBUG = False
 
+class AutLearn(Enum):
+    KTAIL = 1
+    SMM = 2
+    MDP = 3
+    DET = 4
+
 class SelfInterpretableExtractor:
 
     def __init__(self, memory_len = 1, is_one_hot = False, use_residual_connection = False,
@@ -76,8 +83,8 @@ class SelfInterpretableExtractor:
         self.extraction_stats = None
         self.optimizing_specification = optimizing_specification
         self.family_quotient_numpy = family_quotient_numpy
-        self.stoch = True
-        self.k_tail = False
+        self.aut_learn_type = AutLearn.MDP
+        self.joint_action_update = True
         self.use_gumbel_softmax = use_gumbel_softmax
         self.stacked_observations = stacked_observations
         self.non_deterministic = True
@@ -124,45 +131,45 @@ class SelfInterpretableExtractor:
                                            env : EnvironmentWrapperVec):
         
         print(f"Learning from {len(all_trajectories)} trajectories")
-        if self.stoch:
-            if self.k_tail:
-                model = run_k_tails(all_trajectories, 'mealy', k=1,
-                                 input_completeness=None, print_info=True)
-            else:
-                # alergia_trajectories = self.create_alergia_smm_traj(all_trajectories)
-                # mdp_traj = [["init"] + t for t in all_trajectories]
-                # model = run_Alergia(mdp_traj,"mdp",eps=0.1)
-                # print(f"Learned MDP of size {len(model.states)}")
-                model = run_Alergia(all_trajectories,"smm",compatibility_checker = ChiSquareChecker(alpha=0.05))
-                print(f"Learned Chi2 SMM of size {len(model.states)}")
-                epsilon = 0.5
-                score = ScoreCalculation(hoeffding_compatibility(epsilon, True))
-                def likelihood_ratio_score(alpha=0.05) -> ScoreFunction:
-                    if not 0 < alpha <= 1:
-                        raise ValueError(f"Confidence {alpha} not between 0 and 1")
+        if self.aut_learn_type == AutLearn.KTAIL:
 
-                    def score_fun(part: Dict[GsmNode, GsmNode]):
-                        llh_diff, param_diff = differential_info(part)
-                        if param_diff == 0:
-                            # This should cover the corner case when the partition merges only states with no outgoing transitions.
-                            return -1  # Let them be very bad merges.
-                        score = 1 - chi2.cdf(2 * llh_diff, param_diff)
-                        if score < alpha:
-                            return False
-                        return score
+            model = run_k_tails(all_trajectories, 'mealy', k=1,
+                                input_completeness=None, print_info=True)
+        elif self.aut_learn_type == AutLearn.SMM:
+            # alergia_trajectories = self.create_alergia_smm_traj(all_trajectories)
+            # mdp_traj = [["init"] + t for t in all_trajectories]
+            # model = run_Alergia(mdp_traj,"mdp",eps=0.1)
+            # print(f"Learned MDP of size {len(model.states)}")
+            model = run_Alergia(all_trajectories,"smm", compatibility_checker = ChiSquareChecker(alpha=0.01))
+            print(f"Learned Chi2 SMM of size {len(model.states)}")
+            epsilon = 0.5
+            score = ScoreCalculation(hoeffding_compatibility(epsilon, True))
+            def likelihood_ratio_score(alpha=0.05) -> ScoreFunction:
+                if not 0 < alpha <= 1:
+                    raise ValueError(f"Confidence {alpha} not between 0 and 1")
 
-                    return score_fun
-                # score = ScoreCalculation(score_function=likelihood_ratio_score())
-                # alg = GeneralizedStateMerging(output_behavior="mealy", transition_behavior="stochastic",
-                #                               score_calc=score,
-                #                               compatibility_on_pta=True, compatibility_on_futures=True)
-                # model = alg.run(all_trajectories)
-        else:
+                def score_fun(part: Dict[GsmNode, GsmNode]):
+                    llh_diff, param_diff = differential_info(part)
+                    if param_diff == 0:
+                        # This should cover the corner case when the partition merges only states with no outgoing transitions.
+                        return -1  # Let them be very bad merges.
+                    score = 1 - chi2.cdf(2 * llh_diff, param_diff)
+                    if score < alpha:
+                        return False
+                    return score
+
+                return score_fun
+        elif self.aut_learn_type == AutLearn.MDP:
+            mdp_traj = [["init"] + t for t in all_trajectories]
+            model = run_Alergia(mdp_traj, "mdp", compatibility_checker=ChiSquareChecker(alpha=0.01))
+            print(f"Learned MDP of size {len(model.states)}")
+
+        elif self.aut_learn_type == AutLearn.DET:
             learn_trajectories = create_mealy_learn_traj(all_trajectories)
             model = run_RPNI(learn_trajectories, 'mealy', algorithm='gsm',
                              input_completeness=None, print_info=True)
         self.make_aalpy_input_complete(model,env.stormpy_model.nr_observations)
-        if self.stoch and self.k_tail:
+        if self.aut_learn_type == AutLearn.KTAIL:
             probs = self.compute_probs(model,all_trajectories)
         else:
             probs = None
@@ -170,11 +177,12 @@ class SelfInterpretableExtractor:
         print(f"Learned FSC of size {len(model.states)}")
         self.iteration += 1
         fsc_actions, fsc_updates, initial_state = self.aalpy_to_fsc(model,env,probs)
-        print(f"FSC actions shape: {fsc_actions.shape}, updates shape: {fsc_updates.shape}, initial state: {initial_state}")
+        update_shape = None if fsc_updates is None else fsc_updates.shape
+        print(f"FSC actions shape: {fsc_actions.shape}, updates shape: {update_shape}, initial state: {initial_state}")
         table_based_policy = TableBasedPolicy(
             original_policy, fsc_actions, fsc_updates, initial_memory=initial_state, action_keywords=env.action_keywords, 
             nr_observations=len(self.family_quotient_numpy.observation_to_legal_action_mask))
-        print(f"New FSC actions shape: {table_based_policy.tf_observation_to_action_table.shape}, updates shape: {table_based_policy.tf_observation_to_update_table.shape}, initial state: {table_based_policy.initial_memory}")
+        # print(f"New FSC actions shape: {table_based_policy.tf_observation_to_action_table.shape}, updates shape: {table_based_policy.tf_observation_to_update_table.shape}, initial state: {table_based_policy.initial_memory}")
 
         return table_based_policy,model
 
@@ -183,27 +191,47 @@ class SelfInterpretableExtractor:
         n_states = len(model.states)
         s_id_to_fsc_id = {state.state_id : fsc_id for fsc_id, state in enumerate(model.states)}
         nr_observations = env.stormpy_model.nr_observations
-        fsc_actions = np.zeros((n_states, nr_observations, len(env.action_keywords)), dtype=np.float32)
-        fsc_updates = np.zeros((n_states, nr_observations, n_states), dtype=np.float32)
+        if self.joint_action_update:
+            fsc_actions = np.zeros((n_states, nr_observations, n_states * len(env.action_keywords)), dtype=np.float32)
+            fsc_updates = None
+        else:
+            fsc_actions = np.zeros((n_states, nr_observations, len(env.action_keywords)), dtype=np.float32)
+            fsc_updates = np.zeros((n_states, nr_observations, n_states), dtype=np.float32)
+
         for state in model.states:
             fsc_id = s_id_to_fsc_id[state.state_id]
             for obs in range(nr_observations):
                 str_obs = str(obs)
-                if self.stoch:
-                    if self.k_tail:
-                        for (act, next_state) in state.transitions[str_obs]:
-                            action_int = int(act) if act != "epsilon" else 0
-                            next_fsc_id = s_id_to_fsc_id[next_state.state_id]
-                            prob = probs[(state.state_id, str_obs, act)]
+                if self.aut_learn_type == AutLearn.KTAIL:
+                    for (act, next_state) in state.transitions[str_obs]:
+                        action_int = int(act) if act != "epsilon" else 0
+                        next_fsc_id = s_id_to_fsc_id[next_state.state_id]
+                        prob = probs[(state.state_id, str_obs, act)]
+                        fsc_actions[fsc_id, obs, action_int] = prob
+                        fsc_updates[fsc_id, obs, next_fsc_id] = prob
+                elif self.aut_learn_type == AutLearn.SMM:
+                    for (next_state,act,prob) in state.transitions[str_obs]:
+                        action_int = int(act) if act != "epsilon" else 0
+                        next_fsc_id = s_id_to_fsc_id[next_state.state_id]
+                        if self.joint_action_update:
+                            fsc_actions[fsc_id, obs, action_int * n_states + next_fsc_id] = prob
+                        else:
                             fsc_actions[fsc_id, obs, action_int] = prob
                             fsc_updates[fsc_id, obs, next_fsc_id] = prob
-                    else:
-                        for (next_state,act,prob) in state.transitions[str_obs]:
-                            action_int = int(act) if act != "epsilon" else 0
-                            next_fsc_id = s_id_to_fsc_id[next_state.state_id]
+                elif self.aut_learn_type == AutLearn.MDP:
+                    for (next_state,prob) in state.transitions[str_obs]:
+                        act = next_state.output
+                        # act can be == "Init" if there is input completion, i.e., observation completion for some obs
+                        action_int = int(act) if act != "epsilon" and act != "init" else 0
+                        next_fsc_id = s_id_to_fsc_id[next_state.state_id]
+                        if self.joint_action_update:
+                            fsc_actions[fsc_id, obs, action_int * n_states + next_fsc_id] = prob
+                        else:
                             fsc_actions[fsc_id, obs, action_int] = prob
                             fsc_updates[fsc_id, obs, next_fsc_id] = prob
-                else:
+                elif self.aut_learn_type == AutLearn.DET:
+                    if joint_action_update:
+                        raise Exception("Not Implemented")
                     next_state = state.transitions[str_obs]
                     action = int(state.output_fun[str_obs]) if state.output_fun[str_obs] != "epsilon" else 0
                     next_fsc_id = s_id_to_fsc_id[next_state.state_id]
@@ -212,13 +240,16 @@ class SelfInterpretableExtractor:
 
         # add full action support
         fsc_actions += 0.0001
-        for state in range(n_states):
-            for obs in range(nr_observations):
-                fsc_actions[state,obs,:] /= sum(fsc_actions[state,obs,:])
+        if self.joint_action_update and (self.aut_learn_type == AutLearn.SMM or self.aut_learn_type == AutLearn.MDP):
+            fsc_actions = fsc_actions / np.sum(fsc_actions, axis=-1, keepdims=True)
+        else:
+            for state in range(n_states):
+                for obs in range(nr_observations):
+                    fsc_actions[state,obs,:] /= sum(fsc_actions[state,obs,:])
         return fsc_actions, fsc_updates, s_id_to_fsc_id[model.initial_state.state_id]
 
     def make_aalpy_input_complete(self, model : Union[MealyMachine,Onfsm,StochasticMealyMachine], nr_observations):
-        if self.stoch and not self.k_tail and len(model.states) == 1:
+        if self.aut_learn_type == AutLearn.SMM and len(model.states) == 1:
             print("Learned single state SMM")
             dummy_state = StochasticMealyState("q10")
             model.states.append(dummy_state)
@@ -232,12 +263,13 @@ class SelfInterpretableExtractor:
                 obs = str(obs)
                 if obs not in state.transitions.keys():
                     target_state = state
-                    if self.stoch:
-                        if self.k_tail:
-                            state.transitions[obs].append(( 'epsilon', target_state))
-                        else:
-                            state.transitions[obs].append((  target_state,'epsilon',1.0))
-                    else:
+                    if self.aut_learn_type == AutLearn.KTAIL:
+                        state.transitions[obs].append(( 'epsilon', target_state))
+                    elif self.aut_learn_type == AutLearn.SMM:
+                        state.transitions[obs].append((  target_state,'epsilon',1.0))
+                    elif self.aut_learn_type == AutLearn.MDP:
+                        state.transitions[obs].append((  target_state,1.0))
+                    elif self.aut_learn_type == AutLearn.DET:
                         state.transitions[obs] = target_state
                         state.output_fun[obs] = 'epsilon'
 
