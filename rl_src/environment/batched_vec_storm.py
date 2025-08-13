@@ -13,6 +13,10 @@ from jax import numpy as jnp
 from stormpy import simulator
 from stormpy.storage.storage import SparsePomdp
 
+from tools.args_emulator import ArgsEmulator
+
+import os
+
 
 class BatchedVecStorm(StormVecEnv):
     """
@@ -21,7 +25,7 @@ class BatchedVecStorm(StormVecEnv):
     Initially, it is just the StormVecEnv with a different name, but you can add more POMDPs and then the simulator will play them in parallel.
     """
     def __init__(self, pomdp: SparsePomdp, get_scalarized_reward: Dict[str, np.array], num_envs=1, seed=42, metalabels=None, random_init=False, max_steps=100,
-                 obs_evaluator=None, quotient_state_valuations=None, observation_to_actions=None):
+                 obs_evaluator=None, quotient_state_valuations=None, observation_to_actions=None, args: ArgsEmulator = None):
         super().__init__(pomdp, get_scalarized_reward, num_envs=num_envs, seed=seed, metalabels=metalabels,
                          random_init=random_init, max_steps=max_steps, obs_evaluator=obs_evaluator,
                          quotient_state_valuations=quotient_state_valuations,
@@ -36,9 +40,15 @@ class BatchedVecStorm(StormVecEnv):
         self.observation_to_actions = observation_to_actions
         self.simulators = [self.simulator] # Initial simulator from the superclass
         self.num_envs_per_simulator = [self.num_envs]  # Track number of environments per simulator
+    
+    def set_args(self, args: ArgsEmulator):
+        """Sets the arguments for the environment."""
+        self.args = args
         
-    def recompute_num_envs(self, exponential_simulator_distribution=True):
+    def recompute_num_envs(self, exponential_simulator_distribution=False):
         """Recomputes the number of environments per simulator based on the current state of the simulators."""
+        if hasattr(self, "args") and self.args is not None:
+            exponential_simulator_distribution = self.args.geometric_batched_vec_storm
         num_simulators = len(self.simulators)
         exponent = 0.8  # Exponential distribution factor
         assert num_simulators > 0, "No simulators available."
@@ -79,7 +89,8 @@ class BatchedVecStorm(StormVecEnv):
         Args:
             pomdp (SparsePomdp): The POMDP to be added to the batch of simulators.
         """
-
+        _, new_key = jax.random.split(self.rng_key) if hasattr(self, 'rng_key') else (None, int.from_bytes(os.urandom(4), "big"))
+        new_key = int(sum(jax.random.key_data(new_key)))  # Convert JAX key to an integer for reproducibility
         new_storm_vec_env = StormVecEnv(
             pomdp=pomdp,
             get_scalarized_reward=self.get_scalarized_reward,
@@ -89,7 +100,8 @@ class BatchedVecStorm(StormVecEnv):
             max_steps=self.max_steps,
             obs_evaluator=self.obs_evaluator,
             quotient_state_valuations=self.quotient_state_valuations,
-            observation_to_actions=self.observation_to_actions
+            observation_to_actions=self.observation_to_actions,
+            seed=new_key
         )
 
         new_simulator = new_storm_vec_env.simulator

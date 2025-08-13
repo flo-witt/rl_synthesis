@@ -101,7 +101,7 @@ class FatherAgent(AbstractAgent):
             self.fsc = self.load_fsc(args.paynt_fsc_json)
         self.wrapper = wrapper
         self.wrapper_eager = None
-        self.evaluation_result = EvaluationResults(self.environment.goal_value)
+        self.evaluation_result = EvaluationResults(self.environment.goal_value, args=args)
         self.duplexing = False
 
     def __init__(self, environment: EnvironmentWrapperVec, tf_environment: tf_py_environment.TFPyEnvironment, args, load=False, agent_folder=None):
