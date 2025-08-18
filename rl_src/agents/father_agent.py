@@ -392,6 +392,8 @@ class FatherAgent(AbstractAgent):
             self.tf_environment.reset()
         if train_iteration % 50 == 0:
             self.store_percent_of_dormant_neurons()
+        if self.args.shrink_and_perturb and train_iteration % 40 == 0:
+            self.shrink_and_perturb()
 
         return train_loss
 
@@ -841,3 +843,6 @@ class FatherAgent(AbstractAgent):
         self.evaluation_result.add_dormant_neurons_percentage(percent_dormant_neurons * 100)
         logger.info(f"Percentage of dormant neurons in actor network: {percent_dormant_neurons * 100:.2f}%")
         self.agent.actor_net.neuron_activations = None
+
+    def shrink_and_perturb(self):
+        pass

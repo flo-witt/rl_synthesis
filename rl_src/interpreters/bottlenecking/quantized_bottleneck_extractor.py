@@ -146,10 +146,11 @@ class BottleneckExtractor:
     
 
     def extract_fsc(self, policy: TFPolicy, environment: EnvironmentWrapperVec, stochastic_policy: bool = True,
-                    generate_fake_time_step : callable = None) -> TableBasedPolicy:
+                    generate_fake_time_step : callable = None, nr_observations = None) -> TableBasedPolicy:
         # Computes the number of potential combinations of latent memory (3 possible values for each latent memory cell, {-1, 0, 1})
         memory_size = 3 ** self.latent_dim
-        nr_observations = environment.stormpy_model.nr_observations
+        nr_observations = environment.stormpy_model.nr_observations if nr_observations is None else nr_observations
+
         if stochastic_policy:
             fsc_actions = np.zeros((memory_size, nr_observations, len(environment.action_keywords)), dtype=np.float32)
             fsc_updates = np.zeros((memory_size, nr_observations, memory_size), dtype=np.float32)
@@ -208,7 +209,7 @@ class BottleneckExtractor:
                     fsc_updates[j, i] = BottleneckExtractor.convert_memory_vector_to_number(encoded_memory)
         fsc_actions, fsc_updates = Reorganizer.reorganize_action_and_update_functions(
             fsc_actions, fsc_updates, initial_memory)
-        return TableBasedPolicy(policy, fsc_actions, fsc_updates, initial_memory = 0)
+        return TableBasedPolicy(policy, fsc_actions, fsc_updates, initial_memory = 0, action_keywords=environment.action_keywords, nr_observations=nr_observations)
     
     def evaluate_extracted_fsc(self, agent: FatherAgent) -> EvaluationResults:
         extracted_policy = self.extract_fsc(agent.wrapper, agent.environment)

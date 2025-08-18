@@ -127,7 +127,7 @@ def run_experiments(name_of_experiment="results_of_interpretation", path_to_mode
                     random_start_simulator=False, model_condition: str = "", model_memory_size=0, use_rnn_less=False, state_estimation=False,
                     train_state_estimator_continuously=False,
                     curiosity_automata_reward=False, predicate_automata_obs = False, go_explore = False,
-                    stacked_observations=False, env_see_reward=False, env_see_last_action=False, env_see_num_steps=False,
+                    stacked_observations=False, env_see_reward=True, env_see_last_action=True, env_see_num_steps=True,
                     use_entropy_reward=False, full_observable_entropy_reward=False, use_binary_entropy_reward=False):
     """ Run multiple experiments for PAYNT oracle.
     Args:
@@ -174,8 +174,9 @@ def run_experiments(name_of_experiment="results_of_interpretation", path_to_mode
                                     go_explore=go_explore, stacked_observations=stacked_observations,
                                     env_see_reward=env_see_reward, env_see_last_action=env_see_last_action, env_see_num_steps=env_see_num_steps,
                                     use_entropy_reward=use_entropy_reward, full_observable_entropy_reward=full_observable_entropy_reward,
-                                    use_binary_entropy_reward=use_binary_entropy_reward)
-                
+                                    use_binary_entropy_reward=use_binary_entropy_reward,
+                                    )
+
                 with open("args_setting.txt", "w") as f:
                     for key, value in args.__dict__.items():
                         f.write(f"{key}: {value}\n")

@@ -40,17 +40,18 @@ class BatchedVecStorm(StormVecEnv):
         self.observation_to_actions = observation_to_actions
         self.simulators = [self.simulator] # Initial simulator from the superclass
         self.num_envs_per_simulator = [self.num_envs]  # Track number of environments per simulator
+
     
     def set_args(self, args: ArgsEmulator):
         """Sets the arguments for the environment."""
         self.args = args
         
-    def recompute_num_envs(self, exponential_simulator_distribution=False):
+    def recompute_num_envs(self, exponential_simulator_distribution=True):
         """Recomputes the number of environments per simulator based on the current state of the simulators."""
         if hasattr(self, "args") and self.args is not None:
             exponential_simulator_distribution = self.args.geometric_batched_vec_storm
         num_simulators = len(self.simulators)
-        exponent = 0.8  # Exponential distribution factor
+        exponent = 0.95  # Exponential distribution factor
         assert num_simulators > 0, "No simulators available."
         if exponential_simulator_distribution:
             a1 = self.num_envs * (1 - exponent)
@@ -107,13 +108,19 @@ class BatchedVecStorm(StormVecEnv):
         new_simulator = new_storm_vec_env.simulator
 
         self.simulators.append(new_simulator)
-        self.recompute_num_envs()
+        if hasattr(self, "args") and self.args is not None:
+            self.recompute_num_envs(self.args.geometric_batched_vec_storm)
+        else:
+            self.recompute_num_envs()
         self.reset() # Reset to initialize the new simulator states
 
     def set_num_envs(self, num_envs):
         super().set_num_envs(num_envs)
         self.num_envs = num_envs
-        self.recompute_num_envs()
+        if hasattr(self, "args") and self.args is not None:
+            self.recompute_num_envs(self.args.geometric_batched_vec_storm)
+        else:
+            self.recompute_num_envs()
         self.reset()
 
     def step(self, actions) -> Tuple[jnp.array, jnp.array, jnp.array, jnp.array, jnp.array, jnp.array]:

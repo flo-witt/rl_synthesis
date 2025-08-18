@@ -50,7 +50,7 @@ class Recurrent_PPO_agent(FatherAgent):
         self.common_init(environment, tf_environment, args, load, agent_folder)
         train_step_counter = tf.Variable(0)
         optimizer = Adam(
-            learning_rate=args.learning_rate, beta_1=0.99, beta_2=0.99, weight_decay=0.001)
+            learning_rate=args.learning_rate, beta_1=0.99, beta_2=0.99, weight_decay=0.0001)
         tf_environment = self.tf_environment
         action_spec = tf_environment.action_spec()
         if actor_net is not None:
@@ -145,8 +145,12 @@ class Recurrent_PPO_agent(FatherAgent):
         """If PPO, this function sets the masking inactive for agent wrapper."""
         self.wrapper.unset_policy_masker()
 
-    def reset_weights(self):
+    def reset_weights(self, value_only: bool = False):
+        
         for var in self.agent.variables:
+            if value_only:
+                if "Value" not in var.name:
+                    continue
             if "kernel" in var.name:
                 if "dynamic_unroll" in var.name:  # Rekurentní vrstvy
                     # Použití Glorot Uniform pro RNN váhy
@@ -161,6 +165,43 @@ class Recurrent_PPO_agent(FatherAgent):
                 # Inicializace biasů na nulu
                 var.assign(tf.zeros(var.shape))
         self.agent.initialize()
+
+    def shrink_and_perturb(self):
+        """Implements the shrink and perturb method for the agent's actor and critic networks.
+        """
+        logger.info("Shrinking and perturbing actor and critic networks")
+        for var in self.agent.variables:
+            if "kernel" in var.name:
+                if "dynamic_unroll" in var.name:
+                    # For RNN layers, we shrink the weights by a factor of 0.9 and add smaller Gaussian noise
+                    weights = var.numpy()
+                    # Shrink the weights by a factor of 0.9
+                    weights *= 0.9
+                    # Add Gaussian noise with mean 0 and standard deviation 0.0075
+                    noise = np.random.normal(0, 0.075, weights.shape)
+                    weights += noise
+                    var.assign(weights)
+                else:
+                    weights = var.numpy()
+                    # Shrink the weights by a factor of 0.9
+                    weights *= 0.9
+                    # Add Gaussian noise with mean 0 and standard deviation 0.01
+                    noise = np.random.normal(0, 0.1, weights.shape)
+                    weights += noise
+                    var.assign(weights)
+            elif "bias" in var.name:
+                # For biases, we shrink them by a factor of 0.9 and add smaller Gaussian noise
+                biases = var.numpy()
+                biases *= 0.9
+                # Add Gaussian noise with mean 0 and standard deviation 0.001
+                noise = np.random.normal(0, 0.1, biases.shape)
+                biases += noise
+                var.assign(biases)
+        
+        # Reinitialize the agent after perturbation
+        self.agent.initialize()
+        # Log the shrink and perturb action
+        logger.info("Actor and critic networks shrunk and perturbed")
 
 
 

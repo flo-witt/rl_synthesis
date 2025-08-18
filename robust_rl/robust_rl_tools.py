@@ -166,6 +166,16 @@ def parse_args():
         "--noisy-observations",
         action="store_true",
         help="Use noisy observations during training.")
+    parser.add_argument(
+        "--shrink-and-perturb",
+        action="store_true",
+        help="Use shrink and perturb method during training."
+    )
+    parser.add_argument(
+        "--shrink-and-perturb-externally",
+        action="store_true",
+        help="Use external shrink and perturb method during training."
+    )
     args = parser.parse_args()
     return args
 

@@ -83,8 +83,8 @@ class SelfInterpretableExtractor:
         self.extraction_stats = None
         self.optimizing_specification = optimizing_specification
         self.family_quotient_numpy = family_quotient_numpy
-        self.aut_learn_type = AutLearn.MDP
-        self.joint_action_update = True
+        self.aut_learn_type = AutLearn.SMM
+        self.joint_action_update = False
         self.use_gumbel_softmax = use_gumbel_softmax
         self.stacked_observations = stacked_observations
         self.non_deterministic = True
@@ -314,6 +314,29 @@ class SelfInterpretableExtractor:
             print(t)
         return smm_trajs
     
+    def sample_subtrajectories(self, all_trajectories : list[tuple[str, int]], num_samples : int = 10000, fixed_length : int = 32):
+        """
+        Samples subtrajectories from the given trajectories.
+        :param all_trajectories: List of trajectories to sample from.
+        :param num_samples: Number of samples to take.
+        :param fixed_length: Length of each sampled subtrajectory.
+        :return: List of sampled subtrajectories.
+        """
+        sampled_sub_trajs = []
+        num_trajectories = len(all_trajectories)
+        for _ in range(num_samples):
+            random_index = np.random.randint(0, num_trajectories)
+            trajectory = all_trajectories[random_index]
+            if len(trajectory) < fixed_length:
+                sampled_sub_trajs.append(trajectory)
+            else:
+                start_index = np.random.randint(0, len(trajectory) - fixed_length + 1)
+                sub_trajectory = [(trajectory[i][0], trajectory[i][1]) for i in range(start_index, start_index + fixed_length)]
+                sampled_sub_trajs.append(sub_trajectory)
+        logger.info(f"Sampled {len(sampled_sub_trajs)} sub-trajectories of length {fixed_length}")
+
+        return sampled_sub_trajs
+    
     def aalpy_extraction(self, original_policy : TFPolicy, 
                          env : EnvironmentWrapperVec, tf_env : TFPyEnvironment = None) -> tuple[TableBasedPolicy, ExtractionStats]:
         orig_eval_result = evaluate_policy_in_model(original_policy, environment=env, tf_environment=tf_env,
@@ -324,9 +347,10 @@ class SelfInterpretableExtractor:
         # original_policy.set_greedy(True)
         logger.info("Sampling data with original policy")
         use_replay_buffer = True
+        sample_sub_trajs = False
         all_trajectories = []
         num_samples = self.num_data_steps
-        for i in range(3):
+        for i in range(1):
                 buffer = sample_data_with_policy(
                     original_policy, num_samples=num_samples, environment=env, tf_environment=tf_env,
                     use_replay_buffer=use_replay_buffer, get_both=False)
@@ -338,6 +362,9 @@ class SelfInterpretableExtractor:
                         all_trajectories.append(trajectory)
                     print(f"Learned {len(all_trajectories)} trajectories")
                     print("Learned trajectory lengths ", set(map(len, all_trajectories)))
+                    if sample_sub_trajs:
+                        all_trajectories = self.sample_subtrajectories(all_trajectories, fixed_length=32)
+                        print(f"Sampled {len(all_trajectories)} sub-trajectories of length 32")
                     del buffer
                 else:
                     print(f"Buffer size: {len(buffer)}")
