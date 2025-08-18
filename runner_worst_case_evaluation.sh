@@ -3,9 +3,8 @@
 
 source prerequisites/venv/bin/activate
 
-models_dir="subset_evaluation_models"
+models_dir="subset_evaluation"
 
-perturbation_types("", "--shrink_and_perturb_externally")
 
 for model in $(ls $models_dir); do
     echo "Evaluating model: $model"
