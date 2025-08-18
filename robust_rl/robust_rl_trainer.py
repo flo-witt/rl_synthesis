@@ -499,7 +499,7 @@ class RobustTrainer:
         hole_assignment = pomdp_sketch.family.pick_random()
         pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
         pomdps = [pomdp]
-        if False:  # Add nr_initial_pomdps random POMDPs to the environment
+        if True:  # Add nr_initial_pomdps random POMDPs to the environment
             # nr_initial_pomdps = nr_initial_pomdps if not self.extraction_less else 50
             for _ in range(nr_initial_pomdps):
                 hole_assignment = pomdp_sketch.family.pick_random()
@@ -509,13 +509,13 @@ class RobustTrainer:
                 pomdps.append(pomdp)
         environments, tf_environments = self.prepare_subset_environments_for_evaluation(
             pomdp_sketch, pomdps, args_emulated)
-        nr_iterations = 101
+        nr_iterations = 81
         for i in range(200):
             logger.info(f"Iteration {i+1} of extraction RL loop")
             # Train the agent on multiple POMDPs
             self.train_on_new_pomdp(
-                None, self.agent, nr_iterations=nr_iterations)
-            nr_iterations = 101 if not self.args.periodic_restarts else 301
+                pomdp, self.agent, nr_iterations=nr_iterations)
+            nr_iterations = 11 if not self.args.periodic_restarts else 301
             # Evaluate the agent on all POMDPs
             # merged_results, worst_case_index_rl = self.perform_overall_evaluation(merged_results, self.agent.get_policy(False, True),
             #                                                      environments, tf_environments, all_hole_assignments, save=True,

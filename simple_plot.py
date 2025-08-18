@@ -218,9 +218,9 @@ def main():
         "average_rl_return_subset_simulated": 1,
         "average_extracted_fsc_return_subset_simulated": 1,
         "worst_case_on_subset_rl" : 5,
-        "worst_case_on_subset_fsc": 5, 
+        "worst_case_on_subset_fsc": 5,    
     }
-    get_and_plot_some_metric(["models_robust_subset/avoid/benchmark_stats_41.json",
+    get_and_plot_some_metric(["models_robust_subset/avoid/benchmark_stats_43.json",
                               ],
                              metric=metrics_with_periods,
                              constant_dict={"Worst-case from rfPG": 161.0},
