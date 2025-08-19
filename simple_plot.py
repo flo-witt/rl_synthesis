@@ -99,68 +99,130 @@ def plot_family_performance():
 
 
 def plot_some_metrics(metric_dict, metric_name=None, constant_dict=None, data_names=None):
-    """Plot all metrics, using lines for period=1 and distinct markers for period>1."""
-    plt.figure(figsize=(12, 10))
-    colors = plt.cm.tab10.colors  # Paleta barev
-    line_styles = ['-', '--', ':', '-.']  # Různé styly čar
-    markers = ['x', 'o', 's', '^', 'D']  # Různé tvary markerů
+    """
+    Plot all metrics, with optional twin y-axis for specified metrics.
 
+    Parameters:
+    - twin_y_metrics: List of metric names to plot on the twin y-axis.
+    """
+    fig, ax1 = plt.subplots(figsize=(12, 10))
+    colors = plt.cm.tab10.colors
+    line_styles = ['-', '--', ':', '-.']
+    markers = ['x', 'o', 's', '^', 'D']
+
+    # Hlavní osa (ax1)
     for i, (m, metric_data_list) in enumerate(metric_dict.items()):
+        if m == "DBSCAN Clusters":
+            continue  # Tyto metriky vykreslíme na druhou osu
         period = metric_name[m] if isinstance(metric_name, dict) else 1
         for j, metric_data in enumerate(metric_data_list):
             df = pd.DataFrame({m: metric_data})
-            color = colors[j % len(colors)]  # Stejná barva pro stejné data_name
+            color = colors[j % len(colors)]
             label = f"{data_names[j]} ({m})" if data_names is not None else f"{m}_{j}"
-
             if period > 1:
-                # Pro period > 1: markery v dané periodě, s různými tvary
                 indices = np.arange(0, len(df[m]) * period, period)
-                plt.plot(
+                ax1.plot(
                     indices,
                     df[m],
                     label=label,
                     color=color,
-                    linestyle='None',  # Bez čáry
-                    marker=markers[i % len(markers)],  # Různý tvar pro každou metriku
+                    linestyle='None',
+                    marker=markers[i % len(markers)],
                     markersize=8,
-                    mec=color,  # Barva okraje markeru
+                    mec=color,
                     mew=2,
                 )
             else:
-                # Pro period = 1: klasická čára
                 sns.lineplot(
                     data=df,
                     x=df.index,
                     y=m,
+                    ax=ax1,
                     label=label,
                     color=color,
                     linestyle=line_styles[i % len(line_styles)],
                     linewidth=2
                 )
 
-    plt.title("Metrics Plot")
-    plt.xlabel('i-th POMDPs added to the training')
-    plt.ylabel('Values')
+    # Druhá osa (ax2)
+    ax2 = ax1.twinx()
+    for i, (m, metric_data_list) in enumerate(metric_dict.items()):
+        print(f"Processing metric: {m}")
+        if not m == "DBSCAN Clusters":
+            continue
+        period = metric_name[m] if isinstance(metric_name, dict) else 1
+        for j, metric_data in enumerate(metric_data_list):
+            df = pd.DataFrame({m: metric_data})
+            color = colors[(j + 3) % len(colors)]  # Jiná barva pro druhou osu
+            label = f"{data_names[j]} ({m})" if data_names is not None else f"{m}_{j}"
+            if period > 1:
+                indices = np.arange(0, len(df[m]) * period, period)
+                ax2.plot(
+                    indices,
+                    df[m],
+                    label=label,
+                    color=color,
+                    linestyle='None',
+                    marker=markers[i % len(markers)],
+                    markersize=8,
+                    mec=color,
+                    mew=2,
+                )
+            else:
+                sns.lineplot(
+                    data=df,
+                    x=df.index,
+                    y=m,
+                    ax=ax2,
+                    label=label,
+                    color=color,
+                    linestyle=line_styles[i % len(line_styles)],
+                    linewidth=2
+                )
 
-    # Přidání konstant
-    handles, labels = plt.gca().get_legend_handles_labels()
+    # Legenda a popisky
+    handles1, labels1 = ax1.get_legend_handles_labels()
     if constant_dict is not None:
         for key, value in constant_dict.items():
-            line = plt.axhline(y=value, color='gray', linestyle='--', label=f'Constant {key}')
-            handles.append(line)
-            labels.append(f'Constant {key}')
+            print(key)
+            line = ax1.axhline(y=value, color='gray', linestyle='--', label=f'Constant {key}')
+            handles1.append(line)
+            labels1.append(f'Constant {key}')
+    handles2, labels2 = ax2.get_legend_handles_labels() if "DBSCAN Clusters" in metric_name else ([], [])
+    ax1.legend(handles=handles1 + handles2, labels=labels1 + labels2, loc='upper left')
+    ax1.set_title("Metrics Plot")
+    ax1.set_xlabel('i-th POMDPs added to the training')
+    ax1.set_ylabel('Values (main axis)')
+    if "DBSCAN Clusters" in metric_name:
+        ax2.set_ylabel('Values (twin axis)')
+    ax1.grid(True)
 
-    plt.legend(handles=handles, labels=labels)
-    plt.grid(True)
     plt.savefig('metrics_plot.png')
+    plt.close()
+
 
 def get_renamer():
     metrics_renamer = {
         "family_performance": "Verified Worst-Case Performance",
         "average_rl_return_subset_simulated": "Empirical RL Subset Simulated",
         "average_extracted_fsc_return_subset_simulated": "Empirical FSC Subset Simulated",
+        "nr_of_clusters": "DBSCAN Clusters"
     }
     return metrics_renamer
+
+def plot_single_file(file_path, metric, constant_dict=None, data_names=None):
+    """Load a single file and plot the specified metric."""
+    result = load_result_from_json(file_path)
+    if isinstance(metric, list):
+        metrics_dict = {m: ast.literal_eval(result[m]) for m in metric}
+    else:
+        metrics_dict = {metric: ast.literal_eval(result[metric])}
+
+    # Convert to numpy arrays
+    metrics_numpy = {m: np.abs(np.array(numbers, dtype=np.float32)) for m, numbers in metrics_dict.items()}
+
+    # Plot the metrics
+    plot_some_metrics(metrics_numpy, metric_name=metric, constant_dict=constant_dict, data_names=data_names)
 
 def get_and_plot_some_metric(file_path, metric, constant_dict=None, data_names=None):
     """Load specific metrics from JSON files and return a dictionary of metrics and their data."""
@@ -203,12 +265,9 @@ def get_and_plot_some_metric(file_path, metric, constant_dict=None, data_names=N
             plot_some_metrics(metrics_dict, metric_name=metric, constant_dict=constant_dict, data_names=data_names)
             return metrics_dict
     else:
-        result = load_result_from_json(file_path)
-        metric_numbers = ast.literal_eval(result[metric])
-        metric_numpy = np.abs(np.array(metric_numbers, dtype=np.float32))
-        metrics_dict = {metric: metric_numpy}
-        plot_some_metrics(metrics_dict, metric_name=metric, constant_dict=constant_dict, data_names=data_names)
-        return metrics_dict
+        # Pokud je 'file_path' jediný soubor, použijeme původní chování
+        plot_single_file(file_path, metric, constant_dict=constant_dict, data_names=data_names)
+        return None
 
 
 def main():
@@ -217,6 +276,7 @@ def main():
         "family_performance": 1,
         "average_rl_return_subset_simulated": 1,
         "average_extracted_fsc_return_subset_simulated": 1,
+        "nr_of_clusters": 1,
         "worst_case_on_subset_rl" : 5,
         "worst_case_on_subset_fsc": 5,    
     }
@@ -225,7 +285,7 @@ def main():
                              metric=metrics_with_periods,
                              constant_dict={"Worst-case from rfPG": 161.0},
                              data_names=["Geometric Without Restart, short trainings",
-                                         ])
+                                         "Geometric Without Restart, short trainings, shrink and perturb"])
     # reach_probs_numbers = ast.literal_eval(result["reach_probs"])
     # reach_probs_numpy = np.array(reach_probs_numbers, dtype=np.float32)
     # plot_reach_probabilities(reach_probs_numpy)

@@ -5,6 +5,7 @@ from robust_rl.robust_rl_tools import create_json_file_name, assignment_to_pomdp
 import paynt.quotient.fsc
 import paynt.synthesizer.synthesizer_ar
 
+from robust_rl.rnn_analyzer import RNNAnalyzer
 
 import os
 
@@ -101,6 +102,7 @@ class RobustTrainer:
             self.worst_cases_reachability_fsc = []
             self.period_between_worst_case_evaluation = 5
             self.shrink_and_perturb_activated = []
+            self.nr_of_clusters = []
 
         def add_rl_performance(self, performance: float):
             self.rl_performance_single_pomdp.append(performance)
@@ -164,7 +166,8 @@ class RobustTrainer:
             "worst_cases_reachability_rl": str(benchmark_stats.worst_cases_reachability_rl),
             "worst_cases_reachability_fsc": str(benchmark_stats.worst_cases_reachability_fsc),
             "period_between_worst_case_evaluation": str(benchmark_stats.period_between_worst_case_evaluation),
-            "shrink_and_perturb_activated": str(benchmark_stats.shrink_and_perturb_activated)
+            "shrink_and_perturb_activated": str(benchmark_stats.shrink_and_perturb_activated),
+            "nr_of_clusters": str(benchmark_stats.nr_of_clusters)
         }
         with open(path, 'w') as f:
             json.dump(stats, f, indent=4)
@@ -491,6 +494,8 @@ class RobustTrainer:
         """
         Pure RL loop, without FSC extraction.
         """
+        logger.info("Starting extraction loop")
+        rnn_analyzer = RNNAnalyzer(self.args)
         select_worst_case_by_index = False
         args_emulated = self.args
 
@@ -509,12 +514,14 @@ class RobustTrainer:
                 pomdps.append(pomdp)
         environments, tf_environments = self.prepare_subset_environments_for_evaluation(
             pomdp_sketch, pomdps, args_emulated)
-        nr_iterations = 81
+        nr_iterations = 101
         for i in range(200):
             logger.info(f"Iteration {i+1} of extraction RL loop")
             # Train the agent on multiple POMDPs
             self.train_on_new_pomdp(
                 pomdp, self.agent, nr_iterations=nr_iterations)
+            nr_clusters = rnn_analyzer.analyze(self.agent, self.tf_env)
+            self.benchmark_stats.nr_of_clusters.append(nr_clusters)
             nr_iterations = 11 if not self.args.periodic_restarts else 301
             # Evaluate the agent on all POMDPs
             # merged_results, worst_case_index_rl = self.perform_overall_evaluation(merged_results, self.agent.get_policy(False, True),
@@ -583,6 +590,7 @@ class RobustTrainer:
 
             self.agent.evaluation_result.save_to_json(
                 json_path, new_pomdp=True)
+            
             self.save_stats(json_path)
 
 
