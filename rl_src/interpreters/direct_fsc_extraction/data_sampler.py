@@ -1,6 +1,7 @@
 from typing import Union, List, Tuple
 
 import tf_agents
+import tensorflow_probability as tfp
 
 from tf_agents.policies.tf_policy import TFPolicy
 from tf_agents.replay_buffers.tf_uniform_replay_buffer import TFUniformReplayBuffer
@@ -15,9 +16,12 @@ def sample_data_with_policy(policy: TFPolicy, num_samples=100,
                             tf_environment: TFPyEnvironment = None,
                             trajectory_buffer: TrajectoryBuffer = None,
                             use_replay_buffer=True,
-                            get_both=False) -> Union[TFUniformReplayBuffer,List, Tuple[List, TFUniformReplayBuffer]]:
+                            get_both=False,
+                            seed=None) -> Union[TFUniformReplayBuffer,List, Tuple[List, TFUniformReplayBuffer]]:
     prev_time_step = tf_environment.reset()
+    seed_stream = tfp.util.SeedStream(seed, salt="sampling")
     policy_state = policy.get_initial_state(environment.batch_size)
+
     action_function = tf_agents.utils.common.function(policy.action)
     if get_both:
         replay_buffer_lists = [prev_time_step]
@@ -31,7 +35,7 @@ def sample_data_with_policy(policy: TFPolicy, num_samples=100,
         replay_buffer = [prev_time_step]
 
     for i in range(num_samples):
-        policy_step = action_function(prev_time_step, policy_state)
+        policy_step = action_function(prev_time_step, policy_state, seed=seed_stream())
         action = policy_step.action
         policy_state = policy_step.state
         time_step = tf_environment.step(action)

@@ -10,6 +10,13 @@ import os
 
 import paynt.synthesizer.synthesizer_onebyone
 
+from paynt.synthesizer.synthesizer_pomdp import SynthesizerPomdp
+from paynt.quotient.storm_pomdp_control import StormPOMDPControl
+
+from paynt.quotient.pomdp import PomdpQuotient
+from paynt.quotient.pomdp_family import PomdpFamilyQuotient
+
+
 from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_agent
 
 
@@ -176,6 +183,17 @@ def parse_args():
         action="store_true",
         help="Use external shrink and perturb method during training."
     )
+    parser.add_argument(
+        "--single-pomdp-setting",
+        action="store_true",
+        help="Experimental setting, where only a single POMDP is selected."
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Random seed for reproducibility. Default is 42."
+    )
     args = parser.parse_args()
     return args
 
@@ -226,3 +244,26 @@ def generate_heatmap_complete(pomdp_sketch, fsc):
         evaluations.append(one_by_one.evaluate(
             assignment, keep_value_only=True))
     return evaluations, hole_assignments_to_test
+
+def compute_policy_by_saynt(pomdp, original_pomdp_sketch : PomdpFamilyQuotient):
+    PomdpQuotient.initial_memory_size = 1
+    PomdpQuotient.posterior_aware = False
+    pomdp_quotient = PomdpQuotient(pomdp, original_pomdp_sketch.specification)
+
+    storm_control = StormPOMDPControl()
+    storm_options = "cutoff"
+    iterative_storm = [900, 8, 3]
+    use_storm_cutoffs = False
+    get_storm_result = None
+    unfold_strategy_storm = "storm"
+    prune_storm = False
+
+    storm_control.set_options(
+        storm_options, get_storm_result, iterative_storm, use_storm_cutoffs,
+        unfold_strategy_storm, prune_storm
+    )
+    method = "ar"
+
+    synthesizer = SynthesizerPomdp(pomdp_quotient, method, storm_control)
+    synthesizer.run()
+

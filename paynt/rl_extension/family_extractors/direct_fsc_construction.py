@@ -35,11 +35,13 @@ class ConstructorFSC:
                 action_for_memory = []
                 for observation in range(np_action_function.shape[1]):
                     action_dict = {}
+                    illegal_action_prob = 0.0
                     for action, prob in enumerate(np_action_function[memory][observation]):
                         if prob > 0.0:
                             action = int(action) if (family_quotient_numpy and original_action_labels) is None else family_quotient_numpy.action_labels.tolist(
                             ).index(original_action_labels[action])
                             if family_quotient_numpy is not None and not family_quotient_numpy.observation_to_legal_action_mask[observation][action]:
+                                illegal_action_prob += prob
                                 continue
                             else:
                                 action_dict[action] = prob
@@ -50,6 +52,12 @@ class ConstructorFSC:
                             # Uniform distribution over legal actions
                             action_dict = {
                                 action: 1.0 / len(action_dict) for action in action_dict}
+                    # Uniformly distribute the illegal action probability to legal actions
+                    if illegal_action_prob > 0.0:
+                        for action in action_dict:
+                            action_dict[action] += illegal_action_prob / len(
+                                action_dict)
+
                     # Normalize the action probabilities
                     total_prob = sum(action_dict.values())
                     if total_prob > 0:

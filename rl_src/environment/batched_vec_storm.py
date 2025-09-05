@@ -51,7 +51,9 @@ class BatchedVecStorm(StormVecEnv):
         if hasattr(self, "args") and self.args is not None:
             exponential_simulator_distribution = self.args.geometric_batched_vec_storm
         num_simulators = len(self.simulators)
-        exponent = 0.95  # Exponential distribution factor
+        print(f"Recomputing number of environments per simulator: {num_simulators} simulators, total {self.num_envs} environments.")
+        print(f"Exponential distribution: {exponential_simulator_distribution}")
+        exponent = 0.4  # Exponential distribution factor
         assert num_simulators > 0, "No simulators available."
         if exponential_simulator_distribution:
             a1 = self.num_envs * (1 - exponent)
@@ -69,6 +71,7 @@ class BatchedVecStorm(StormVecEnv):
             # Distribute any remaining environments evenly across simulators
             for i in range(self.num_envs % num_simulators):
                 self.num_envs_per_simulator[i] += 1
+        print(f"Number of environments per simulator: {self.num_envs_per_simulator}, total: {sum(self.num_envs_per_simulator)}")
 
     def set_dominant_simulator(self, simulator_index):
         """Sets the dominant simulator to be used for the next reset and steps.
@@ -90,7 +93,7 @@ class BatchedVecStorm(StormVecEnv):
         Args:
             pomdp (SparsePomdp): The POMDP to be added to the batch of simulators.
         """
-        _, new_key = jax.random.split(self.rng_key) if hasattr(self, 'rng_key') else (None, int.from_bytes(os.urandom(4), "big"))
+        _, new_key = jax.random.split(self.rng_key)
         new_key = int(sum(jax.random.key_data(new_key)))  # Convert JAX key to an integer for reproducibility
         new_storm_vec_env = StormVecEnv(
             pomdp=pomdp,

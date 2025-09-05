@@ -109,7 +109,7 @@ class Recurrent_PPO_agent(FatherAgent):
             
         self.wrapper = PolicyMaskWrapper(self.agent.policy, observation_and_action_constraint_splitter, tf_environment.time_step_spec(),
                                            is_greedy=(not self.args.prefer_stochastic), predicate_automata=predicate_automata)
-        self.wrapper.set_policy_masker()
+        # self.wrapper.set_policy_masker()
         self.wrapper_eager = PyTFEagerPolicy(self.wrapper, True, False)
         logging.info("Collector driver initialized")
         if self.args.entropy_reward:
@@ -139,10 +139,12 @@ class Recurrent_PPO_agent(FatherAgent):
 
     def set_policy_masking(self):
         """If PPO, this function sets the masking active for agent wrapper."""
+        print("Masker set")
         self.wrapper.set_policy_masker()
 
     def unset_policy_masking(self):
         """If PPO, this function sets the masking inactive for agent wrapper."""
+        print("Masker unset")
         self.wrapper.unset_policy_masker()
 
     def reset_weights(self, value_only: bool = False):

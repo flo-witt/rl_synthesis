@@ -295,7 +295,7 @@ class FatherAgent(AbstractAgent):
             self.driver = DynamicStepDriver(
                 tf_environment,
                 eager,
-                observers=observers,
+                observers=observers, 
                 num_steps=num_steps)
             
     def init_pretraining_driver(self, reward_generator: EntropyRewardGenerator = None):
@@ -367,7 +367,7 @@ class FatherAgent(AbstractAgent):
         if self.wrapper is None:
             return self.agent.policy
         else:
-            self.wrapper.set_policy_masker()
+            # self.wrapper.set_policy_masker()
             return self.wrapper
 
     def train_innerest_body(self, experience, train_iteration, randomized=False, vectorized=False):
@@ -631,7 +631,7 @@ class FatherAgent(AbstractAgent):
             self.environment.unset_go_explore()
         # if self.args.prefer_stochastic:
         self.set_agent_stochastic()
-        # self.set_policy_masking()
+        self.set_policy_masking()
         # else:
         #     self.set_agent_greedy()
         #     self.set_policy_masking()
@@ -654,7 +654,7 @@ class FatherAgent(AbstractAgent):
                 # self.set_agent_greedy()
 
                 logger.info("Evaluating agent with greedy masked policy.")
-                # self.set_policy_masking()
+                self.set_policy_masking()
                 if self.args.render_if_possible and self.environment.grid_like_renderer:
                     self.render_agent_behavior(self.get_evaluation_policy())
             self.vec_driver.run()

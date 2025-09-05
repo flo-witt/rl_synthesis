@@ -12,14 +12,25 @@ import pstats
 import paynt.synthesizer.synthesizer_onebyone
 import paynt.utils
 import paynt.utils.timer
+from paynt.quotient.pomdp_family import PomdpFamilyQuotient
 
 from tests.general_test_tools import init_args
 
 from paynt.rl_extension.robust_rl.family_quotient_numpy import FamilyQuotientNumpy
 
+import random
+import numpy as np
+import tensorflow as tf
+
 import logging
 
 logger = logging.getLogger(__name__)
+
+def set_global_seeds(seed):
+    """Set the global random seeds for reproducibility."""
+    tf.random.set_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
 
 def main():
@@ -35,12 +46,12 @@ def main():
     paynt.cli.setup_logger()
 
     project_path = args_cmd.project_path
-    pomdp_sketch = load_sketch(project_path)
+    pomdp_sketch : PomdpFamilyQuotient = load_sketch(project_path)
     json_path = create_json_file_name(project_path)
 
 
-    num_samples_learn = 802
-    nr_pomdps = 4
+    num_samples_learn = 601
+    nr_pomdps = 5
 
     # This can be useful for extraction and some other stuff.
     family_quotient_numpy = FamilyQuotientNumpy(pomdp_sketch)
@@ -64,9 +75,18 @@ def main():
     args_emulated.noisy_observations = args_cmd.noisy_observations
     args_emulated.shrink_and_perturb = args_cmd.shrink_and_perturb
     args_emulated.shrink_and_perturb_externally = args_cmd.shrink_and_perturb_externally
+    args_emulated.single_pomdp_experiment = args_cmd.single_pomdp_setting
+    args_emulated.seed = args_cmd.seed
+    
+    set_global_seeds(args_emulated.seed)
     # pomdp = initialize_prism_model(prism_path, properties_path, constants="")
 
-    hole_assignment = pomdp_sketch.family.pick_any()
+    
+
+    if args_emulated.single_pomdp_experiment:
+        nr_pomdps = 0
+
+    hole_assignment = pomdp_sketch.family.pick_random()
     pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
 
     extractor = initialize_extractor(

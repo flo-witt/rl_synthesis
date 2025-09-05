@@ -14,7 +14,7 @@ def init_environment(args : ArgsEmulator) -> tuple[EnvironmentWrapperVec, TFPyEn
 
 def init_args(prism_path, properties_path, nr_runs=101, goal_value_multiplier = 1.0, batched_vec_storm = False, masked_training = False) -> ArgsEmulator:
     args = ArgsEmulator(prism_model=prism_path, prism_properties=properties_path, learning_rate=1.6e-4,
-                            restart_weights=0, learning_method="PPO", prefer_stochastic=False,
+                            restart_weights=0, learning_method="PPO", prefer_stochastic=True,
                             nr_runs=nr_runs, agent_name="Testus", load_agent=False,
                             evaluate_random_policy=False, max_steps=401, evaluation_goal=40.0, evaluation_antigoal=-0.0,
                             trajectory_num_steps=32, discount_factor=0.995, num_environments=256,

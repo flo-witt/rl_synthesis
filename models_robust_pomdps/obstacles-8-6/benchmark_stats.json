@@ -1,8 +1,0 @@
-{
-    "fsc_size": "9",
-    "num_training_steps_per_iteration": "301",
-    "rl_performance_single_pomdp": "[69.027115, 108.02261, 107.85302, 116.00737, 144.52866, 200.86842, 122.49708, 162.38899, 318.37848]",
-    "extracted_fsc_performance": "[-110.54394, -223.42702, -155.252, -282.2964, -196.492, -215.94025, -136.92787, -206.06633, -311.719]",
-    "family_performance": "[281.1764609658989, 425.40195215517315, 270.9229526238823, 411.40146978511086, 273.64858827155484, 284.4091505424329, 7955.660428448907, 300.817726724323, 814.5137853061498]",
-    "available_nodes_in_fsc": "[array([ True, False,  True,  True,  True,  True, False,  True,  True]), array([ True,  True,  True,  True, False,  True, False, False, False]), array([ True, False,  True,  True,  True,  True, False,  True,  True]), array([ True,  True,  True,  True,  True,  True, False, False, False]), array([ True,  True,  True,  True, False,  True, False, False, False]), array([ True,  True,  True,  True,  True,  True,  True, False, False]), array([ True,  True,  True,  True,  True,  True,  True,  True,  True]), array([ True,  True,  True,  True,  True,  True, False, False,  True]), array([ True,  True,  True,  True,  True,  True,  True,  True,  True])]"
-}

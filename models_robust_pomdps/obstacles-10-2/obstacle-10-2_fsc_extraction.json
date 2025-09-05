@@ -1,8 +1,0 @@
-{
-    "fsc_size": "9",
-    "num_training_steps_per_iteration": "301",
-    "rl_performance_single_pomdp": "[36.69204, 19.640057, 22.928068, 23.3589, 24.14663, 23.826633]",
-    "extracted_fsc_performance": "[-50.822212]",
-    "family_performance": "[95.33070645194286]",
-    "available_nodes_in_fsc": "[array([ True,  True, False, False, False, False, False,  True, False])]"
-}

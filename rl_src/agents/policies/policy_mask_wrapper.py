@@ -182,7 +182,7 @@ class PolicyMaskWrapper(TFPolicy):
             logits = distribution.action.logits
             logits = self.current_masker(logits, mask)
             # action = tf.random.categorical(distribution.action.logits, num_samples=1, dtype=tf.int32)
-            action = tf.random.categorical(logits, num_samples=1, dtype=tf.int32)
+            action = tf.random.categorical(logits, num_samples=1, dtype=tf.int32, seed=seed)
             action = tf.squeeze(action, axis=-1)
 
         if self.predicate_automata is not None:

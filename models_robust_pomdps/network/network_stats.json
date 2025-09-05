@@ -1,8 +1,0 @@
-{
-    "average_rl_performance_subset_simulated": "[3.7711294, 3.7553267, 3.8055754, 3.8130326, 3.8570669, 3.8160512, 3.8180044]",
-    "average_extracted_fsc_performance_subset_simulated": "[3.6441593, 3.685268, 3.6947544, 3.7252605, 3.6214657, 3.5753348, 3.668527]",
-    "family_performance": "[3.655449010271115, 3.764007857178834, 3.7408847497517956, 3.756499117386752, 3.6542490585758296, 3.648481946713531, 3.7283466844639714]",
-    "available_nodes_in_fsc": "[array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True]), array([ True,  True,  True]), array([ True,  True,  True]), array([ True,  True,  True])]",
-    "worst_case_pomdp_values_simulated_rl": "[2.2007813, 3.8589845, 3.7921875, 3.8457031, 3.882422, 3.84375, 3.8167968, 3.865625]",
-    "worst_case_pomdp_values_simulated_fsc": "[3.5914063, 3.7257812, 3.6726563, 3.6953125, 3.6105468, 3.5761719, 3.6945312]"
-}

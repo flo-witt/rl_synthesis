@@ -24,6 +24,9 @@ class ExtractionStats:
         self.evaluation_accuracies = []
         self.number_of_training_trajectories = []
 
+        self.lstm_extracted_reachability = []
+        self.lstm_extracted_return = []
+
     def add_extraction_result(self, extracted_policy_reachability: float, extracted_policy_reward: float):
         self.extracted_policy_reachabilities.append(
             extracted_policy_reachability)
@@ -38,6 +41,10 @@ class ExtractionStats:
 
     def add_number_of_training_trajectories(self, number_of_trajectories: int):
         self.number_of_training_trajectories.append(number_of_trajectories)
+
+    def add_lstm_result(self, lstm_extracted_reachability: float, lstm_extracted_return: float):
+        self.lstm_extracted_reachability.append(lstm_extracted_reachability)
+        self.lstm_extracted_return.append(lstm_extracted_return)
 
     def store_as_json(self, model_name: str, experiments_path: str):
         if not os.path.exists(experiments_path):

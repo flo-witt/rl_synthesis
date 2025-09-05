@@ -119,7 +119,22 @@ def plot_some_metrics(metric_dict, metric_name=None, constant_dict=None, data_na
             df = pd.DataFrame({m: metric_data})
             color = colors[j % len(colors)]
             label = f"{data_names[j]} ({m})" if data_names is not None else f"{m}_{j}"
-            if period > 1:
+            # If data are boolean, use scatter plot with crosses for True values
+            print(f"Processing metric: {m}")
+            print(f"Data type: {type(metric_data[0])}, Sample data: {metric_data[:10]}")
+            if isinstance(metric_data[0], (bool, np.bool_)):
+                true_indices = [index for index, value in enumerate(metric_data) if value]
+                ax1.scatter(
+                    true_indices,
+                    [1] * len(true_indices),
+                    label=label,
+                    color="red",
+                    marker='x',
+                    s=100,
+                    edgecolor="red",
+                    linewidth=2,
+                )
+            elif period > 1:
                 indices = np.arange(0, len(df[m]) * period, period)
                 ax1.plot(
                     indices,
@@ -133,6 +148,8 @@ def plot_some_metrics(metric_dict, metric_name=None, constant_dict=None, data_na
                     mew=2,
                 )
             else:
+                if "Simple Cloning" == m:
+                    color = "green"
                 sns.lineplot(
                     data=df,
                     x=df.index,
@@ -183,18 +200,26 @@ def plot_some_metrics(metric_dict, metric_name=None, constant_dict=None, data_na
     # Legenda a popisky
     handles1, labels1 = ax1.get_legend_handles_labels()
     if constant_dict is not None:
-        for key, value in constant_dict.items():
+        # Generate colors for constants
+        colors = plt.cm.tab10.colors
+        for i, (key, value) in enumerate(constant_dict.items()):
             print(key)
-            line = ax1.axhline(y=value, color='gray', linestyle='--', label=f'Constant {key}')
+
+            # generate a horizontal line for each constant with different color
+            line = ax1.axhline(y=value, color=colors[i], linestyle='-', label=f'Constant {key}', linewidth=2)
             handles1.append(line)
             labels1.append(f'Constant {key}')
     handles2, labels2 = ax2.get_legend_handles_labels() if "DBSCAN Clusters" in metric_name else ([], [])
     ax1.legend(handles=handles1 + handles2, labels=labels1 + labels2, loc='upper left')
-    ax1.set_title("Metrics Plot")
+    ax1.set_title("Metrics Plot (Minimization)")
     ax1.set_xlabel('i-th POMDPs added to the training')
     ax1.set_ylabel('Values (main axis)')
+    ax1.set_ylim(bottom=0, top=500)  # Set lower limit to 0 for the main axis
+    ax2.set_ylim(bottom=0)  
+    
+
     if "DBSCAN Clusters" in metric_name:
-        ax2.set_ylabel('Values (twin axis)')
+        ax2.set_ylabel('Size of the DBSCAN Clusters')
     ax1.grid(True)
 
     plt.savefig('metrics_plot.png')
@@ -206,7 +231,8 @@ def get_renamer():
         "family_performance": "Verified Worst-Case Performance",
         "average_rl_return_subset_simulated": "Empirical RL Subset Simulated",
         "average_extracted_fsc_return_subset_simulated": "Empirical FSC Subset Simulated",
-        "nr_of_clusters": "DBSCAN Clusters"
+        "nr_of_clusters": "DBSCAN Clusters",
+        "lstm_extracted_return": "Simple Cloning"
     }
     return metrics_renamer
 
@@ -234,14 +260,23 @@ def get_and_plot_some_metric(file_path, metric, constant_dict=None, data_names=N
         if isinstance(metric, dict):
             for m, period in metric.items():
                 metric_data = [ast.literal_eval(result[m]) for result in results]
-                metric_numpy = [np.abs(np.array(numbers, dtype=np.float32)) for numbers in metric_data]
+                # If int or float, convert to np.float32, if bool, remain as is
+                metric_numpy = [np.abs(np.array(numbers, dtype=np.float32)) if isinstance(numbers, (int, float)) else np.abs(numbers) for numbers in metric_data]
                 metrics_dict[m] = metric_numpy
-
+            if "average_extracted_fsc_return_subset_simulated" in metrics_dict:
+                if len(metrics_dict["average_extracted_fsc_return_subset_simulated"][0]) == 2 * len(metrics_dict[list(metrics_dict.keys())[0]][0]):
+                    print("Averaging average_extracted_fsc_return_subset_simulated to match lengths")
+                    averaged = []
+                    for arr in metrics_dict["average_extracted_fsc_return_subset_simulated"]:
+                        averaged_arr = [(arr[i] + arr[i+1]) / 2 for i in range(0, len(arr), 2)]
+                        averaged.append(np.array(averaged_arr))
+                    metrics_dict["average_extracted_fsc_return_subset_simulated"] = averaged
             # Přejmenování metrik, pokud je potřeba
             metrics_renamer = get_renamer()
             metrics_dict = {metrics_renamer.get(m, m): v for m, v in metrics_dict.items()}
             metric = {metrics_renamer.get(m, m): period for m, period in metric.items()}
-
+            # Pokud je average_extracted_fsc_return_subset_simulated dvakrát delší než ostatní metriky, zprůměruj vždy 0 a 1, 2 a 3, atd.
+            
             # Předání slovníku s periodami jako 'metric_name'
             plot_some_metrics(metrics_dict, metric_name=metric, constant_dict=constant_dict, data_names=data_names)
             return metrics_dict
@@ -270,6 +305,32 @@ def get_and_plot_some_metric(file_path, metric, constant_dict=None, data_names=N
         return None
 
 
+
+def get_proper_constants(file_path):
+    """Get the proper constants for a given domain name."""
+    constants_dict = {
+        "avoid": {"Worst-case from rfPG": 161.05,
+                "Best-case from AALpy extraction": 143.1276},
+        "obstacles-10-2": {"Worst-case from rfPG": 28.64184,
+                        "Best-case from longer training (restarts/geometric)": 47.64920},
+        "obstacles-8-5": {"Worst-case from rfPG": 205.8682,
+                        "Best-case from longer training (restarts/geometric)": 212.6712},
+        "network": {"Worst-case from rfPG": 3.4816,
+                "Best-case from longer training (restarts/geometric)": 3.7283},
+        "rover": {"Worst-case from rfPG": 296.851,
+                "Best-case from longer training (restarts/geometric)": 298.05970},
+        "drone-2-6-1": {"Worst-case from rfPG": 0.0,
+                    "Best-case from longer training (restarts/geometric)": 0.4711},
+        "maze-10": {"Worst-case from rfPG": 0.0,
+                "Best-case from longer training (restarts/geometric)": 8.22631}
+    }
+
+    model_name = file_path.split("/")[-2]
+    if model_name in constants_dict:
+        return constants_dict[model_name]
+    else:
+        return None
+
 def main():
     metrics = ["family_performance", "average_rl_return_subset_simulated", "average_extracted_fsc_return_subset_simulated"]
     metrics_with_periods = {
@@ -277,15 +338,23 @@ def main():
         "average_rl_return_subset_simulated": 1,
         "average_extracted_fsc_return_subset_simulated": 1,
         "nr_of_clusters": 1,
-        "worst_case_on_subset_rl" : 5,
-        "worst_case_on_subset_fsc": 5,    
+        # "worst_case_on_subset_rl" : 5,
+        # "worst_case_on_subset_fsc": 5,
+        # "shrink_and_perturb_activated": 1,
+        # "lstm_extracted_return": 1
     }
-    get_and_plot_some_metric(["models_robust_subset/avoid/benchmark_stats_43.json",
-                              ],
+    file_paths = [# "avoid/benchmark_stats.json",
+                               "models_robust_subset/avoid/benchmark_stats_72.json",
+                              ]
+    print(f"Processing files: {file_paths}")
+    constant_dict = get_proper_constants(file_paths[0])
+    get_and_plot_some_metric(file_path=file_paths,
                              metric=metrics_with_periods,
-                             constant_dict={"Worst-case from rfPG": 161.0},
-                             data_names=["Geometric Without Restart, short trainings",
-                                         "Geometric Without Restart, short trainings, shrink and perturb"])
+                             constant_dict=constant_dict,
+                             data_names=[# "Geometric, short trainings",
+                                         "Single POMDP Setting",
+
+                                         ])
     # reach_probs_numbers = ast.literal_eval(result["reach_probs"])
     # reach_probs_numpy = np.array(reach_probs_numbers, dtype=np.float32)
     # plot_reach_probabilities(reach_probs_numpy)

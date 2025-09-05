@@ -19,7 +19,9 @@ class TableBasedPolicy(TFPolicy):
                  initial_memory = 0,
                  action_keywords = None,
                  descending_actions = None,
-                 nr_observations = None
+                 nr_observations = None,
+                 time_step_spec : TimeStep = None,
+                 action_spec = None
                  ):
         """
         TableBasedPolicy is a policy that uses a table to map observations to actions and updates.
@@ -29,7 +31,11 @@ class TableBasedPolicy(TFPolicy):
             action_function (np.ndarray): The action function table. It has shape (nr_model_states, nr_observations).
             update_function (np.ndarray): The update function table. It has shape (nr_model_states, nr_observations)."""
         policy_state_spec = TensorSpec(shape=(), dtype=tf.int32)
-        super(TableBasedPolicy, self).__init__(original_policy.time_step_spec, original_policy.action_spec, policy_state_spec=policy_state_spec)
+
+        if time_step_spec is not None and action_spec is not None:
+            super(TableBasedPolicy, self).__init__(time_step_spec, action_spec, policy_state_spec=policy_state_spec)
+        else:
+            super(TableBasedPolicy, self).__init__(original_policy.time_step_spec, original_policy.action_spec, policy_state_spec=policy_state_spec)
         self.nr_actions = len(action_keywords)
         self.nr_observations = nr_observations if nr_observations is not None else action_function.shape[1]
         self.mem_size = action_function.shape[0]

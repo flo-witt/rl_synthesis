@@ -39,6 +39,7 @@ import os
 from interpreters.direct_fsc_extraction.extraction_stats import ExtractionStats
 from interpreters.direct_fsc_extraction.data_sampler import sample_data_with_policy
 from interpreters.direct_fsc_extraction.cloned_fsc_actor_policy import ClonedFSCActorPolicy
+from interpreters.direct_fsc_extraction.cloned_lstm_network_policy import ClonedLSTMActorPolicy
 
 from interpreters.aalpy_extraction.mealy_automata_learner import MealyAutomataLearner
 
@@ -65,7 +66,7 @@ class SelfInterpretableExtractor:
                  max_episode_len = 800, 
                  optimizing_specification : SpecificationChecker.Constants = SpecificationChecker.Constants.REACHABILITY,
                  family_quotient_numpy : FamilyQuotientNumpy = None, autlearn_extraction = True,
-                 use_gumbel_softmax = False, stacked_observations = False):
+                 use_gumbel_softmax = False, stacked_observations = False, seed=42):
         self.autlearn_extraction = autlearn_extraction
         self.iteration = 0
         self.memory_len = memory_len
@@ -89,6 +90,7 @@ class SelfInterpretableExtractor:
         self.stacked_observations = stacked_observations
         self.non_deterministic = True
         self.complete_probs = True if use_gumbel_softmax else False
+        self.seed = seed
 
     def set_memory_len(self, memory_len):
         self.memory_len = memory_len
@@ -117,7 +119,8 @@ class SelfInterpretableExtractor:
                 optimization_specification = self.optimizing_specification, model_name = self.model_name,
                 find_best_policy=self.get_best_policy_flag,
                 max_episode_length=self.max_episode_len, observation_length=env.observation_spec_len, 
-                orig_env_use_stacked_observations=self.stacked_observations)
+                orig_env_use_stacked_observations=self.stacked_observations,
+                use_gumbel_softmax=True, seed=self.seed)
         self.extraction_stats = ExtractionStats(original_policy_reachability=orig_eval_result.reach_probs[-1],
                                                      original_policy_reward=orig_eval_result.returns[-1],
                                                      use_one_hot=self.is_one_hot,
@@ -230,7 +233,7 @@ class SelfInterpretableExtractor:
                             fsc_actions[fsc_id, obs, action_int] = prob
                             fsc_updates[fsc_id, obs, next_fsc_id] = prob
                 elif self.aut_learn_type == AutLearn.DET:
-                    if joint_action_update:
+                    if self.joint_action_update:
                         raise Exception("Not Implemented")
                     next_state = state.transitions[str_obs]
                     action = int(state.output_fun[str_obs]) if state.output_fun[str_obs] != "epsilon" else 0
@@ -343,7 +346,8 @@ class SelfInterpretableExtractor:
                                                         max_steps=(self.max_episode_len + 1) * 2)
 
         # if isinstance(original_policy, PolicyMaskWrapper):
-        original_policy.set_policy_masker()
+        # original_policy.set_policy_masker()
+        
         # original_policy.set_greedy(True)
         logger.info("Sampling data with original policy")
         use_replay_buffer = True
@@ -363,7 +367,7 @@ class SelfInterpretableExtractor:
                     print(f"Learned {len(all_trajectories)} trajectories")
                     print("Learned trajectory lengths ", set(map(len, all_trajectories)))
                     if sample_sub_trajs:
-                        all_trajectories = self.sample_subtrajectories(all_trajectories, fixed_length=32)
+                        all_trajectories = self.sample_subtrajectories(all_trajectories, fixed_length=32, num_samples=20000)
                         print(f"Sampled {len(all_trajectories)} sub-trajectories of length 32")
                     del buffer
                 else:
@@ -402,6 +406,7 @@ class SelfInterpretableExtractor:
     def self_interpretable_extraction(self, original_policy : TFPolicy,
                                         env : EnvironmentWrapperVec, 
                                         tf_env : TFPyEnvironment = None) -> tuple[TableBasedPolicy, ExtractionStats]:
+        self.family_quotient_numpy.observation_to_legal_action_mask
         orig_eval_result = evaluate_policy_in_model(original_policy, environment=env, tf_environment=tf_env, max_steps=(self.max_episode_len + 1) * 2)
         if self.specification_checker is not None:
             self.specification_checker.set_optimal_value_from_evaluation_results(orig_eval_result)
@@ -410,15 +415,24 @@ class SelfInterpretableExtractor:
             self.reset_cloned_actor(original_policy, orig_eval_result, env)
 
         # if isinstance(original_policy, PolicyMaskWrapper):
-        original_policy.set_policy_masker()
+        # original_policy.set_policy_masker()
         #     original_policy.set_greedy(True)
         logger.info("Sampling data with original policy")
+        print(f"Sampling {self.num_data_steps} steps")
         buffer = sample_data_with_policy(
             original_policy, num_samples=self.num_data_steps, environment=env, tf_environment=tf_env)
         logger.info("Data sampled")
-        if isinstance(original_policy, PolicyMaskWrapper):
-            original_policy.unset_policy_masker()
         logger.info("Cloning original policy to FSC")
+        DEBUG = False
+        extraction_stats_lstm = None
+        if DEBUG:
+            cloned_lstm_actor = ClonedLSTMActorPolicy(original_policy, observation_and_action_constraint_splitter=original_policy.observation_and_action_constraint_splitter,
+                                                      observation_length=env.observation_spec_len, lstm_units=32)
+            extraction_stats_lstm = cloned_lstm_actor.behavioral_clone_original_policy_to_fsc(
+                buffer, num_epochs=20000, environment=env, tf_environment=tf_env, args=None, extraction_stats=None
+            )
+
+
         extraction_stats = self.cloned_actor.behavioral_clone_original_policy_to_fsc(
             buffer, num_epochs=self.training_epochs, specification_checker=self.specification_checker,
             environment=env, tf_environment=tf_env, args=None, extraction_stats=self.extraction_stats)
@@ -432,13 +446,14 @@ class SelfInterpretableExtractor:
         self.cloned_actor.unset_probs_updates()
         fsc_res = evaluate_policy_in_model(fsc, environment=env, tf_environment=tf_env, max_steps=(self.max_episode_len + 1) * 2)
         extraction_stats.add_fsc_result(fsc_res.reach_probs[-1], fsc_res.returns[-1])
+        if extraction_stats_lstm is not None:
+            extraction_stats.add_lstm_result(extraction_stats_lstm.extracted_policy_reachabilities[-1], extraction_stats_lstm.extracted_policy_rewards[-1])
 
         return fsc, extraction_stats
 
     def clone_and_generate_fsc_from_policy(self, original_policy : TFPolicy, 
                                            env : EnvironmentWrapperVec = None, 
                                            tf_env : TFPyEnvironment = None) -> tuple[TableBasedPolicy, ExtractionStats]:
-        logger.error(str(self.autlearn_extraction))
         if self.autlearn_extraction:
             return self.aalpy_extraction(
                 original_policy, env, tf_env)
@@ -454,44 +469,6 @@ class SelfInterpretableExtractor:
         memory_to_tensor_table = tf.convert_to_tensor(
             memory_to_tensor_table, dtype=tf.float32)
         return memory_to_tensor_table
-    
-    @staticmethod
-    def extract_fsc_nonvectorized(policy: TFPolicy, environment: EnvironmentWrapperVec, memory_len: int, is_one_hot: bool = True) -> TableBasedPolicy:
-        base = 3
-        max_memory = base ** memory_len if not is_one_hot else memory_len
-        nr_observations = environment.stormpy_model.nr_observations
-        fsc_actions = np.zeros((max_memory, nr_observations))
-        fsc_updates = np.zeros((max_memory, nr_observations))
-        logger.info("Computing memory to tensor table of non-vectorized approach")
-        compute_memory, decompute_memory = get_encoding_functions(is_one_hot)
-        memory_to_tensor_table = SelfInterpretableExtractor.create_memory_to_tensor_table(
-            compute_memory, memory_len, max_memory)
-        eager = PyTFEagerPolicy(
-            policy, use_tf_function=True, batch_time_steps=False)
-        logger.info("Starting to extract FSC via non-vectorized approach")
-        obs_batch = tf.convert_to_tensor(np.arange(nr_observations), dtype=tf.int32)
-        time_steps = environment.create_fake_timestep_from_observation_integer(obs_batch)
-        # Go through all observations
-        for i in range(nr_observations):
-            # Go thrgough all memory permutations
-            fake_time_step = environment.create_fake_timestep_from_observation_integer(
-                i)
-            # Assert that time_step for observation i is the same as the one in the batch with corresponding indice
-
-            for j in range(max_memory):
-                policy_state = memory_to_tensor_table[j]
-                policy_state = tf.reshape(policy_state, (1, memory_len))
-
-                policy_step = eager.action(
-                    fake_time_step, policy_state=policy_state)
-
-                fsc_actions[j, i] = policy_step.action.numpy()[0]
-                fsc_updates[j, i] = decompute_memory(
-                    memory_len, policy_step.state, base)
-
-        table_based_policy = TableBasedPolicy(
-            policy, fsc_actions, fsc_updates, initial_memory=0)
-        return table_based_policy, fsc_actions, fsc_updates
     
     @staticmethod
     def get_det_action_and_update_function(policy: TFPolicy, time_steps, memory_states, 
@@ -631,7 +608,7 @@ class SelfInterpretableExtractor:
         )
         cloned_actor = ClonedFSCActorPolicy(
             agent.wrapper, memory_size, agent.wrapper.observation_and_action_constraint_splitter,
-            use_one_hot=use_one_hot, use_residual_connection=use_residual_connection, observation_length=env.observation_spec_len)
+            use_one_hot=use_one_hot, use_residual_connection=use_residual_connection, observation_length=env.observation_spec_len, seed=args.seed)
         # Train the cloned actor (cloned_actor.fsc_actor) to mimic the original policy
         extraction_stats = cloned_actor.behavioral_clone_original_policy_to_fsc(
             buffer, num_epochs=extraction_epochs,

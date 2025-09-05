@@ -74,6 +74,7 @@ pip install tensorflow==2.15 ml-dtypes==0.5.0
 pip install tf_agents
 pip install tqdm dill matplotlib pandas seaborn networkx
 pip install aalpy
+pip install scikit-learn
 
 cd ${PAYNT_ROOT}/rl_src
 pip install -e .
