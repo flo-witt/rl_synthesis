@@ -142,7 +142,6 @@ class RobustTrainer:
             agent.unset_policy_masking()
 
 
-        policy = agent.get_policy(False, True)
         tf_environment = TFPyEnvironment(environment)
         # if True:
         #     from rl_src.interpreters.extracted_fsc.table_based_policy import TableBasedPolicy, initialize_random_joint_fsc_function
@@ -459,6 +458,13 @@ class RobustTrainer:
             self.save_stats(json_path)
             if self.args.periodic_restarts:
                 self.agent.reset_weights()
+
+    def train_and_extract_single_pomdp(self, pomdp, nr_iterations=1500, num_samples_learn=4001, args: ArgsEmulator = None):
+        """
+        RL training and extraction on a single POMDP. Loopless.
+        """
+        pass
+
 
 
 def initialize_extractor(pomdp_sketch, args_emulated: ArgsEmulator, family_quotient_numpy: FamilyQuotientNumpy):

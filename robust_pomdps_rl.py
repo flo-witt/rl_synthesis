@@ -13,6 +13,7 @@ import paynt.synthesizer.synthesizer_onebyone
 import paynt.utils
 import paynt.utils.timer
 from paynt.quotient.pomdp_family import PomdpFamilyQuotient
+from paynt.quotient.pomdp import PomdpQuotient
 
 from tests.general_test_tools import init_args
 
@@ -33,6 +34,8 @@ def set_global_seeds(seed):
     random.seed(seed)
 
 
+
+
 def main():
     args_cmd = parse_args()
 
@@ -46,11 +49,11 @@ def main():
     paynt.cli.setup_logger()
 
     project_path = args_cmd.project_path
-    pomdp_sketch : PomdpFamilyQuotient = load_sketch(project_path)
-    json_path = create_json_file_name(project_path)
+    pomdp_sketch= load_sketch(project_path)
+        
 
 
-    num_samples_learn = 601
+    num_samples_learn = 4001
     nr_pomdps = 5
 
     # This can be useful for extraction and some other stuff.
@@ -81,24 +84,23 @@ def main():
     set_global_seeds(args_emulated.seed)
     # pomdp = initialize_prism_model(prism_path, properties_path, constants="")
 
-    
+    if type(pomdp_sketch) == PomdpFamilyQuotient: 
 
-    if args_emulated.single_pomdp_experiment:
-        nr_pomdps = 0
+        if args_emulated.single_pomdp_experiment:
+            nr_pomdps = 0
 
-    hole_assignment = pomdp_sketch.family.pick_random()
-    pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
-
-    extractor = initialize_extractor(
-        pomdp_sketch, args_emulated, family_quotient_numpy)
-
-    agent = extractor.generate_agent(pomdp, args_emulated)
-    last_hole = None
-    for i in range(nr_pomdps):
         hole_assignment = pomdp_sketch.family.pick_random()
-    extractor.extraction_loop(pomdp_sketch, project_path=project_path,
-                              nr_initial_pomdps=nr_pomdps, num_samples_learn=num_samples_learn)
-    return
+        pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
+
+        extractor = initialize_extractor(
+            pomdp_sketch, args_emulated, family_quotient_numpy)
+
+        agent = extractor.generate_agent(pomdp, args_emulated)
+        last_hole = None
+        extractor.extraction_loop(pomdp_sketch, project_path=project_path,
+                                nr_initial_pomdps=nr_pomdps, num_samples_learn=num_samples_learn)
+    else:
+        pass
 
 
 main()
