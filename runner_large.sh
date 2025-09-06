@@ -1,7 +1,7 @@
 #!/bin/bash
 # This script is used to evaluate the worst-case performance of a robust RL agent
 
-models_dir="models_single_family_large"
+models_dir="models_robust_large"
 
 seeds=(12345 23456 34567 45678 56789)
 

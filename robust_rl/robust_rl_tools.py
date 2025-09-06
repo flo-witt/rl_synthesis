@@ -216,16 +216,16 @@ def deterministic_fsc_to_stochastic_fsc(pomdp_sketch, fsc):
     return fsc
 
 
-def create_json_file_name(project_path):
+def create_json_file_name(project_path, seed = ""):
     """
     Creates a JSON file name based on the project path.
     """
-    json_path = os.path.join(project_path, "benchmark_stats.json")
+    json_path = os.path.join(project_path, f"benchmark_stats_{seed}.json")
     if os.path.exists(json_path):
         index = 0
-        while os.path.exists(os.path.join(project_path, f"benchmark_stats_{index}.json")):
+        while os.path.exists(os.path.join(project_path, f"benchmark_stats_{seed}_{index}.json")):
             index += 1
-        json_path = os.path.join(project_path, f"benchmark_stats_{index}.json")
+        json_path = os.path.join(project_path, f"benchmark_stats_{seed}_{index}.json")
     return json_path
 
 

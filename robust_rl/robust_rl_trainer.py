@@ -351,7 +351,7 @@ class RobustTrainer:
             config = Config(project_path.split("/")[-2])
         else:
             config = Config(project_path.split("/")[-1])
-        json_path = create_json_file_name(f"{project_path}_{self.args.seed}")
+        json_path = create_json_file_name(f"{project_path}", seed=f"{self.args.seed}")
 
         hole_assignment = pomdp_sketch.family.pick_random()
 
@@ -482,7 +482,7 @@ class RobustTrainer:
         self.benchmark_stats.add_family_performance(
                 one_by_one.best_assignment_value)
         logger.info(f"Synthesized assignment: {hole_assignment} with value {one_by_one.best_assignment_value}")
-        json_path = create_json_file_name(f"{project_path}_{self.args.seed}")
+        json_path = create_json_file_name(f"{project_path}", seed=f"{self.args.seed}")
         self.agent.evaluation_result.save_to_json(json_path, new_pomdp=False)
         self.save_stats(json_path)
         return paynt_fsc, hole_assignment, one_by_one.best_assignment_value
