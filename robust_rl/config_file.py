@@ -1,13 +1,13 @@
 class Config:
     def __init__(self, model_name="default_model"):
-        self.set_config()
+        self.set_config(model_name)
 
     def config_obstacles_10_2(self):
         self.nr_inner_iter = 60
         self.nr_initial_iter = 400
 
     def config_obstacles_8_5(self):
-        self.nr_inner_iter = 60
+        self.nr_inner_iter = 70
         self.nr_initial_iter = 400
 
     def config_avoid(self):
@@ -19,15 +19,15 @@ class Config:
         self.nr_initial_iter = 400
 
     def config_network(self):
-        self.nr_inner_iter = 100
+        self.nr_inner_iter = 150
         self.nr_initial_iter = 400
 
     def config_drone(self):
-        self.nr_inner_iter = 100
+        self.nr_inner_iter = 150
         self.nr_initial_iter = 400
 
     def config_maze(self):
-        self.nr_inner_iter = 100
+        self.nr_inner_iter = 150
         self.nr_initial_iter = 400
 
     def config_default_model(self):
@@ -46,10 +46,13 @@ class Config:
         }
 
     def set_config(self, model_name="default_model"):
+        print(model_name)
         translation_dict = self.translation_model_name_dict()
         if model_name in translation_dict:
             method_name = f"config_{translation_dict[model_name]}"
         else:
             method_name = f"config_default_model"
+        print(method_name)
+        exit(0)
         method = getattr(self, method_name)
         method()

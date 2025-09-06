@@ -19,6 +19,8 @@ from paynt.rl_extension.self_interpretable_interface.self_interpretable_extracto
 from paynt.rl_extension.family_extractors.direct_fsc_construction import ConstructorFSC
 
 from paynt.rl_extension.robust_rl.family_quotient_numpy import FamilyQuotientNumpy
+from paynt.quotient.pomdp import PomdpQuotient
+from paynt.quotient.pomdp_family import PomdpFamilyQuotient
 
 
 from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_agent
@@ -344,9 +346,12 @@ class RobustTrainer:
         rnn_analyzer = RNNAnalyzer(self.args)
         select_worst_case_by_index = False
         args_emulated = self.args
-        config = Config(project_path.split("/")[-1])
-
-        json_path = create_json_file_name(project_path)
+        print(project_path)
+        if project_path.split("/")[-1] == "":
+            config = Config(project_path.split("/")[-2])
+        else:
+            config = Config(project_path.split("/")[-1])
+        json_path = create_json_file_name(f"{project_path}_{self.args.seed}")
 
         hole_assignment = pomdp_sketch.family.pick_random()
 
@@ -459,23 +464,43 @@ class RobustTrainer:
             if self.args.periodic_restarts:
                 self.agent.reset_weights()
 
-    def train_and_extract_single_pomdp(self, pomdp, nr_iterations=1500, num_samples_learn=4001, args: ArgsEmulator = None):
+    def train_and_extract_single_pomdp(self, pomdp_sketch : PomdpFamilyQuotient, nr_iterations=1500, num_samples_learn=4001, args: ArgsEmulator = None, project_path: str = None):
         """
         RL training and extraction on a single POMDP. Loopless.
         """
-        pass
+        rnn_analyzer = RNNAnalyzer(self.args)
+        
+        self.train_on_new_pomdp(None, self.agent, nr_iterations=nr_iterations)
+        rnn_analyzer.analyze(self.agent, self.tf_env)
+        fsc = self.extract_fsc(self.agent, self.agent.environment, pomdp_sketch, num_data_steps=num_samples_learn, training_epochs=20001, get_dict=True)
+        paynt_fsc = fsc["extracted_paynt_fsc"]
+        dtmc_sketch = pomdp_sketch.build_dtmc_sketch(
+            paynt_fsc, negate_specification=True)
+        one_by_one = paynt.synthesizer.synthesizer_onebyone.SynthesizerOneByOne(
+            dtmc_sketch)
+        hole_assignment = one_by_one.synthesize(keep_optimum=True)
+        self.benchmark_stats.add_family_performance(
+                one_by_one.best_assignment_value)
+        logger.info(f"Synthesized assignment: {hole_assignment} with value {one_by_one.best_assignment_value}")
+        json_path = create_json_file_name(f"{project_path}_{self.args.seed}")
+        self.agent.evaluation_result.save_to_json(json_path, new_pomdp=False)
+        self.save_stats(json_path)
+        return paynt_fsc, hole_assignment, one_by_one.best_assignment_value
 
 
 
 def initialize_extractor(pomdp_sketch, args_emulated: ArgsEmulator, family_quotient_numpy: FamilyQuotientNumpy):
-    quotient_sv = pomdp_sketch.quotient_mdp.state_valuations
-    quotient_obs = pomdp_sketch.obs_evaluator
+    if family_quotient_numpy is not None:
+        quotient_sv = pomdp_sketch.quotient_mdp.state_valuations
+        quotient_obs = pomdp_sketch.obs_evaluator
+    else:
+        quotient_sv = None
+        quotient_obs = None
 
-    quotient_sv = pomdp_sketch.quotient_mdp.state_valuations
     use_one_hot_memory = True if args_emulated.extraction_type == "si-g" else False
     use_gumbel_softmax = True if args_emulated.extraction_type == "si-g" else False
     # 3 ** i in case of non-one-hot memory
-    latent_dim = 9 if use_one_hot_memory else 2
+    latent_dim = 3
 
     # Currently latent_dim is hardcoded to 2 (3 ** i => 9-FSC)
     # If use one-hot memory, then the size of FSC is equal to the latent_dim.

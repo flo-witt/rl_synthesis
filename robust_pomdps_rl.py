@@ -49,7 +49,7 @@ def main():
     paynt.cli.setup_logger()
 
     project_path = args_cmd.project_path
-    pomdp_sketch= load_sketch(project_path)
+    pomdp_sketch : PomdpFamilyQuotient = load_sketch(project_path)
         
 
 
@@ -57,7 +57,7 @@ def main():
     nr_pomdps = 5
 
     # This can be useful for extraction and some other stuff.
-    family_quotient_numpy = FamilyQuotientNumpy(pomdp_sketch)
+   
 
     prism_path = os.path.join(project_path, "sketch.templ")
     properties_path = os.path.join(project_path, "sketch.props")
@@ -83,9 +83,9 @@ def main():
     
     set_global_seeds(args_emulated.seed)
     # pomdp = initialize_prism_model(prism_path, properties_path, constants="")
-
-    if type(pomdp_sketch) == PomdpFamilyQuotient: 
-
+    # If family has more than one POMDP, we need to use FamilyQuotientNumpy for robust RL.
+    if len(list(pomdp_sketch.family.all_combinations())) > 1:
+        family_quotient_numpy = FamilyQuotientNumpy(pomdp_sketch)
         if args_emulated.single_pomdp_experiment:
             nr_pomdps = 0
 
@@ -100,7 +100,16 @@ def main():
         extractor.extraction_loop(pomdp_sketch, project_path=project_path,
                                 nr_initial_pomdps=nr_pomdps, num_samples_learn=num_samples_learn)
     else:
-        pass
+        family_quotient_numpy = FamilyQuotientNumpy(pomdp_sketch)
+        hole_assignment = pomdp_sketch.family.pick_random()
+        pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
+        extractor = initialize_extractor(
+            pomdp_sketch, args_emulated, family_quotient_numpy)
+        agent = extractor.generate_agent(pomdp, args_emulated)
+        extractor.train_and_extract_single_pomdp(pomdp_sketch, nr_iterations=4000, num_samples_learn=num_samples_learn, args=args_emulated, project_path=project_path)
+
+
+
 
 
 main()
