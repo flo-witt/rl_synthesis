@@ -52,7 +52,5 @@ class Config:
             method_name = f"config_{translation_dict[model_name]}"
         else:
             method_name = f"config_default_model"
-        print(method_name)
-        exit(0)
         method = getattr(self, method_name)
         method()
