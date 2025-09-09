@@ -34,6 +34,10 @@ class Config:
         self.nr_inner_iter = 50
         self.nr_initial_iter = 400
 
+    def config_obstacles_10_5(self):
+        self.nr_inner_iter = 100
+        self.nr_initial_iter = 400
+
     def translation_model_name_dict(self):
         return {
             "obstacles-10-2": "obstacles_10_2",
@@ -42,7 +46,8 @@ class Config:
             "rover": "rover",
             "network": "network",
             "drone-2-6-1": "drone",
-            "maze-10": "maze"
+            "maze-10": "maze",
+            "obstacles-10-5": "obstacles_10_5",
         }
 
     def set_config(self, model_name="default_model"):
