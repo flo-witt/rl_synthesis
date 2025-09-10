@@ -1,0 +1,72 @@
+Running extraction for model in ./models_training_loop/avoid/
+Running without extraction for model in ./models_training_loop/avoid/ with restart: --periodic-restarts, extraction_with: --without-extraction, and standard flags: --batched-vec-storm
+Running without extraction for model in ./models_training_loop/avoid/ with restart: , extraction_with: --without-extraction, and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag: --geometric-batched-vec-storm and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag: --geometric-batched-vec-storm and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag:  and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag:  and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag: --geometric-batched-vec-storm and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag: --geometric-batched-vec-storm and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag:  and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag:  and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag: --geometric-batched-vec-storm and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag: --geometric-batched-vec-storm and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag:  and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag:  and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag: --geometric-batched-vec-storm and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag: --geometric-batched-vec-storm and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag:  and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag:  and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag: --geometric-batched-vec-storm and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag: --geometric-batched-vec-storm and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag:  and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag:  and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag: --geometric-batched-vec-storm and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag: --geometric-batched-vec-storm and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag:  and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag:  and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag: --geometric-batched-vec-storm and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag: --geometric-batched-vec-storm and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag:  and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag:  and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag: --geometric-batched-vec-storm and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag: --geometric-batched-vec-storm and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag:  and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag:  and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag: --geometric-batched-vec-storm and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag: --geometric-batched-vec-storm and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag:  and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag:  and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag: --geometric-batched-vec-storm and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag: --geometric-batched-vec-storm and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag:  and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag:  and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag: --geometric-batched-vec-storm and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag: --geometric-batched-vec-storm and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag:  and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag:  and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag: --geometric-batched-vec-storm and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag: --geometric-batched-vec-storm and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag:  and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag:  and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag: --geometric-batched-vec-storm and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag: --geometric-batched-vec-storm and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag:  and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag:  and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag: --geometric-batched-vec-storm and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag: --geometric-batched-vec-storm and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag:  and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag:  and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag: --geometric-batched-vec-storm and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag: --geometric-batched-vec-storm and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag:  and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/obstacles-8-5/ with geometric flag:  and restart: , extraction_with: , and standard flags: --batched-vec-storm
+Running extraction for model in ./models_training_loop/avoid/
+Running extraction for model in ./models_training_loop/avoid/ with geometric flag: --geometric-batched-vec-storm and restart: --periodic-restarts, extraction_with: , and standard flags: --batched-vec-storm
