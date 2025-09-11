@@ -9,6 +9,8 @@ from paynt.quotient.fsc import Fsc
 from paynt.quotient.pomdp import PomdpQuotient
 from paynt.rl_extension.robust_rl.family_quotient_numpy import FamilyQuotientNumpy
 
+import numpy as np
+
 
 class ConstructorFSC:
     """Class to construct a Finite State Controller (FSC) from different policies, e.g. TableBasedPolicy.
@@ -16,7 +18,7 @@ class ConstructorFSC:
     """
 
     @staticmethod
-    def __create_action_function(tf_action_function: tf.Tensor, family_quotient_numpy: FamilyQuotientNumpy = None, original_action_labels: list[str] = None):
+    def __create_action_function(tf_action_function: tf.Tensor, family_quotient_numpy: FamilyQuotientNumpy = None, original_action_labels: list[str] = None, cut_probs=0.0):
         """Creates the action function for the FSC.
         Args:
             tf_action_function (tf.Tensor): The action function to be used in the FSC.
@@ -34,10 +36,24 @@ class ConstructorFSC:
             for memory in range(np_action_function.shape[0]):
                 action_for_memory = []
                 for observation in range(np_action_function.shape[1]):
+                    if cut_probs >= 1.0:
+                        most_probable_action = np.argmax(
+                            np_action_function[memory][observation])
+                        most_probable_action = int(most_probable_action) if (family_quotient_numpy and original_action_labels) is None else family_quotient_numpy.action_labels.tolist(
+                        ).index(original_action_labels[most_probable_action])
+                        if family_quotient_numpy is not None and not family_quotient_numpy.observation_to_legal_action_mask[observation][most_probable_action]:
+                            # If the most probable action is illegal, choose a random legal action
+                            legal_actions = [action for action in range(len(
+                                family_quotient_numpy.action_labels)) if family_quotient_numpy.observation_to_legal_action_mask[observation][action]]
+                            most_probable_action = np.random.choice(
+                                legal_actions)
+                        action_for_memory.append(int(most_probable_action))
+
+                        continue
                     action_dict = {}
                     illegal_action_prob = 0.0
                     for action, prob in enumerate(np_action_function[memory][observation]):
-                        if prob > 0.0:
+                        if prob > 0.0 and prob >= cut_probs:
                             action = int(action) if (family_quotient_numpy and original_action_labels) is None else family_quotient_numpy.action_labels.tolist(
                             ).index(original_action_labels[action])
                             if family_quotient_numpy is not None and not family_quotient_numpy.observation_to_legal_action_mask[observation][action]:
@@ -68,7 +84,7 @@ class ConstructorFSC:
             return action_function
 
     @staticmethod
-    def __create_update_function(tf_update_function: tf.Tensor):
+    def __create_update_function(tf_update_function: tf.Tensor, cut_probs=0.0):
         """Creates the update function for the FSC.
         Args:
             tf_update_function (tf.Tensor): The update function to be used in the FSC.
@@ -88,9 +104,13 @@ class ConstructorFSC:
             for memory in range(np_update_function.shape[0]):
                 update_for_memory = []
                 for observation in range(np_update_function.shape[1]):
+                    if cut_probs >= 1.0:
+                        update_for_memory.append(
+                            np.argmax(np_update_function[memory][observation]))
+                        continue
                     update_dict = {}
                     for update, prob in enumerate(np_update_function[memory][observation]):
-                        if prob > 0:
+                        if prob > 0 and prob >= cut_probs:
                             update_dict[update] = prob
                     if update_dict == {}:
                         update_dict = {update: 1.0 for update in range(
@@ -100,6 +120,7 @@ class ConstructorFSC:
                     if total_prob > 0:
                         update_dict = {
                             update: prob / total_prob for update, prob in update_dict.items()}
+
                     update_for_memory.append(update_dict)
                 update_function.append(update_for_memory)
             return update_function
@@ -113,7 +134,7 @@ class ConstructorFSC:
         return list(table_based_policy.action_keywords)
 
     @staticmethod
-    def __construct_factored_fsc(table_based_policy: TableBasedPolicy, pomdp_quotient: PomdpQuotient, family_quotient_numpy: FamilyQuotientNumpy = None) -> FscFactored:
+    def __construct_factored_fsc(table_based_policy: TableBasedPolicy, pomdp_quotient: PomdpQuotient, family_quotient_numpy: FamilyQuotientNumpy = None, cut_probs=0.0) -> FscFactored:
         """Constructs a factored FSC from a table-based policy.
         Args:
             table_based_policy (TableBasedPolicy): The table-based policy to be converted into an FSC.
@@ -123,11 +144,13 @@ class ConstructorFSC:
             FscFactored: The constructed FSC.
         """
         action_function = ConstructorFSC.__create_action_function(
-            table_based_policy.tf_observation_to_action_table, family_quotient_numpy, table_based_policy.action_keywords)
+            table_based_policy.tf_observation_to_action_table, family_quotient_numpy, table_based_policy.action_keywords, cut_probs)
         update_function = ConstructorFSC.__create_update_function(
-            table_based_policy.tf_observation_to_update_table)
+            table_based_policy.tf_observation_to_update_table, cut_probs)
         is_deterministic = True if type(
             action_function[0][0]) is int else False
+        if cut_probs >= 1.0:
+            is_deterministic = True
         try:
             observation_labels = ConstructorFSC.__create_observation_labels(
                 pomdp_quotient)
@@ -177,7 +200,7 @@ class ConstructorFSC:
                         memory_action = action // table_based_policy.mem_size
                         memory_update = action % table_based_policy.mem_size
                         memory_action = int(memory_action) if (family_quotient_numpy and table_based_policy.action_keywords) is None \
-                                            else family_quotient_numpy.action_labels.tolist().index(table_based_policy.action_keywords[memory_action])
+                            else family_quotient_numpy.action_labels.tolist().index(table_based_policy.action_keywords[memory_action])
                         if prob > 0.0:
                             if family_quotient_numpy is not None and not family_quotient_numpy.observation_to_legal_action_mask[observation][memory_action]:
                                 continue
@@ -207,6 +230,7 @@ class ConstructorFSC:
         table_based_policy: TableBasedPolicy,
         pomdp_quotient: PomdpQuotient,
         family_quotient_numpy: FamilyQuotientNumpy,
+        cut_probs=0.0
 
     ) -> FscFactored | Fsc:
         """Constructs a Finite State Controller (FSC) from a table-based policy.
@@ -218,6 +242,6 @@ class ConstructorFSC:
         """
         # Create a new FSC object
         if table_based_policy.joint_transition_function is None:
-            return ConstructorFSC.__construct_factored_fsc(table_based_policy, pomdp_quotient, family_quotient_numpy)
+            return ConstructorFSC.__construct_factored_fsc(table_based_policy, pomdp_quotient, family_quotient_numpy, cut_probs)
         else:
             return ConstructorFSC.__construct_joint_fsc(table_based_policy, pomdp_quotient, family_quotient_numpy)

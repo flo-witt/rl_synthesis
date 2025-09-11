@@ -109,7 +109,7 @@ def generate_latex_table_from_stats(benchmark_stats):
 
 
 if __name__ == "__main__":
-    base_directory = "experiments_external/models_robust_large"
+    base_directory = "experiments_external/models_robust_large_copy"
     benchmark_stats = load_all_benchmark_directories(base_directory)
     print(benchmark_stats["network"][0][1]) # Access of one benchmark stats from the "network" directory
     generate_latex_table_from_stats(benchmark_stats)

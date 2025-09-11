@@ -153,7 +153,6 @@ class FscFactored:
 
     def check_action_function(self, observation_to_actions):
         assert len(self.action_function) == self.num_nodes, "FSC action function is not defined for all memory nodes"
-        print(observation_to_actions)
         for node in range(self.num_nodes):
             assert len(self.action_function[node]) == self.num_observations, \
                 "in memory node {}, FSC action function is not defined for all observations".format(node)

@@ -42,12 +42,13 @@ class Config:
         return {
             "obstacles-10-2": "obstacles_10_2",
             "obstacles-8-5": "obstacles_8_5",
+            "obstacles-10-5": "obstacles_8_5",
             "avoid": "avoid",
+            "avoid-large": "avoid",
             "rover": "rover",
             "network": "network",
             "drone-2-6-1": "drone",
             "maze-10": "maze",
-            "obstacles-10-5": "obstacles_10_5",
         }
 
     def set_config(self, model_name="default_model"):

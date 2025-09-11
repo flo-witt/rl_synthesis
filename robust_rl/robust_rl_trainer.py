@@ -56,6 +56,7 @@ class RobustTrainer:
         self.quotient_state_valuations = quotient_state_valuations
         self.family_quotient_numpy = family_quotient_numpy
         fsc_size = latent_dim if use_one_hot_memory else 3**latent_dim
+        self.cut_probs = 0.45 if "drone" in args.prism_model else 0.0
 
         if self.args.extraction_type == "alergia":
             self.autlearn_extraction = True
@@ -163,12 +164,12 @@ class RobustTrainer:
         # from paynt.rl_extension.self_interpretable_interface.tabular_reinforce import TabularReinforce
         # TabularReinforce.train(fsc, environment)
         paynt_fsc = ConstructorFSC.construct_fsc_from_table_based_policy(
-            fsc, quotient, family_quotient_numpy=self.family_quotient_numpy)
+            fsc, quotient, family_quotient_numpy=self.family_quotient_numpy, cut_probs=self.cut_probs)
         self.fscs_extracted.append(paynt_fsc)
-        policy_to_test = generate_table_based_fsc_from_paynt_fsc(
-            paynt_fsc, environment.action_keywords, agent)
-        evaluation_result = evaluate_policy_in_model(
-            policy_to_test, self.args, environment, tf_environment)
+        # policy_to_test = generate_table_based_fsc_from_paynt_fsc(
+        #     paynt_fsc, environment.action_keywords, agent)
+        # evaluation_result = evaluate_policy_in_model(
+        #     policy_to_test, self.args, environment, tf_environment)
 
         available_nodes = paynt_fsc.compute_available_updates(0)
         self.benchmark_stats.available_nodes_in_fsc.append(available_nodes)
@@ -346,7 +347,7 @@ class RobustTrainer:
         rnn_analyzer = RNNAnalyzer(self.args)
         select_worst_case_by_index = False
         args_emulated = self.args
-        print(project_path)
+        training_epochs = 6001 if "avoid-large" in project_path else 5001
         if project_path.split("/")[-1] == "":
             config = Config(project_path.split("/")[-2])
         else:
@@ -384,7 +385,8 @@ class RobustTrainer:
             #                                                      project_path=project_path)
             best_assignment_value = None
             for use_masking in [True]:
-                fsc = self.extract_fsc(self.agent, self.agent.environment, pomdp_sketch, get_dict=True, num_data_steps=num_samples_learn, use_masking=use_masking, training_epochs=5001)
+
+                fsc = self.extract_fsc(self.agent, self.agent.environment, pomdp_sketch, get_dict=True, num_data_steps=num_samples_learn, use_masking=use_masking, training_epochs=501)
                 # Evaluate the FSC on all POMDPs
                 paynt_fsc = fsc["extracted_paynt_fsc"]
                 table_based_fsc = fsc["extracted_fsc"]
@@ -419,41 +421,16 @@ class RobustTrainer:
             self.add_pomdp_to_subset(pomdp, environments, tf_environments)
             pomdps.append(pomdp)
 
-            if False and i % self.period_between_worst_case_evaluation == 0:
-                rl_return, rl_probs = self.perform_subset_evaluation(
-                    self.agent.get_policy(False, True), environments, tf_environments)
-                rl_return = np.min(rl_return)
-                fsc_return, fsc_probs = self.perform_subset_evaluation(
-                    table_based_fsc, environments, tf_environments)
-                fsc_return = np.min(fsc_return)
-                self.benchmark_stats.worst_cases_on_subset_rl.append(rl_return)
-                self.benchmark_stats.worst_cases_on_subset_fsc.append(
-                    fsc_return)
-                self.benchmark_stats.worst_cases_reachability_rl.append(
-                    np.min(rl_probs))
-                self.benchmark_stats.worst_cases_reachability_fsc.append(
-                    np.min(fsc_probs))
-
-            # If the absolute difference between the worst-case is beyond a threshold, perturb the agent
-                if self.args.shrink_and_perturb_externally and np.abs(np.abs(rl_return) - np.abs(fsc_return)) / ((np.abs(rl_return) + np.abs(fsc_return)) / 2.0) > 0.3:
+            last_extracted_fsc_return = np.abs(
+                self.benchmark_stats.extracted_fsc_return[-1])
+            last_rl_return = np.abs(
+                self.benchmark_stats.rl_performance_single_pomdp[-1])
+            if self.args.shrink_and_perturb_externally and np.abs(last_extracted_fsc_return - last_rl_return) / ((np.abs(last_extracted_fsc_return) + np.abs(last_rl_return)) / 2.0) > 0.3:
                     self.agent.shrink_and_perturb()
                     nr_iterations = 101
                     self.benchmark_stats.shrink_and_perturb_activated.append(
                         True)
-                else:
-                    self.benchmark_stats.shrink_and_perturb_activated.append(
-                        False)
             else:
-                last_extracted_fsc_return = np.abs(
-                    self.benchmark_stats.extracted_fsc_return[-1])
-                last_rl_return = np.abs(
-                    self.benchmark_stats.rl_performance_single_pomdp[-1])
-                if self.args.shrink_and_perturb_externally and np.abs(last_extracted_fsc_return - last_rl_return) / ((np.abs(last_extracted_fsc_return) + np.abs(last_rl_return)) / 2.0) > 0.3:
-                    self.agent.shrink_and_perturb()
-                    nr_iterations = 101
-                    self.benchmark_stats.shrink_and_perturb_activated.append(
-                        True)
-                else:
                     self.benchmark_stats.shrink_and_perturb_activated.append(
                         False)
 
@@ -472,10 +449,14 @@ class RobustTrainer:
         
         self.train_on_new_pomdp(None, self.agent, nr_iterations=nr_iterations)
         rnn_analyzer.analyze(self.agent, self.tf_env)
-        fsc = self.extract_fsc(self.agent, self.agent.environment, pomdp_sketch, num_data_steps=num_samples_learn, training_epochs=20001, get_dict=True)
+        fsc = self.extract_fsc(self.agent, self.agent.environment, pomdp_sketch, num_data_steps=num_samples_learn, training_epochs=501, get_dict=True)
         paynt_fsc = fsc["extracted_paynt_fsc"]
+        import pickle as pkl
+        with open(os.path.join(project_path, "extracted_fsc.pkl"), "wb") as f:
+            pkl.dump(paynt_fsc, f)
+            
         dtmc_sketch = pomdp_sketch.build_dtmc_sketch(
-            paynt_fsc, negate_specification=True)
+            paynt_fsc)
         one_by_one = paynt.synthesizer.synthesizer_onebyone.SynthesizerOneByOne(
             dtmc_sketch)
         hole_assignment = one_by_one.synthesize(keep_optimum=True)
@@ -486,6 +467,8 @@ class RobustTrainer:
         self.agent.evaluation_result.save_to_json(json_path, new_pomdp=False)
         self.save_stats(json_path)
         return paynt_fsc, hole_assignment, one_by_one.best_assignment_value
+    
+
 
 
 

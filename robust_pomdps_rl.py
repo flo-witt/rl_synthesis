@@ -106,7 +106,7 @@ def main():
         extractor = initialize_extractor(
             pomdp_sketch, args_emulated, family_quotient_numpy)
         agent = extractor.generate_agent(pomdp, args_emulated)
-        extractor.train_and_extract_single_pomdp(pomdp_sketch, nr_iterations=4000, num_samples_learn=num_samples_learn, args=args_emulated, project_path=project_path)
+        extractor.train_and_extract_single_pomdp(pomdp_sketch, nr_iterations=410, num_samples_learn=num_samples_learn, args=args_emulated, project_path=project_path)
 
 
 

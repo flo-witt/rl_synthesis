@@ -436,6 +436,7 @@ class SelfInterpretableExtractor:
         extraction_stats = self.cloned_actor.behavioral_clone_original_policy_to_fsc(
             buffer, num_epochs=self.training_epochs, specification_checker=self.specification_checker,
             environment=env, tf_environment=tf_env, args=None, extraction_stats=self.extraction_stats)
+        del buffer
         self.cloned_actor.set_probs_updates()
         # if self.get_best_policy_flag:
         #     self.cloned_actor.load_best_policy()

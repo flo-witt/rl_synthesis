@@ -337,7 +337,7 @@ class ClonedFSCActorPolicy(TFPolicy):
                               extraction_stats: ExtractionStats,
                               evaluation_result: EvaluationResults,
                               specification_checker: SpecificationChecker):
-        if iteration_number % 500 == 0:
+        if iteration_number % 10 == 0:
             avg_loss = loss_metric.result()
             accuracy = accuracy_metric.result()
             logger.info(f"Epoch {iteration_number}, Loss: {avg_loss:.4f}")
@@ -346,7 +346,7 @@ class ClonedFSCActorPolicy(TFPolicy):
             loss_metric.reset_states()
             accuracy_metric.reset_states()
             
-        if iteration_number % 5000 == 0:
+        if iteration_number % 100 == 0:
             self.evaluation_result = evaluate_policy_in_model(
                 cloned_actor, None, environment, tf_environment, self.max_episode_length * 2, evaluation_result)
             extraction_stats.add_extraction_result(
