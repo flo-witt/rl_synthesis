@@ -56,7 +56,7 @@ class RobustTrainer:
         self.quotient_state_valuations = quotient_state_valuations
         self.family_quotient_numpy = family_quotient_numpy
         fsc_size = latent_dim if use_one_hot_memory else 3**latent_dim
-        self.cut_probs = 0.45 if "drone" in args.prism_model else 0.0
+        self.cut_probs = 0.0
 
         if self.args.extraction_type == "alergia":
             self.autlearn_extraction = True
