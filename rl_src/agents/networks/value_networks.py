@@ -1,6 +1,3 @@
-# Description: Network creators for critic-based agents.
-# Author: David Hudák
-
 from tf_agents.networks import network
 import tensorflow as tf
 

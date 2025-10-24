@@ -1,5 +1,3 @@
-# Author: Martin Tappler, reimplemented by David Hudák
-
 import aalpy
 import numpy as np
 

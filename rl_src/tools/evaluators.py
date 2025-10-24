@@ -1,10 +1,3 @@
-# Description: This file contains the function for evaluation of model.
-# The function computes the average return of the policy over the given number of episodes.
-# Author: David Hudák
-# Login: xhudak03
-# Project: diploma-thesis
-# File: evaluators.py
-
 import tensorflow as tf
 
 from environment.environment_wrapper import Environment_Wrapper

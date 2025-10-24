@@ -1,8 +1,3 @@
-# Description: Random agent class that inherits from FatherAgent class. Not used.
-# Author: David Hudák
-# Login: xhudak03
-# File: random_agent.py
-
 
 import collections
 import tensorflow as tf

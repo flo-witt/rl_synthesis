@@ -1,9 +1,3 @@
-# Class for abstract agent, probably redundant.
-# Author: David Hudák
-# Login: xhudak03
-# Project: diploma-thesis
-# File: abstract_agent.py
-
 from abc import ABC, abstractmethod
 from tools.args_emulator import ReplayBufferOptions
 

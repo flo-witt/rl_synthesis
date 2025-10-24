@@ -35,7 +35,8 @@ class ArgsEmulator:
                  use_binary_entropy_reward: bool = False, batched_vec_storm : bool = False, enforce_recompilation: bool = False,
                  width_of_lstm: int = 32, extraction_type: str = "alergia", geometric_batched_vec_storm: bool = False,
                  without_extraction: bool = False, periodic_restarts: bool = False, noisy_observations: bool = False,
-                 shrink_and_perturb: bool = False, shrink_and_perturb_externally: bool = False, single_pomdp_experiment : bool = False):
+                 shrink_and_perturb: bool = False, shrink_and_perturb_externally: bool = False, single_pomdp_experiment : bool = False,
+                 with_gru: bool = False):
         """Args emulator for the RL parser. This class is used to emulate the args object from the RL parser for the RL initializer and other stuff.
         Args:
             prism_model (str): The path to the prism model file. Defaults to None -- must be set, if not used inside of Paynt.
@@ -109,6 +110,7 @@ class ArgsEmulator:
             shrink_and_perturb (bool, optional): Whether to use shrink and perturb method for exploration. Defaults to False.
             shrink_and_perturb_externally (bool, optional): Whether to use external shrink and perturb method for exploration. Defaults to False.
             single_pomdp_experiment (bool, optional): Whether to use a single POMDP for the experiment. Defaults to False.
+            with_gru (bool, optional): Whether to use GRU extraction for the robust RL agent to compare with. Defaults to False.
 
         """
         self.prism_model = prism_model
@@ -182,3 +184,4 @@ class ArgsEmulator:
         self.shrink_and_perturb = shrink_and_perturb
         self.shrink_and_perturb_externally = shrink_and_perturb_externally
         self.single_pomdp_experiment = single_pomdp_experiment
+        self.with_gru = with_gru

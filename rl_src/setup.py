@@ -12,10 +12,7 @@ setup(
         'tf_agents'
 
     ],
-    author='David Hudák',
-    author_email='ihudak@vutbr.cz',
     description='A reinforcement learning project for experiments with Storm models.',
-    url='https://github.com/DaveHudiny/synthesis/rl_src',
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',

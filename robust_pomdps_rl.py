@@ -1,19 +1,15 @@
 
-from robust_rl.robust_rl_trainer import RobustTrainer, initialize_extractor
+from robust_rl.robust_rl_trainer import initialize_extractor
 from robust_rl.robust_rl_tools import parse_args
-from robust_rl.robust_rl_tools import generate_heatmap_complete, assignment_to_pomdp, create_json_file_name, load_sketch
+from robust_rl.robust_rl_tools import assignment_to_pomdp, load_sketch
 import paynt.cli
-import paynt.synthesizer.synthesizer_ar
 
 import os
 import cProfile
-import pstats
 
-import paynt.synthesizer.synthesizer_onebyone
 import paynt.utils
 import paynt.utils.timer
 from paynt.quotient.pomdp_family import PomdpFamilyQuotient
-from paynt.quotient.pomdp import PomdpQuotient
 
 from tests.general_test_tools import init_args
 
@@ -32,8 +28,6 @@ def set_global_seeds(seed):
     tf.random.set_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
-
-
 
 def main():
     args_cmd = parse_args()
@@ -77,41 +71,37 @@ def main():
     args_emulated.without_extraction = args_cmd.without_extraction
     args_emulated.periodic_restarts = args_cmd.periodic_restarts
     args_emulated.noisy_observations = args_cmd.noisy_observations
-    args_emulated.shrink_and_perturb = args_cmd.shrink_and_perturb
-    args_emulated.shrink_and_perturb_externally = args_cmd.shrink_and_perturb_externally
     args_emulated.single_pomdp_experiment = args_cmd.single_pomdp_setting
     args_emulated.seed = args_cmd.seed
+    args_emulated.with_gru = args_cmd.with_gru
 
     set_global_seeds(args_emulated.seed)
-    # pomdp = initialize_prism_model(prism_path, properties_path, constants="")
+
     # If family has more than one POMDP, we need to use FamilyQuotientNumpy for robust RL.
-    if len(list(pomdp_sketch.family.all_combinations())) > 1:
+    if len(list(pomdp_sketch.family.all_combinations())) > 1: # Robust version of the loop
         family_quotient_numpy = FamilyQuotientNumpy(pomdp_sketch)
         if args_emulated.single_pomdp_experiment:
             nr_additional_pomdps = 0
 
         hole_assignment = pomdp_sketch.family.pick_random()
         pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
-        print(pomdp)
         # Print number of members of family
-        print("Number of POMDPs in family: ", len(list(pomdp_sketch.family.all_combinations())))
+        logger.info("Number of POMDPs in family: %d", len(list(pomdp_sketch.family.all_combinations())))
 
         extractor = initialize_extractor(
             pomdp_sketch, args_emulated, family_quotient_numpy)
 
         agent = extractor.generate_agent(pomdp, args_emulated)
-        last_hole = None
         extractor.extraction_loop(pomdp_sketch, project_path=project_path,
                                 nr_initial_pomdps=nr_additional_pomdps, num_samples_learn=num_samples_learn)
-    else:
+    else: # Non-robust version of the loop, i.e., family has only one POMDP. This is because we do not want to repeatedly extract policy for the same POMDP.
         family_quotient_numpy = FamilyQuotientNumpy(pomdp_sketch)
-        hole_assignment = pomdp_sketch.family.pick_random()
+        hole_assignment = pomdp_sketch.family.pick_random() # There is only one anyway
         pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
-        print(pomdp)
         extractor = initialize_extractor(
             pomdp_sketch, args_emulated, family_quotient_numpy)
         agent = extractor.generate_agent(pomdp, args_emulated)
-        extractor.train_and_extract_single_pomdp(pomdp_sketch, nr_iterations=4001, num_samples_learn=num_samples_learn, args=args_emulated, project_path=project_path)
+        extractor.train_and_extract_single_pomdp(pomdp_sketch, nr_iterations=401, num_samples_learn=num_samples_learn, args=args_emulated, project_path=project_path)
 
 
 

@@ -150,7 +150,7 @@ def parse_args():
     parser.add_argument(
         "--extraction-method",
         type=str,
-        choices=["alergia", "si-t", "si-g", "bottleneck"],
+        choices=["alergia", "si-g"],
         default="alergia",
         help="Method to use for extraction. Default is 'alergia'.")
     parser.add_argument(
@@ -174,16 +174,6 @@ def parse_args():
         action="store_true",
         help="Use noisy observations during training.")
     parser.add_argument(
-        "--shrink-and-perturb",
-        action="store_true",
-        help="Use shrink and perturb method during training."
-    )
-    parser.add_argument(
-        "--shrink-and-perturb-externally",
-        action="store_true",
-        help="Use external shrink and perturb method during training."
-    )
-    parser.add_argument(
         "--single-pomdp-setting",
         action="store_true",
         help="Experimental setting, where only a single POMDP is selected."
@@ -193,6 +183,12 @@ def parse_args():
         type=int,
         default=42,
         help="Random seed for reproducibility. Default is 42."
+    )
+    parser.add_argument(
+        "--with-gru",
+        action="store_true",
+        default=False,
+        help="Use GRU extraction for the robust RL agent to compare with."
     )
     args = parser.parse_args()
     return args

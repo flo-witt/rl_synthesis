@@ -5,46 +5,62 @@ class Config:
     def config_obstacles_10_2(self):
         self.nr_inner_iter = 60
         self.nr_initial_iter = 400
+        self.extraction_epochs = 501
 
     def config_obstacles_8_5(self):
         self.nr_inner_iter = 70
         self.nr_initial_iter = 400
+        self.extraction_epochs = 501
 
     def config_avoid(self):
         self.nr_inner_iter = 25
         self.nr_initial_iter = 200
+        self.extraction_epochs = 501
 
     def config_rover(self):
         self.nr_inner_iter = 100
         self.nr_initial_iter = 400
+        self.extraction_epochs = 501
 
     def config_network(self):
         self.nr_inner_iter = 150
         self.nr_initial_iter = 400
+        self.extraction_epochs = 501
 
     def config_drone(self):
         self.nr_inner_iter = 150
         self.nr_initial_iter = 400
+        self.extraction_epochs = 5001
 
     def config_maze(self):
         self.nr_inner_iter = 150
         self.nr_initial_iter = 400
+        self.extraction_epochs = 501
 
     def config_default_model(self):
         self.nr_inner_iter = 50
         self.nr_initial_iter = 400
+        self.extraction_epochs = 501
 
     def config_obstacles_10_5(self):
         self.nr_inner_iter = 100
         self.nr_initial_iter = 400
+        self.extraction_epochs = 501
 
     def config_avoid_large_old(self):
         self.nr_inner_iter = 35
         self.nr_initial_iter = 200
+        self.extraction_epochs = 501
 
     def config_avoid_large(self):
         self.nr_inner_iter = 35
         self.nr_initial_iter = 250
+        self.extraction_epochs = 5001
+
+    def config_moving_obstacles(self):
+        self.nr_inner_iter = 50
+        self.nr_initial_iter = 400
+        self.extraction_epochs = 5001
 
     def translation_model_name_dict(self):
         return {
@@ -57,6 +73,7 @@ class Config:
             "network": "network",
             "drone-2-6-1": "drone",
             "maze-10": "maze",
+            "moving-obstacles": "moving_obstacles",
         }
 
     def set_config(self, model_name="default_model"):

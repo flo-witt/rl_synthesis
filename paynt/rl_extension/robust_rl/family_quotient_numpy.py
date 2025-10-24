@@ -7,7 +7,6 @@ from tf_agents.trajectories import TimeStep
 
 import tensorflow as tf
 
-from payntbind.synthesis.synthesis import ObservationEvaluator
 
 
 class FamilyQuotientNumpy:
@@ -24,7 +23,7 @@ class FamilyQuotientNumpy:
         self._initialize_numpy_arrays(family_quotient)
         self._compute_observation_mapping_function(family_quotient.obs_evaluator)
 
-    def _compute_observation_mapping_function(self, obs_evaluator : ObservationEvaluator):
+    def _compute_observation_mapping_function(self, obs_evaluator):
         valuations_length = len(obs_evaluator.obs_valuation(0))
         self.observation_mapping_function = np.zeros((self.family_quotient.num_observations, valuations_length), dtype=np.float32)
         for observation_integer in range(self.family_quotient.num_observations):

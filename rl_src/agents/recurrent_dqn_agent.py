@@ -1,7 +1,3 @@
-# Implementation of recurrent DQN agent.
-# Author: David Hudák
-# Login: xhudak03
-# File: recurrent_dqn_agent.py
 
 import tensorflow as tf
 

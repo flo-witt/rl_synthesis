@@ -1,9 +1,3 @@
-# File: rl_main.py
-# Description: Main for Reinforcement Learning Approach. If you want to train agents,
-#              you can do it here, or you can use --reinforcement-learning option within PAYNT
-# Author: David Hudak
-# Login: xhudak03
-
 from agents.father_agent import FatherAgent
 from tools.trajectory_buffer import TrajectoryBuffer
 from tools.evaluation_results_class import EvaluationResults

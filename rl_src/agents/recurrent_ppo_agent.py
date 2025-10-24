@@ -1,7 +1,3 @@
-# Implementation of PPO agent with recurrent neural networks.
-# Author: David Hudák
-# Login: xhudak03
-# File: recurrent_ppo_agent.py
 
 import logging
 from agents.father_agent import FatherAgent

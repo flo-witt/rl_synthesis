@@ -1,8 +1,3 @@
-# Description: Controller for the simulation of the SAYNT algorithm in the Storm simulator.
-# Author: David Hudák
-# Login: ihudak
-
-
 import stormpy.simulator
 import paynt.quotient.storm_pomdp_control as Storm_POMDP_Control
 import paynt.quotient.pomdp as POMDP

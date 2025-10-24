@@ -1,9 +1,3 @@
-# Description: This file contains the implementation of the FatherAgent class, which is the parent class of other agents in the project.
-# Author: David Hudák
-# Login: xhudak03
-# Project: diploma-thesis
-# File: father_agent.py
-
 from tf_agents.policies import py_tf_eager_policy
 
 

@@ -6,7 +6,7 @@ import tf_agents
 from tests.general_test_tools import *
 
 
-from paynt.rl_extension.self_interpretable_interface.self_interpretable_extractor import SelfInterpretableExtractor
+from paynt.rl_extension.self_interpretable_interface.aalpy_and_sig_interface import SelfInterpretableExtractor
 from interpreters.direct_fsc_extraction.cloned_fsc_actor_policy import ClonedFSCActorPolicy
 from tools.specification_check import SpecificationChecker
 from agents.recurrent_ppo_agent import Recurrent_PPO_agent

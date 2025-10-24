@@ -1,7 +1,6 @@
 # using Paynt for POMDP sketches
 
-from rl_src.interpreters.bottlenecking.quantized_bottleneck_extractor import BottleneckExtractor
-from robust_rl.robust_rl_tools import create_json_file_name, assignment_to_pomdp, generate_heatmap_complete, generate_table_based_fsc_from_paynt_fsc, compute_policy_by_saynt
+from robust_rl.robust_rl_tools import create_json_file_name, assignment_to_pomdp
 import paynt.quotient.fsc
 import paynt.synthesizer.synthesizer_ar
 
@@ -9,23 +8,20 @@ from robust_rl.rnn_analyzer import RNNAnalyzer
 
 import os
 
-from tf_agents.policies import TFPolicy
 
 from rl_src.environment.environment_wrapper_vec import EnvironmentWrapperVec
 from rl_src.environment.tf_py_environment import TFPyEnvironment
 
-from paynt.rl_extension.self_interpretable_interface.self_interpretable_extractor import SelfInterpretableExtractor
+from paynt.rl_extension.self_interpretable_interface.aalpy_and_sig_interface import SelfInterpretableExtractor
 
 from paynt.rl_extension.family_extractors.direct_fsc_construction import ConstructorFSC
 
 from paynt.rl_extension.robust_rl.family_quotient_numpy import FamilyQuotientNumpy
-from paynt.quotient.pomdp import PomdpQuotient
 from paynt.quotient.pomdp_family import PomdpFamilyQuotient
 
 
 from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_agent
 from rl_src.tools.args_emulator import ArgsEmulator
-from rl_src.tools.evaluators import evaluate_policy_in_model
 
 import numpy as np
 
@@ -95,28 +91,6 @@ class RobustTrainer:
         else:
             return None
 
-    def call_bottlenecking(self, agent: Recurrent_PPO_agent, environment: EnvironmentWrapperVec, tf_environment: TFPyEnvironment, num_data_steps=4001, training_epochs=10001):
-        policy = agent.get_policy(False, True)
-        extractor = BottleneckExtractor(
-            tf_environment, 64, 1
-        )
-        extractor.train_autoencoder(
-            policy, 61, num_data_steps=num_data_steps)
-        extractor.evaluate_bottlenecking(
-            agent
-        )
-        fsc = extractor.extract_fsc(
-            policy, environment,
-            generate_fake_time_step=self.family_quotient_numpy.get_time_steps_for_observation_integers,
-            nr_observations=len(self.family_quotient_numpy.observation_to_legal_action_mask))
-        evaluation_result = evaluate_policy_in_model(
-            fsc, self.args, environment, tf_environment)
-        self.benchmark_stats.add_extracted_fsc_performance(
-            evaluation_result.returns[-1])
-        self.benchmark_stats.add_extracted_fsc_reachability(
-            evaluation_result.reach_probs[-1])
-        return fsc
-
     def call_si_or_aalpy(self, agent: Recurrent_PPO_agent, environment: EnvironmentWrapperVec, tf_environment: TFPyEnvironment, num_data_steps=4001, training_epochs=10001):
         policy = agent.get_policy(False, True)
         fsc, extraction_stats = self.direct_extractor.clone_and_generate_fsc_from_policy(
@@ -143,30 +117,12 @@ class RobustTrainer:
             agent.unset_policy_masking()
 
         tf_environment = TFPyEnvironment(environment)
-        # if True:
-        #     from rl_src.interpreters.extracted_fsc.table_based_policy import TableBasedPolicy, initialize_random_joint_fsc_function
-        #
-        #     action_function, update_function = initialize_random_joint_fsc_function(
-        #         environment.action_keywords, len(self.family_quotient_numpy.observation_to_legal_action_mask), 3)
-        #     fsc = TableBasedPolicy(
-        #         original_policy=policy, action_function=action_function, update_function=update_function,
-        #         action_keywords=environment.action_keywords, nr_observations=len(self.family_quotient_numpy.observation_to_legal_action_mask))
 
-        if self.extraction_type == "bottleneck" or self.direct_extractor is None:
-            fsc = self.call_bottlenecking(
-                agent, environment, tf_environment, num_data_steps=num_data_steps, training_epochs=training_epochs)
-        else:
-            fsc = self.call_si_or_aalpy(
-                agent, environment, tf_environment, num_data_steps=num_data_steps, training_epochs=training_epochs)
-        # from paynt.rl_extension.self_interpretable_interface.tabular_reinforce import TabularReinforce
-        # TabularReinforce.train(fsc, environment)
+        fsc = self.call_si_or_aalpy(
+            agent, environment, tf_environment, num_data_steps=num_data_steps, training_epochs=training_epochs)
         paynt_fsc = ConstructorFSC.construct_fsc_from_table_based_policy(
             fsc, quotient, family_quotient_numpy=self.family_quotient_numpy, cut_probs=self.cut_probs)
         self.fscs_extracted.append(paynt_fsc)
-        # policy_to_test = generate_table_based_fsc_from_paynt_fsc(
-        #     paynt_fsc, environment.action_keywords, agent)
-        # evaluation_result = evaluate_policy_in_model(
-        #     policy_to_test, self.args, environment, tf_environment)
 
         available_nodes = paynt_fsc.compute_available_updates(0)
         self.benchmark_stats.available_nodes_in_fsc.append(available_nodes)
@@ -222,124 +178,17 @@ class RobustTrainer:
                                                       observation_to_actions=self.pomdp_sketch.observation_to_actions)
             agent.change_environment(self.environment)
 
-    def prepare_environments(self, pomdp_sketch, args_emulated):
-        """
-        Prepares the environments for the POMDP sketch.
-        """
-        obs_evaluator = pomdp_sketch.obs_evaluator
-        quotient_state_valuations = pomdp_sketch.quotient_mdp.state_valuations
-        environment_wrappers = []
-        pomdps = []
-        for sub_family in pomdp_sketch.family.all_combinations():
-            hole_assignment = pomdp_sketch.family.construct_assignment(
-                sub_family)
-            pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
-            environment = EnvironmentWrapperVec(pomdp, args_emulated, num_envs=self.args.num_environments, enforce_compilation=True,
-                                                obs_evaluator=obs_evaluator,
-                                                quotient_state_valuations=quotient_state_valuations,
-                                                observation_to_actions=pomdp_sketch.observation_to_actions)
-            environment_wrappers.append(environment)
-            pomdps.append(pomdp)
-        tf_environments = [TFPyEnvironment(env)
-                           for env in environment_wrappers]
-        return environment_wrappers, tf_environments, list(pomdp_sketch.family.all_combinations()), pomdps
-
-    def prepare_subset_environments_for_evaluation(self, pomdp_sketch, pomdps, args_emulated) -> tuple[list[EnvironmentWrapperVec], list[TFPyEnvironment]]:
-        """
-        Prepares the subset of POMDPs for worst-case evaluation.
-        """
-        obs_evaluator = pomdp_sketch.obs_evaluator
-        quotient_state_valuations = pomdp_sketch.quotient_mdp.state_valuations
-        environment_wrappers = []
-        for pomdp in pomdps:
-            environment = EnvironmentWrapperVec(pomdp, args_emulated, num_envs=self.args.num_environments, enforce_compilation=True,
-                                                obs_evaluator=obs_evaluator,
-                                                quotient_state_valuations=quotient_state_valuations,
-                                                observation_to_actions=pomdp_sketch.observation_to_actions)
-            environment_wrappers.append(environment)
-        tf_environments = [TFPyEnvironment(env)
-                           for env in environment_wrappers]
-        return environment_wrappers, tf_environments
-
-    def add_pomdp_to_subset(self, pomdp, environments: list[EnvironmentWrapperVec], tf_environments: list[TFPyEnvironment]):
-        """
-        Adds a new POMDP to the subset of environments.
-        """
-        environment = EnvironmentWrapperVec(pomdp, self.args, num_envs=self.args.num_environments, enforce_compilation=True,
-                                            obs_evaluator=self.obs_evaluator,
-                                            quotient_state_valuations=self.quotient_state_valuations,
-                                            observation_to_actions=self.pomdp_sketch.observation_to_actions)
-        environments.append(environment)
-        tf_environments.append(TFPyEnvironment(environment))
-
-    def evaluate_on_all_pomdps(self, policy: TFPolicy, environments, tf_environments, hole_assignments):
-        results = {}
-        for i, environment in enumerate(environments):
-            result = evaluate_policy_in_model(
-                policy, self.args, environment, tf_environments[i], self.args.max_steps + 1)
-            results[hole_assignments[i]] = result.best_return
-        return results
-
-    def merge_results(self, results, merged_results=None):
-        """
-        Merges the results from the evaluation of all POMDPs.
-        """
-        if merged_results is None:
-            merged_results = {}
-        for assignment, value in results.items():
-            if assignment not in merged_results:
-                merged_results[assignment] = []
-            merged_results[assignment].append(value)
-        return merged_results
-
-    def get_worst_case_pomdp_index(self, all_evaluations, all_hole_assignments):
-        worst_hole_assignment = min(all_evaluations, key=all_evaluations.get)
-        logger.info(
-            f"Worst hole assignment: {worst_hole_assignment} with value {all_evaluations[worst_hole_assignment]}")
-        worst_case_index = all_hole_assignments.index(worst_hole_assignment)
-        return worst_case_index
-
-    def get_worst_case_pomdp_value(self, all_evaluations: dict):
-        worst_hole_value = min(all_evaluations.values())
-        return worst_hole_value
-
-    def perform_subset_evaluation(self, policy, environments, tf_environments):
-        """
-        Performs evaluation on a subset of POMDPs.
-        """
-        results_returns = []
-        results_reachabilities = []
-        for i, environment in enumerate(environments):
-            result = evaluate_policy_in_model(
-                policy, self.args, environment, tf_environments[i], self.args.max_steps + 1)
-            results_returns.append(result.best_return)
-            results_reachabilities.append(result.best_reach_prob)
-        return results_returns, results_reachabilities
-
-    def perform_heatmap_evaluation(self, fsc, pomdp_sketch, save=False, project_path=None):
-        """
-        Performs a heatmap evaluation of the FSC.
-        """
-        heatmap_evaluations, hole_assignments_to_test = generate_heatmap_complete(
-            pomdp_sketch, fsc)
-        if save:
-            if project_path is not None:
-                file_name = os.path.join(
-                    project_path, f"{self.args.model_name}_heatmap_evaluations.txt")
-            else:
-                file_name = f"{self.args.model_name}_heatmap_evaluations.txt"
-            with open(file_name, 'w') as f:
-                f.write(f"Heatmap evaluations for FSC: {fsc}\n")
-                for i, evaluation in enumerate(heatmap_evaluations):
-                    f.write(f"{hole_assignments_to_test[i]}: {evaluation}\n")
-                f.write("\n")
-        return heatmap_evaluations, hole_assignments_to_test
+    def add_initial_pomdps(self, pomdp, pomdp_sketch: PomdpFamilyQuotient, nr_initial_pomdps=10):
+        for _ in range(nr_initial_pomdps):
+            hole_assignment = pomdp_sketch.family.pick_random()
+            pomdp, _, _ = assignment_to_pomdp(
+                pomdp_sketch, hole_assignment)
+            self.add_new_pomdp(pomdp, self.agent)
 
     def extraction_loop(self, pomdp_sketch, project_path, nr_initial_pomdps=10, num_samples_learn=401):
         """
-        Pure RL loop, without FSC extraction.
+        Main extraction loop for robust RL.
         """
-        operator = min if pomdp_sketch.specification.optimality.minimizing else max
         logger.info("Starting extraction loop")
         rnn_analyzer = RNNAnalyzer(self.args)
         args_emulated = self.args
@@ -353,62 +202,44 @@ class RobustTrainer:
         hole_assignment = pomdp_sketch.family.pick_random()
 
         pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
-        pomdps = [pomdp]
-        if True:  # Add nr_initial_pomdps random POMDPs to the environment
-            # nr_initial_pomdps = nr_initial_pomdps if not self.extraction_less else 50
-            for _ in range(nr_initial_pomdps):
-                hole_assignment = pomdp_sketch.family.pick_random()
-                pomdp, _, _ = assignment_to_pomdp(
-                    pomdp_sketch, hole_assignment)
-                self.add_new_pomdp(pomdp, self.agent)
-                pomdps.append(pomdp)
-        # environments, tf_environments = self.prepare_subset_environments_for_evaluation(
-        #     pomdp_sketch, pomdps, args_emulated)
+        if nr_initial_pomdps:  # Add nr_initial_pomdps random POMDPs to the environment
+            self.add_initial_pomdps(pomdp, pomdp_sketch, nr_initial_pomdps)
         nr_iterations = config.nr_initial_iter
+        # Upper limit of the outer iterations. In practice, we are stopped by an external timeout.
         for i in range(101):
             logger.info(f"Iteration {i+1} of extraction RL loop")
-            # Train the agent on multiple POMDPs
+
             if args_emulated.single_pomdp_experiment:
                 pomdp = None
-            self.train_on_new_pomdp(
+            self.train_on_new_pomdp(  # Train the agent on multiple POMDPs
                 pomdp, self.agent, nr_iterations=nr_iterations)
+
+            # Analysis of the dormant neurons. Not mentioned in the paper, but used during the tuning.
             nr_clusters = rnn_analyzer.analyze(self.agent, self.tf_env)
             self.benchmark_stats.add_nr_clusters(nr_clusters)
+
             nr_iterations = config.nr_inner_iter if not self.args.periodic_restarts else 401
-            # Evaluate the agent on all POMDPs
-            # merged_results, worst_case_index_rl = self.perform_overall_evaluation(merged_results, self.agent.get_policy(False, True),
-            #                                                      environments, tf_environments, all_hole_assignments, save=True,
-            #                                                      project_path=project_path)
-            best_assignment_value = None
+
+            # In our final implementation, we always use masking for the extraction
             for use_masking in [True]:
 
                 fsc = self.extract_fsc(self.agent, self.agent.environment, pomdp_sketch, get_dict=True,
-                                       num_data_steps=num_samples_learn, use_masking=use_masking, training_epochs=5001)
+                                       num_data_steps=num_samples_learn, use_masking=use_masking, training_epochs=config.extraction_epochs)
                 # Evaluate the FSC on all POMDPs
                 paynt_fsc = fsc["extracted_paynt_fsc"]
                 table_based_fsc = fsc["extracted_fsc"]
 
-                # _, worst_case_index_fsc = self.perform_overall_evaluation(merged_results, table_based_fsc, environments, tf_environments, all_hole_assignments,
-                #                                                           save=True, is_fsc=True, project_path=project_path)
                 dtmc_sketch = pomdp_sketch.build_dtmc_sketch(
                     paynt_fsc, negate_specification=True)
                 synthesizer = paynt.synthesizer.synthesizer_ar.SynthesizerAR(
                     dtmc_sketch)
                 hole_assignment = synthesizer.synthesize(keep_optimum=True)
 
-                best_assignment_value = synthesizer.best_assignment_value if best_assignment_value is None else operator(
-                    best_assignment_value, synthesizer.best_assignment_value)
-
-            # self.benchmark_stats.add_worst_case_assignments(all_hole_assignments[worst_case_index_rl], all_hole_assignments[worst_case_index_fsc], hole_assignment)
-            # self.benchmark_stats.add_worst_case_same_as_simulated(
-            #     None)
             logger.info(
                 f"Extracted FSC for hole assignment: {hole_assignment}")
             self.benchmark_stats.add_family_performance(
                 synthesizer.best_assignment_value)
 
-            # Perform heatmap evaluation
-            # heatmap_evaluations, hole_assignments_to_test = self.perform_heatmap_evaluation(paynt_fsc, pomdp_sketch, save=True, project_path=project_path)
             if not self.extraction_less:
                 pomdp, _, _ = assignment_to_pomdp(
                     pomdp_sketch, hole_assignment)
@@ -416,21 +247,8 @@ class RobustTrainer:
                 hole_assignment = pomdp_sketch.family.pick_random()
                 pomdp, _, _ = assignment_to_pomdp(
                     pomdp_sketch, hole_assignment)
-            # self.add_pomdp_to_subset(pomdp, environments, tf_environments)
-            pomdps.append(pomdp)
 
-            last_extracted_fsc_return = np.abs(
-                self.benchmark_stats.extracted_fsc_return[-1])
-            last_rl_return = np.abs(
-                self.benchmark_stats.rl_performance_single_pomdp[-1])
-            if self.args.shrink_and_perturb_externally and np.abs(last_extracted_fsc_return - last_rl_return) / ((np.abs(last_extracted_fsc_return) + np.abs(last_rl_return)) / 2.0) > 0.3:
-                self.agent.shrink_and_perturb()
-                nr_iterations = 101
-                self.benchmark_stats.shrink_and_perturb_activated.append(
-                    True)
-            else:
-                self.benchmark_stats.shrink_and_perturb_activated.append(
-                    False)
+            self.benchmark_stats.shrink_and_perturb_activated.append(False)
 
             self.agent.evaluation_result.save_to_json(
                 json_path, new_pomdp=True)
@@ -480,11 +298,11 @@ def initialize_extractor(pomdp_sketch, args_emulated: ArgsEmulator, family_quoti
 
     use_one_hot_memory = True if args_emulated.extraction_type == "si-g" else False
     use_gumbel_softmax = True if args_emulated.extraction_type == "si-g" else False
-    # 3 ** i in case of non-one-hot memory
-    latent_dim = 10
+    if "avoid-large" in args_emulated.prism_model or "drone-2-6-1" in args_emulated.prism_model or "moving-obstacles" in args_emulated.prism_model:
+        latent_dim = 10  # For these models, we use larger latent dimension => usually larger FSCs
+    else:
+        latent_dim = 3
 
-    # Currently latent_dim is hardcoded to 2 (3 ** i => 9-FSC)
-    # If use one-hot memory, then the size of FSC is equal to the latent_dim.
     extractor = RobustTrainer(args_emulated, use_one_hot_memory=use_one_hot_memory, latent_dim=latent_dim, quotient_state_valuations=quotient_sv,
                               obs_evaluator=quotient_obs, pomdp_sketch=pomdp_sketch,
                               family_quotient_numpy=family_quotient_numpy, use_gumbel_softmax=use_gumbel_softmax)

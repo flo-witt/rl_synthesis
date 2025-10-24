@@ -1,4 +1,4 @@
-#!/bin/bash
+ #!/bin/bash
 
 # multi-core compilation
 # COMPILE_JOBS=$(nproc)
@@ -19,59 +19,25 @@ python3.10 -m pip install --upgrade pip
 # prerequisites
 mkdir -p ${PREREQUISITES}
 
-# build cvc5 (optional)
-# cd ${PREREQUISITES}
-# git clone --depth 1 --branch cvc5-1.0.0 https://github.com/cvc5/cvc5.git cvc5
-# cd ${PREREQUISITES}/cvc5
-# source ${PAYNT_ROOT}/env/bin/activate
-# ./configure.sh --prefix="." --auto-download --python-bindings
-# cd build
-# make --jobs ${COMPILE_JOBS}
-# make install
-# deactivate
-
-# build storm
-cd ${PREREQUISITES}
-git clone https://github.com/moves-rwth/storm.git storm
-# git clone --branch stable https://github.com/moves-rwth/storm.git storm
-mkdir -p ${PREREQUISITES}/storm/build
-cd ${PREREQUISITES}/storm/build
-cmake ..
-make storm storm-cli storm-pomdp --jobs ${COMPILE_JOBS}
-# make check --jobs ${COMPILE_JOBS}
-
 # setup and activate python environment
 python3.10 -m venv ${PREREQUISITES}/venv
 source ${PREREQUISITES}/venv/bin/activate
 pip3 install wheel
-
-# build stormpy
-cd ${PREREQUISITES}
-git clone https://github.com/moves-rwth/stormpy.git stormpy
-# git clone --branch stable https://github.com/moves-rwth/stormpy.git stormpy
-cd ${PREREQUISITES}/stormpy
-pip install .
-# python3 setup.py test
+pip3 install paynt
 
 # paynt dependencies
 sudo apt -y install graphviz
 pip3 install click z3-solver psutil graphviz
 
-# build payntbind
-cd ${PAYNT_ROOT}/payntbind
-python3 setup.py develop
-cd ${PAYNT_ROOT}
-
 # build vec_storm
-cd ${PREREQUISITES}
-git clone https://github.com/DaveHudiny/VecStorm.git VecStorm
-cd ${PREREQUISITES}/VecStorm
+cd ${PAYNT_ROOT}/VecStorm
 pip install -e .
 
 cd ${PAYNT_ROOT}
 
-pip install tensorflow==2.15 ml-dtypes==0.5.0
-pip install tf_agents
+pip install jax==0.5.3
+pip install tensorflow==2.15 ml-dtypes==0.2.0
+pip install tf_agents==0.19.0
 pip install tqdm dill matplotlib pandas seaborn networkx
 pip install aalpy
 pip install scikit-learn

@@ -1,6 +1,3 @@
-# Author: David Hudák
-# Description: Active pretraining for RL agents using a replay buffer and a policy network.
-
 import numpy as np
 
 import tensorflow as tf

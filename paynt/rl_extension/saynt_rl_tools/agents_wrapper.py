@@ -1,8 +1,3 @@
-# This file contains the Synthesizer_RL class, which creates interface between RL and PAYNT.
-# Author: David Hudák
-# Login: xhudak03
-# File: synthesizer_rl.py
-
 from rl_src.experimental_interface import ArgsEmulator, ExperimentInterface
 from rl_src.interpreters.tracing_interpret import TracingInterpret
 from rl_src.agents.policies.parallel_fsc_policy import FSC_Policy

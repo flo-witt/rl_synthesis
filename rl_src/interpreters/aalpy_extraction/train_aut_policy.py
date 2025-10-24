@@ -1,5 +1,3 @@
-# Author: Martin Tappler
-
 import stormpy # import tf_agents # The RL library
 import tensorflow as tf
 

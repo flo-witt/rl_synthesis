@@ -1,8 +1,3 @@
-# Description: This file contains the environment wrapper class that is used to interact with the Storm model and the RL agent.
-# Author: David Hudák
-# Login: xhudak03
-# File: environment_wrapper.py
-
 from environment.renderers.grid_like_renderer import GridLikeRenderer
 import os
 from vec_storm.storm_vec_env import StepInfo
@@ -11,7 +6,6 @@ import numpy as np
 import tensorflow as tf
 
 from stormpy import simulator
-from stormpy.storage import storage
 
 from environment import py_environment
 
@@ -71,7 +65,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
     """The most important class in this project. It wraps the Stormpy simulator and provides the interface for the RL agent.
     """
 
-    def __init__(self, stormpy_model: storage.SparsePomdp, args: ArgsEmulator, num_envs: int = 1, enforce_compilation: bool = False,
+    def __init__(self, stormpy_model, args: ArgsEmulator, num_envs: int = 1, enforce_compilation: bool = False,
                  obs_evaluator=None, quotient_state_valuations=None, observation_to_actions=None):
         """Initializes the environment wrapper.
 
@@ -117,17 +111,18 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
                 self.vectorized_simulator.simulator.observation_by_ids)
             _, first_indices = np.unique(
                 self.state_to_observation_map, return_index=True)
-            nr_observations = stormpy_model.nr_observations
         except:
+            logger.error(
+                "State to observation map not possible to initialize. Using the default one.")
+            exit(1)
             self.state_to_observation_map = tf.constant(
                 self.vectorized_simulator.simulator.state_observation_ids)
             self.observation_valuations = np.array(
                 self.vectorized_simulator.simulator.state_values)
             self.first_indices = self.state_to_observation_map
-            nr_observations = len(self.observation_valuations)
-        self.observations_to_states_map = np.zeros((nr_observations),
+        self.observations_to_states_map = np.zeros((stormpy_model.nr_observations),
                                                    dtype=np.int32)
-        for observation in range(nr_observations):
+        for observation in range(stormpy_model.nr_observations):
             states = np.where(
                 self.state_to_observation_map == observation)[0]
             if states.shape[0] == 0:
@@ -213,7 +208,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         self.noisy_observations = args.noisy_observations
 
         
-    def add_new_pomdp(self, pomdp: storage.SparsePomdp):
+    def add_new_pomdp(self, pomdp):
         """Adds a new POMDP to the environment. This is used with BatchedVecStorm to add new POMDPs to the batch of simulators.
         Args:
             pomdp (storage.SparsePomdp): The POMDP to be added to the environment.
@@ -283,7 +278,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         self.antigoal_values_vector = tf.constant(
             [0.0] * self.num_envs, dtype=tf.float32)
         self.goal_values_vector = tf.constant(
-            [1.0] * self.num_envs, dtype=tf.float32)
+            [100.0] * self.num_envs, dtype=tf.float32)
 
     def set_minimizing_rewards(self):
         self.reward_multiplier = -10.0

@@ -1,7 +1,3 @@
-# Implementation of PPO with critic represetned by Q-values obtained from FSC.
-# Author: David Hudák
-# Login: xhudak03
-# File: ppo_with_qvalues_fsc.py
 
 from agents.father_agent import FatherAgent
 from environment.environment_wrapper import Environment_Wrapper

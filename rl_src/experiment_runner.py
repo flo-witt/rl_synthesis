@@ -1,8 +1,3 @@
-# Used for running various experiments with training. Used primarily for multi-agent training.
-# Author: David Hudák
-# Login: xhudak03
-# File: interface.py
-
 import sys
 sys.path.append("../")
 
