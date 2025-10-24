@@ -60,12 +60,12 @@ The implementation is primarily based on PAYNT with Stormpy, TensorFlow Agents f
   - To get the data from rfPG, take our models and then please follow the instructions in https://zenodo.org/records/15479643.
   - To get the data from SAYNT, change the line in prerequisites/Stormpy directory as in https://github.com/moves-rwth/stormpy/pull/158/files. Then reinstall stormpy using the original installation script.
     - To achieve the same SAYNT performance as in our paper, run:
-    ```shell
+```shell
 
       $ source prerequisites/venv/bin/activate
 
       $ python3.10 paynt.py --iterative-storm 1800 30 2 --storm-pomdp --fsc-synthesis ./path/to/model
-    ```
+```
 
 ## Credits
 
