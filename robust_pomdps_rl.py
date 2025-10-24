@@ -35,7 +35,6 @@ def set_global_seeds(seed):
 
 
 
-
 def main():
     args_cmd = parse_args()
 
@@ -50,11 +49,13 @@ def main():
 
     project_path = args_cmd.project_path
     pomdp_sketch : PomdpFamilyQuotient = load_sketch(project_path)
-        
 
 
     num_samples_learn = 4001
-    nr_pomdps = 5
+    if "avoid-large" in project_path:
+        nr_additional_pomdps = 10
+    else:
+        nr_additional_pomdps = 5
 
     # This can be useful for extraction and some other stuff.
    
@@ -80,17 +81,20 @@ def main():
     args_emulated.shrink_and_perturb_externally = args_cmd.shrink_and_perturb_externally
     args_emulated.single_pomdp_experiment = args_cmd.single_pomdp_setting
     args_emulated.seed = args_cmd.seed
-    
+
     set_global_seeds(args_emulated.seed)
     # pomdp = initialize_prism_model(prism_path, properties_path, constants="")
     # If family has more than one POMDP, we need to use FamilyQuotientNumpy for robust RL.
     if len(list(pomdp_sketch.family.all_combinations())) > 1:
         family_quotient_numpy = FamilyQuotientNumpy(pomdp_sketch)
         if args_emulated.single_pomdp_experiment:
-            nr_pomdps = 0
+            nr_additional_pomdps = 0
 
         hole_assignment = pomdp_sketch.family.pick_random()
         pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
+        print(pomdp)
+        # Print number of members of family
+        print("Number of POMDPs in family: ", len(list(pomdp_sketch.family.all_combinations())))
 
         extractor = initialize_extractor(
             pomdp_sketch, args_emulated, family_quotient_numpy)
@@ -98,11 +102,12 @@ def main():
         agent = extractor.generate_agent(pomdp, args_emulated)
         last_hole = None
         extractor.extraction_loop(pomdp_sketch, project_path=project_path,
-                                nr_initial_pomdps=nr_pomdps, num_samples_learn=num_samples_learn)
+                                nr_initial_pomdps=nr_additional_pomdps, num_samples_learn=num_samples_learn)
     else:
         family_quotient_numpy = FamilyQuotientNumpy(pomdp_sketch)
         hole_assignment = pomdp_sketch.family.pick_random()
         pomdp, _, _ = assignment_to_pomdp(pomdp_sketch, hole_assignment)
+        print(pomdp)
         extractor = initialize_extractor(
             pomdp_sketch, args_emulated, family_quotient_numpy)
         agent = extractor.generate_agent(pomdp, args_emulated)

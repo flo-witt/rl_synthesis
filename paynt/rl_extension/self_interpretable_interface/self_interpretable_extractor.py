@@ -429,7 +429,7 @@ class SelfInterpretableExtractor:
             cloned_lstm_actor = ClonedLSTMActorPolicy(original_policy, observation_and_action_constraint_splitter=original_policy.observation_and_action_constraint_splitter,
                                                       observation_length=env.observation_spec_len, lstm_units=32)
             extraction_stats_lstm = cloned_lstm_actor.behavioral_clone_original_policy_to_fsc(
-                buffer, num_epochs=20000, environment=env, tf_environment=tf_env, args=None, extraction_stats=None
+                buffer, num_epochs=5002, environment=env, tf_environment=tf_env, args=None, extraction_stats=None
             )
 
 

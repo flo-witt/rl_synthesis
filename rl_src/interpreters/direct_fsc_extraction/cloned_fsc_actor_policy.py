@@ -180,15 +180,13 @@ class ClonedFSCActorPolicy(TFPolicy):
         """
         import math
 
-        # Hyperparametry
-        tau_max = 3.0   # Počáteční teplota
-        tau_min = 0.1   # Minimální teplota
+        tau_max = 3.0
+        tau_min = 0.1
         total_epochs = total_epochs
 
-        # Kosinusový pokles (cosine annealing)
+        # cosine annealing
         tau = tau_min + 0.5 * (tau_max - tau_min) * (1 + math.cos(math.pi * epoch / total_epochs))
 
-        # Nastavení teploty do sítě
         network.set_gumbel_temperature(tau)
             
 
@@ -292,9 +290,7 @@ class ClonedFSCActorPolicy(TFPolicy):
                     
                     total_loss += current_loss
 
-                # Průměrování ztráty přes celou sekvenci
                 total_loss /= T
-            # Výpočet gradientů a aktualizace vah
             grads = tape.gradient(total_loss, neural_fsc.trainable_variables)
             grads, _ = tf.clip_by_global_norm(grads, 5.0)
             optimizer.apply_gradients(zip(grads, neural_fsc.trainable_variables))
@@ -337,7 +333,7 @@ class ClonedFSCActorPolicy(TFPolicy):
                               extraction_stats: ExtractionStats,
                               evaluation_result: EvaluationResults,
                               specification_checker: SpecificationChecker):
-        if iteration_number % 10 == 0:
+        if iteration_number % 100 == 0:
             avg_loss = loss_metric.result()
             accuracy = accuracy_metric.result()
             logger.info(f"Epoch {iteration_number}, Loss: {avg_loss:.4f}")
@@ -346,7 +342,7 @@ class ClonedFSCActorPolicy(TFPolicy):
             loss_metric.reset_states()
             accuracy_metric.reset_states()
             
-        if iteration_number % 100 == 0:
+        if False and iteration_number % 100 == 0:
             self.evaluation_result = evaluate_policy_in_model(
                 cloned_actor, None, environment, tf_environment, self.max_episode_length * 2, evaluation_result)
             extraction_stats.add_extraction_result(

@@ -117,18 +117,17 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
                 self.vectorized_simulator.simulator.observation_by_ids)
             _, first_indices = np.unique(
                 self.state_to_observation_map, return_index=True)
+            nr_observations = stormpy_model.nr_observations
         except:
-            logger.error(
-                "State to observation map not possible to initialize. Using the default one.")
-            exit(1)
             self.state_to_observation_map = tf.constant(
                 self.vectorized_simulator.simulator.state_observation_ids)
             self.observation_valuations = np.array(
                 self.vectorized_simulator.simulator.state_values)
             self.first_indices = self.state_to_observation_map
-        self.observations_to_states_map = np.zeros((stormpy_model.nr_observations),
+            nr_observations = len(self.observation_valuations)
+        self.observations_to_states_map = np.zeros((nr_observations),
                                                    dtype=np.int32)
-        for observation in range(stormpy_model.nr_observations):
+        for observation in range(nr_observations):
             states = np.where(
                 self.state_to_observation_map == observation)[0]
             if states.shape[0] == 0:
@@ -279,7 +278,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         self.goal_values_vector = tf.constant(
             [self.args.evaluation_goal] * self.num_envs, dtype=tf.float32)
 
-    def set_maxizing_rewards(self):
+    def set_maximizing_rewards(self):
         self.reward_multiplier = 10.0
         self.antigoal_values_vector = tf.constant(
             [0.0] * self.num_envs, dtype=tf.float32)
@@ -351,7 +350,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
             "rocks": self.set_minimizing_rewards,
             "geo": self.set_reachability_rewards,
             "mba": self.set_minimizing_rewards,
-            "maze": self.set_maxizing_rewards,
+            "maze": self.set_maximizing_rewards,
             "avoid": self.set_avoid_rewards,
             "grid": self.set_reachability_rewards,
             "obstacle": self.set_obstacle_rewards,

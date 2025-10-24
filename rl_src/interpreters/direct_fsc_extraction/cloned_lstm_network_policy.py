@@ -190,7 +190,7 @@ class ClonedLSTMActorPolicy(TFPolicy):
                               tf_environment: TFPyEnvironment,
                               extraction_stats: ExtractionStats,
                               evaluation_result: EvaluationResults):
-        if iteration_number % 500 == 0:
+        if iteration_number % 100 == 0:
             avg_loss = loss_metric.result()
             accuracy = accuracy_metric.result()
             logger.info(f"Epoch {iteration_number}, Loss: {avg_loss:.4f}")

@@ -367,7 +367,7 @@ class FatherAgent(AbstractAgent):
         if self.wrapper is None:
             return self.agent.policy
         else:
-            # self.wrapper.set_policy_masker()
+            self.wrapper.set_policy_masker()
             return self.wrapper
 
     def train_innerest_body(self, experience, train_iteration, randomized=False, vectorized=False):
@@ -643,7 +643,7 @@ class FatherAgent(AbstractAgent):
             compute_average_return(
                 self.get_evaluation_policy(), self.tf_environment, evaluation_episodes, self.environment, self.evaluation_result.update)
         else:
-            if not hasattr(self, "vec_driver") or self.vec_driver is None:
+            if not hasattr(self, "vec_driver") or self.vec_driver is None or last:
                 self.init_vec_evaluation_driver(
                     self.tf_env_eval, self.environment, num_steps=self.args.max_steps + 5)
             if self.args.replay_buffer_option == ReplayBufferOptions.ORIGINAL_OFF_POLICY:

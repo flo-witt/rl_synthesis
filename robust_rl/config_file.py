@@ -38,13 +38,21 @@ class Config:
         self.nr_inner_iter = 100
         self.nr_initial_iter = 400
 
+    def config_avoid_large_old(self):
+        self.nr_inner_iter = 35
+        self.nr_initial_iter = 200
+
+    def config_avoid_large(self):
+        self.nr_inner_iter = 35
+        self.nr_initial_iter = 250
+
     def translation_model_name_dict(self):
         return {
             "obstacles-10-2": "obstacles_10_2",
             "obstacles-8-5": "obstacles_8_5",
             "obstacles-10-5": "obstacles_8_5",
             "avoid": "avoid",
-            "avoid-large": "avoid",
+            "avoid-large": "avoid_large",
             "rover": "rover",
             "network": "network",
             "drone-2-6-1": "drone",

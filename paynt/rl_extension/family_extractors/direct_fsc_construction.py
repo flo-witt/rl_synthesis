@@ -60,7 +60,11 @@ class ConstructorFSC:
                                 illegal_action_prob += prob
                                 continue
                             else:
-                                action_dict[action] = prob
+                                action_dict[action] = prob + 0.0001  # To avoid zero probabilities
+                        else:
+                            if family_quotient_numpy is not None and family_quotient_numpy.observation_to_legal_action_mask[observation][action]:
+                                action_dict[action] = 0.0001  # To avoid zero probabilities
+
                     if action_dict == {}:
                         if family_quotient_numpy is not None:
                             action_dict = {action: 1.0 for action in range(len(

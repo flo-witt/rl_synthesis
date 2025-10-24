@@ -81,9 +81,6 @@ class RobustTrainer:
 
     def save_stats(self, path):
         self.benchmark_stats.save_stats(path)
-    
-
-
 
     def init_extractor(self, latent_dim, autlearn_extraction=False):
         if not self.args.extraction_type == "bottleneck":
@@ -101,7 +98,7 @@ class RobustTrainer:
     def call_bottlenecking(self, agent: Recurrent_PPO_agent, environment: EnvironmentWrapperVec, tf_environment: TFPyEnvironment, num_data_steps=4001, training_epochs=10001):
         policy = agent.get_policy(False, True)
         extractor = BottleneckExtractor(
-            tf_environment, 64, 4
+            tf_environment, 64, 1
         )
         extractor.train_autoencoder(
             policy, 61, num_data_steps=num_data_steps)
@@ -119,7 +116,7 @@ class RobustTrainer:
         self.benchmark_stats.add_extracted_fsc_reachability(
             evaluation_result.reach_probs[-1])
         return fsc
-    
+
     def call_si_or_aalpy(self, agent: Recurrent_PPO_agent, environment: EnvironmentWrapperVec, tf_environment: TFPyEnvironment, num_data_steps=4001, training_epochs=10001):
         policy = agent.get_policy(False, True)
         fsc, extraction_stats = self.direct_extractor.clone_and_generate_fsc_from_policy(
@@ -134,16 +131,16 @@ class RobustTrainer:
         return fsc
 
     def extract_fsc(self, agent: Recurrent_PPO_agent, environment: EnvironmentWrapperVec, quotient, num_data_steps=4001, training_epochs=10001, get_dict=False,
-                    use_masking : bool = True) -> paynt.quotient.fsc.FscFactored:
-        self.direct_extractor.num_data_steps = num_data_steps
-        self.direct_extractor.training_epochs = training_epochs
+                    use_masking: bool = True) -> paynt.quotient.fsc.FscFactored:
+        if not self.extraction_type == "bottleneck":
+            self.direct_extractor.num_data_steps = num_data_steps
+            self.direct_extractor.training_epochs = training_epochs
         # agent.set_agent_greedy()
         # agent.set_policy_masking()
         if use_masking:
             agent.set_policy_masking()
         else:
             agent.unset_policy_masking()
-
 
         tf_environment = TFPyEnvironment(environment)
         # if True:
@@ -345,14 +342,13 @@ class RobustTrainer:
         operator = min if pomdp_sketch.specification.optimality.minimizing else max
         logger.info("Starting extraction loop")
         rnn_analyzer = RNNAnalyzer(self.args)
-        select_worst_case_by_index = False
         args_emulated = self.args
-        training_epochs = 6001 if "avoid-large" in project_path else 5001
         if project_path.split("/")[-1] == "":
             config = Config(project_path.split("/")[-2])
         else:
             config = Config(project_path.split("/")[-1])
-        json_path = create_json_file_name(f"{project_path}", seed=f"{self.args.seed}")
+        json_path = create_json_file_name(
+            f"{project_path}", seed=f"{self.args.seed}")
 
         hole_assignment = pomdp_sketch.family.pick_random()
 
@@ -366,10 +362,10 @@ class RobustTrainer:
                     pomdp_sketch, hole_assignment)
                 self.add_new_pomdp(pomdp, self.agent)
                 pomdps.append(pomdp)
-        environments, tf_environments = self.prepare_subset_environments_for_evaluation(
-            pomdp_sketch, pomdps, args_emulated)
+        # environments, tf_environments = self.prepare_subset_environments_for_evaluation(
+        #     pomdp_sketch, pomdps, args_emulated)
         nr_iterations = config.nr_initial_iter
-        for i in range(200):
+        for i in range(101):
             logger.info(f"Iteration {i+1} of extraction RL loop")
             # Train the agent on multiple POMDPs
             if args_emulated.single_pomdp_experiment:
@@ -386,11 +382,12 @@ class RobustTrainer:
             best_assignment_value = None
             for use_masking in [True]:
 
-                fsc = self.extract_fsc(self.agent, self.agent.environment, pomdp_sketch, get_dict=True, num_data_steps=num_samples_learn, use_masking=use_masking, training_epochs=501)
+                fsc = self.extract_fsc(self.agent, self.agent.environment, pomdp_sketch, get_dict=True,
+                                       num_data_steps=num_samples_learn, use_masking=use_masking, training_epochs=5001)
                 # Evaluate the FSC on all POMDPs
                 paynt_fsc = fsc["extracted_paynt_fsc"]
                 table_based_fsc = fsc["extracted_fsc"]
-                
+
                 # _, worst_case_index_fsc = self.perform_overall_evaluation(merged_results, table_based_fsc, environments, tf_environments, all_hole_assignments,
                 #                                                           save=True, is_fsc=True, project_path=project_path)
                 dtmc_sketch = pomdp_sketch.build_dtmc_sketch(
@@ -398,8 +395,9 @@ class RobustTrainer:
                 synthesizer = paynt.synthesizer.synthesizer_ar.SynthesizerAR(
                     dtmc_sketch)
                 hole_assignment = synthesizer.synthesize(keep_optimum=True)
-                
-                best_assignment_value = synthesizer.best_assignment_value if best_assignment_value is None else operator(best_assignment_value, synthesizer.best_assignment_value)
+
+                best_assignment_value = synthesizer.best_assignment_value if best_assignment_value is None else operator(
+                    best_assignment_value, synthesizer.best_assignment_value)
 
             # self.benchmark_stats.add_worst_case_assignments(all_hole_assignments[worst_case_index_rl], all_hole_assignments[worst_case_index_fsc], hole_assignment)
             # self.benchmark_stats.add_worst_case_same_as_simulated(
@@ -418,7 +416,7 @@ class RobustTrainer:
                 hole_assignment = pomdp_sketch.family.pick_random()
                 pomdp, _, _ = assignment_to_pomdp(
                     pomdp_sketch, hole_assignment)
-            self.add_pomdp_to_subset(pomdp, environments, tf_environments)
+            # self.add_pomdp_to_subset(pomdp, environments, tf_environments)
             pomdps.append(pomdp)
 
             last_extracted_fsc_return = np.abs(
@@ -426,13 +424,13 @@ class RobustTrainer:
             last_rl_return = np.abs(
                 self.benchmark_stats.rl_performance_single_pomdp[-1])
             if self.args.shrink_and_perturb_externally and np.abs(last_extracted_fsc_return - last_rl_return) / ((np.abs(last_extracted_fsc_return) + np.abs(last_rl_return)) / 2.0) > 0.3:
-                    self.agent.shrink_and_perturb()
-                    nr_iterations = 101
-                    self.benchmark_stats.shrink_and_perturb_activated.append(
-                        True)
+                self.agent.shrink_and_perturb()
+                nr_iterations = 101
+                self.benchmark_stats.shrink_and_perturb_activated.append(
+                    True)
             else:
-                    self.benchmark_stats.shrink_and_perturb_activated.append(
-                        False)
+                self.benchmark_stats.shrink_and_perturb_activated.append(
+                    False)
 
             self.agent.evaluation_result.save_to_json(
                 json_path, new_pomdp=True)
@@ -441,35 +439,35 @@ class RobustTrainer:
             if self.args.periodic_restarts:
                 self.agent.reset_weights()
 
-    def train_and_extract_single_pomdp(self, pomdp_sketch : PomdpFamilyQuotient, nr_iterations=1500, num_samples_learn=4001, args: ArgsEmulator = None, project_path: str = None):
+    def train_and_extract_single_pomdp(self, pomdp_sketch: PomdpFamilyQuotient, nr_iterations=1500, num_samples_learn=4001, args: ArgsEmulator = None, project_path: str = None):
         """
         RL training and extraction on a single POMDP. Loopless.
         """
         rnn_analyzer = RNNAnalyzer(self.args)
-        
+
         self.train_on_new_pomdp(None, self.agent, nr_iterations=nr_iterations)
         rnn_analyzer.analyze(self.agent, self.tf_env)
-        fsc = self.extract_fsc(self.agent, self.agent.environment, pomdp_sketch, num_data_steps=num_samples_learn, training_epochs=501, get_dict=True)
+        fsc = self.extract_fsc(self.agent, self.agent.environment, pomdp_sketch,
+                               num_data_steps=num_samples_learn, training_epochs=6001, get_dict=True)
         paynt_fsc = fsc["extracted_paynt_fsc"]
         import pickle as pkl
         with open(os.path.join(project_path, "extracted_fsc.pkl"), "wb") as f:
             pkl.dump(paynt_fsc, f)
-            
+
         dtmc_sketch = pomdp_sketch.build_dtmc_sketch(
             paynt_fsc)
         one_by_one = paynt.synthesizer.synthesizer_onebyone.SynthesizerOneByOne(
             dtmc_sketch)
         hole_assignment = one_by_one.synthesize(keep_optimum=True)
         self.benchmark_stats.add_family_performance(
-                one_by_one.best_assignment_value)
-        logger.info(f"Synthesized assignment: {hole_assignment} with value {one_by_one.best_assignment_value}")
-        json_path = create_json_file_name(f"{project_path}", seed=f"{self.args.seed}")
+            one_by_one.best_assignment_value)
+        logger.info(
+            f"Synthesized assignment: {hole_assignment} with value {one_by_one.best_assignment_value}")
+        json_path = create_json_file_name(
+            f"{project_path}", seed=f"{self.args.seed}")
         self.agent.evaluation_result.save_to_json(json_path, new_pomdp=False)
         self.save_stats(json_path)
         return paynt_fsc, hole_assignment, one_by_one.best_assignment_value
-    
-
-
 
 
 def initialize_extractor(pomdp_sketch, args_emulated: ArgsEmulator, family_quotient_numpy: FamilyQuotientNumpy):
@@ -483,7 +481,7 @@ def initialize_extractor(pomdp_sketch, args_emulated: ArgsEmulator, family_quoti
     use_one_hot_memory = True if args_emulated.extraction_type == "si-g" else False
     use_gumbel_softmax = True if args_emulated.extraction_type == "si-g" else False
     # 3 ** i in case of non-one-hot memory
-    latent_dim = 3
+    latent_dim = 10
 
     # Currently latent_dim is hardcoded to 2 (3 ** i => 9-FSC)
     # If use one-hot memory, then the size of FSC is equal to the latent_dim.

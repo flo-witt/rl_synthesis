@@ -1,0 +1,139 @@
+pomdp
+
+const int N = 6;
+const int gMIN = 1;
+const int gMAX = N;
+
+observable "clk" = clk;
+observable "goal" = goal;
+observable "x_small" = x<(gMAX/2);
+observable "y_small" = y<(gMAX/2);
+
+formula goal = (x=gMAX & y=gMAX);
+
+hole int o1x_i in {1..2};
+hole int o1y_i in {1..2};
+
+hole int o2x_i in {3..4};
+hole int o2y_i in {3..4};
+
+hole int o3x_i in {4..5};
+hole int o3y_i in {4..5};
+
+
+// --- Rock 1 ---
+module rock1
+    o1x : [1..2] init 1;
+    o1y : [1..2] init 1;
+
+    [place] true -> (o1x'=o1x_i) & (o1y'=o1y_i);
+
+    [move] true ->
+        0.5   : (o1x'=o1x) & (o1y'=o1y)
+      + 0.125 : (o1x'=min(o1x+1,2)) & (o1y'=o1y)
+      + 0.125 : (o1y'=min(o1y+1,2)) & (o1x'=o1x)
+      + 0.125 : (o1x'=max(o1x-1,1)) & (o1y'=o1y)
+      + 0.125 : (o1y'=max(o1y-1,1)) & (o1x'=o1x);
+endmodule
+
+// --- Rock 2 ---
+module rock2
+    o2x : [3..4] init 3;
+    o2y : [3..4] init 3;
+
+    [place] true -> (o2x'=o2x_i) & (o2y'=o2y_i);
+
+    [move] true ->
+        0.5   : (o2x'=o2x) & (o2y'=o2y)
+      + 0.125 : (o2x'=min(o2x+1,4)) & (o2y'=o2y)
+      + 0.125 : (o2y'=min(o2y+1,4)) & (o2x'=o2x)
+      + 0.125 : (o2x'=max(o2x-1,3)) & (o2y'=o2y)
+      + 0.125 : (o2y'=max(o2y-1,3)) & (o2x'=o2x);
+endmodule
+
+// --- Rock 3 ---
+module rock3
+    o3x : [4..5] init 4;
+    o3y : [4..5] init 4;
+
+    [place] true -> (o3x'=o3x_i) & (o3y'=o3y_i);
+
+    [move] true ->
+        0.5   : (o3x'=o3x) & (o3y'=o3y)
+      + 0.125 : (o3x'=min(o3x+1,5)) & (o3y'=o3y)
+      + 0.125 : (o3y'=min(o3y+1,5)) & (o3x'=o3x)
+      + 0.125 : (o3x'=max(o3x-1,4)) & (o3y'=o3y)
+      + 0.125 : (o3y'=max(o3y-1,4)) & (o3x'=o3x);
+endmodule
+
+
+formula at1 = (x=o1x & y=o1y);
+formula at2 = (x=o2x & y=o2y);
+formula at3 = (x=o3x & y=o3y);
+
+formula near1 = (x-o1x<=2 & o1x-x<=2 & y-o1y<=2 & o1y-y<=2);
+formula near2 = (x-o2x<=2 & o2x-x<=2 & y-o2y<=2 & o2y-y<=2);
+formula near3 = (x-o3x<=2 & o3x-x<=2 & y-o3y<=2 & o3y-y<=2);
+
+const NUM_OBS = 3;
+formula clk_next = mod(clk+1,NUM_OBS+1);
+
+module clk
+    clk : [-1..NUM_OBS] init -1;
+
+    [place] !goal & clk=-1 -> (clk'=clk_next);
+
+    [up] !goal & clk=0 -> (clk'=clk_next);
+    [do] !goal & clk=0 -> (clk'=clk_next);
+    [le] !goal & clk=0 -> (clk'=clk_next);
+    [ri] !goal & clk=0 -> (clk'=clk_next);
+
+    [detect1] !goal & clk=1 -> (clk'=clk_next);
+    [detect2] !goal & clk=2 -> (clk'=clk_next);
+    [detect3] !goal & clk=3 -> (clk'=clk_next);
+endmodule
+
+const double slip = 0.1;
+
+formula yup = min(y+1,gMAX);
+formula ydo = max(y-1,gMIN);
+formula xle = max(x-1,gMIN);
+formula xri = min(x+1,gMAX);
+
+module agent
+    x : [gMIN..gMAX] init gMIN;
+    y : [gMIN..gMAX] init gMIN;
+
+    [up] true -> 1-slip : (y'=yup) + slip : (y'=min(y+2,gMAX));
+    [do] true -> 1-slip : (y'=ydo) + slip : (y'=max(y-2,gMIN));
+    [le] true -> 1-slip : (x'=xle) + slip : (x'=max(x-2,gMIN));
+    [ri] true -> 1-slip : (x'=xri) + slip : (x'=min(x+2,gMAX));
+
+    [move] true -> true; // synchronizace s pohybem kamenů
+endmodule
+
+module visit1
+    visit1 : bool init false;
+    [detect1] !near1 -> true;
+    [detect1]  near1 -> (visit1'=at1);
+
+    [up] true -> (visit1'=false);
+    [do] true -> (visit1'=false);
+    [le] true -> (visit1'=false);
+    [ri] true -> (visit1'=false);
+endmodule
+
+module visit2=visit1[visit1=visit2,detect1=detect2,near1=near2,at1=at2] endmodule
+module visit3=visit1[visit1=visit3,detect1=detect3,near1=near3,at1=at3] endmodule
+
+formula step_penalty = 1;
+formula crash_penalty = 100;
+formula num_crashes = (visit1?1:0)+(visit2?1:0)+(visit3?1:0);
+formula penalty = step_penalty + num_crashes*crash_penalty;
+
+rewards "penalty"
+    [up] true : penalty;
+    [do] true : penalty;
+    [le] true : penalty;
+    [ri] true : penalty;
+endrewards
