@@ -342,7 +342,7 @@ class ClonedFSCActorPolicy(TFPolicy):
             loss_metric.reset_states()
             accuracy_metric.reset_states()
             
-        if False and iteration_number % 100 == 0:
+        if iteration_number % 500 == 0:
             self.evaluation_result = evaluate_policy_in_model(
                 cloned_actor, None, environment, tf_environment, self.max_episode_length * 2, evaluation_result)
             extraction_stats.add_extraction_result(

@@ -66,7 +66,7 @@ class BlackBoxExtractor:
                  max_episode_len = 800, 
                  optimizing_specification : SpecificationChecker.Constants = SpecificationChecker.Constants.REACHABILITY,
                  family_quotient_numpy : FamilyQuotientNumpy = None, autlearn_extraction = True,
-                 use_gumbel_softmax = False, stacked_observations = False, seed=42):
+                 use_gumbel_softmax = False, stacked_observations = False, seed=42, non_deterministic=True):
         self.autlearn_extraction = autlearn_extraction
         self.iteration = 0
         self.memory_len = memory_len
@@ -88,7 +88,7 @@ class BlackBoxExtractor:
         self.joint_action_update = False
         self.use_gumbel_softmax = use_gumbel_softmax
         self.stacked_observations = stacked_observations
-        self.non_deterministic = True
+        self.non_deterministic = non_deterministic
         self.complete_probs = True if use_gumbel_softmax else False
         self.seed = seed
 
@@ -402,8 +402,7 @@ class BlackBoxExtractor:
     
     def self_interpretable_extraction(self, original_policy : TFPolicy,
                                         env : EnvironmentWrapperVec, 
-                                        tf_env : TFPyEnvironment = None) -> tuple[TableBasedPolicy, ExtractionStats]:
-        self.family_quotient_numpy.observation_to_legal_action_mask
+                                        tf_env : TFPyEnvironment = None, with_gru=False) -> tuple[TableBasedPolicy, ExtractionStats]:
         orig_eval_result = evaluate_policy_in_model(original_policy, environment=env, tf_environment=tf_env, max_steps=(self.max_episode_len + 1) * 2)
         if self.specification_checker is not None:
             self.specification_checker.set_optimal_value_from_evaluation_results(orig_eval_result)
@@ -418,7 +417,7 @@ class BlackBoxExtractor:
         logger.info("Data sampled")
         logger.info("Cloning original policy to FSC")
         extraction_stats_lstm = None
-        if args.with_gru:
+        if with_gru:
             cloned_lstm_actor = ClonedLSTMActorPolicy(original_policy, observation_and_action_constraint_splitter=original_policy.observation_and_action_constraint_splitter,
                                                       observation_length=env.observation_spec_len, lstm_units=32)
             extraction_stats_lstm = cloned_lstm_actor.behavioral_clone_original_policy_to_fsc(
@@ -476,6 +475,7 @@ class BlackBoxExtractor:
             actions = policy_steps.action.numpy().reshape((max_memory, nr_observations))
             fsc_actions[:, :] = actions
             states = policy_steps.state  # (M*O, L)
+            states = tf.math.argmax(states, axis=-1)  # (M*O,)
             states = decompute_memory(
                 memory_len, states, base)
             states = tf.reshape(states, (max_memory, nr_observations)).numpy()  # (M, O)

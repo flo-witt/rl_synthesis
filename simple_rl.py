@@ -1,9 +1,8 @@
-from tests.general_test_tools import init_args
-
 from robust_rl.robust_rl_tools import load_sketch
 
 import os
 
+import numpy as np
 
 # RL implementation imports
 from environment.environment_wrapper_vec import EnvironmentWrapperVec
@@ -13,6 +12,7 @@ from agents.father_agent import FatherAgent
 from interpreters.extracted_fsc.table_based_policy import TableBasedPolicy
 from tools.args_emulator import ArgsEmulator
 from tools.evaluators import evaluate_policy_in_model
+from tests.general_test_tools import init_args
 
 # PAYNT implementation imports
 from paynt.parser.sketch import Sketch
@@ -20,6 +20,7 @@ from paynt.rl_extension.self_interpretable_interface.black_box_extraction import
 from paynt.rl_extension.family_extractors.direct_fsc_construction import ConstructorFSC
 from paynt.quotient.fsc import FscFactored
 from paynt.rl_extension.robust_rl.family_quotient_numpy import FamilyQuotientNumpy
+
 
 
 def load_sketch(project_path):
@@ -45,7 +46,7 @@ def create_json_file_name(project_path, seed=""):
     return json_path
 
 
-def init_extractor(model, args: ArgsEmulator, latent_dim=9, autlearn_extraction=True, steps_to_take=4000, training_epochs=20001) -> BlackBoxExtractor:
+def init_extractor(model, args: ArgsEmulator, latent_dim=9, autlearn_extraction=True, steps_to_take=4000, training_epochs=1001) -> BlackBoxExtractor:
     """Function that initializes the FSC extractor/synthesizer.
     Args:
         args (ArgsEmulator): Arguments object containing various settings for the RL and extraction process.
@@ -64,19 +65,29 @@ def init_extractor(model, args: ArgsEmulator, latent_dim=9, autlearn_extraction=
                                           max_episode_len=args.max_steps,
                                           family_quotient_numpy=None,
                                           autlearn_extraction=autlearn_extraction,
-                                          use_gumbel_softmax=True)
+                                          use_gumbel_softmax=True,
+                                          non_deterministic=False)
     return direct_extractor
 
 
 def fsc_extraction(model, agent: FatherAgent) -> tuple[FscFactored, TableBasedPolicy]:
-    direct_extractor = init_extractor(model, agent.args)
+
+    direct_extractor = init_extractor(model, agent.args, autlearn_extraction=True)
     policy = agent.get_policy(False, True)
     policy.set_greedy(True) # Ensures, that the agent selects argmax actions
     policy.set_policy_masker() # Ensures, that the agent respects the action masking during extraction
-    tf_fsc_policy, extraction_stats = direct_extractor.clone_and_generate_fsc_from_policy( # Extraction stats is a structure that contains various statistics about the extraction process
+    extracted_fsc, extraction_stats = direct_extractor.clone_and_generate_fsc_from_policy( # Extraction stats is a structure that contains various statistics about the extraction process
         policy, agent.environment, agent.tf_environment)
-    evaluate_policy_in_model(tf_fsc_policy, agent.args, agent.environment, agent.tf_environment) # We can evaluate the extracted FSC in the model to see its performance
-    paynt_fsc = ConstructorFSC.construct_fsc_from_table_based_policy(tf_fsc_policy, pomdp_quotient=model, family_quotient_numpy=None, cut_probs=1.0) # Generate PAYNT FSC representation. 
+    evaluate_policy_in_model(extracted_fsc, agent.args, agent.environment, agent.tf_environment) # We can evaluate the extracted FSC in the model to see its performance
+
+    paynt_fsc = ConstructorFSC.construct_fsc_from_table_based_policy(extracted_fsc, pomdp_quotient=model, family_quotient_numpy=None, cut_probs=1.0) # Generate deterministic PAYNT FSC representation. 
+    tf_fsc_policy = TableBasedPolicy(original_policy=policy, # TODO: Replace the original policy from the policy initialization process. 
+                                     action_function=np.array(paynt_fsc.action_function), # If you provide the action and update functions (shape [memory_size, nr_observations]), you obtain standard TF Policy that can be evaluated in TF-Agents environment.
+                                     update_function=np.array(paynt_fsc.update_function), 
+                                     action_keywords=paynt_fsc.action_labels
+                                )
+    evaluate_policy_in_model(tf_fsc_policy, agent.args, agent.environment, agent.tf_environment)
+
     policy.set_greedy(False) # Reset the policy to non-greedy mode
     policy.unset_policy_masker() # Unset the policy masker to allow all actions again, TODO: Check if this is necessary
     return paynt_fsc, tf_fsc_policy
@@ -97,12 +108,14 @@ def main():
 
     # ---------------------------------------------------------
     # This is the learning
+    model = sketch.pomdp # If you don't have POMDP, you can switch to quotient mdp or some other MDP/POMDP representations.
+
     environment = EnvironmentWrapperVec(
-        sketch.pomdp, args, num_envs=args.num_environments, enforce_compilation=True)
+        model, args, num_envs=args.num_environments, enforce_compilation=True)
     tf_env = TFPyEnvironment(environment)
     agent = Recurrent_PPO_agent(
         environment=environment, tf_environment=tf_env, args=args)
-    agent.train_agent(iterations=600)
+    agent.train_agent(iterations=500)
     # ---------------------------------------------------------
     
     # This performs the extraction.
