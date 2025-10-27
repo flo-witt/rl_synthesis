@@ -1,15 +1,10 @@
-# Description: This file contains the implementation of the FatherAgent class, which is the parent class of other agents in the project.
-# Author: David Hudák
-# Login: xhudak03
-# Project: diploma-thesis
-# File: father_agent.py
-
 from tf_agents.policies import py_tf_eager_policy
 
 
 from environment import tf_py_environment
 
 from environment.sparse_reward_shaper import SparseRewardShaper, RewardShaperMethods, ObservationLevel
+from agents.alternative_training.active_pretraining import EntropyRewardGenerator
 
 from tf_agents.replay_buffers import tf_uniform_replay_buffer
 from tf_agents.utils import common
@@ -35,14 +30,14 @@ from tf_agents.drivers.dynamic_step_driver import DynamicStepDriver
 
 from agents.reward_driver import DynamicRewardDriver
 
-from reward_machines.predicate_automata import PredicateAutomata, create_dummy_predicate_automata
-
 import logging
+
+from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
 
 # max_num_steps * MULTIPLIER = maximum length of replay buffer for each thread.
-OFF_POLICY_BUFFER_SIZE_MULTIPLIER = 500
+OFF_POLICY_BUFFER_SIZE_MULTIPLIER = 5000
 
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
@@ -100,7 +95,7 @@ class FatherAgent(AbstractAgent):
             self.fsc = self.load_fsc(args.paynt_fsc_json)
         self.wrapper = wrapper
         self.wrapper_eager = None
-        self.evaluation_result = EvaluationResults(self.environment.goal_value)
+        self.evaluation_result = EvaluationResults(self.environment.goal_value, args=args)
         self.duplexing = False
 
     def __init__(self, environment: EnvironmentWrapperVec, tf_environment: tf_py_environment.TFPyEnvironment, args, load=False, agent_folder=None):
@@ -119,9 +114,23 @@ class FatherAgent(AbstractAgent):
         self.agent = RandomAgent(tf_environment.time_step_spec(),
                                  tf_environment.action_spec())
         self.init_replay_buffer()
-        self.init_collector_driver(tf_environment)
+        self.init_collector_driver(tf_environment, demasked=True)
         self.init_vec_evaluation_driver(
             self.tf_environment, self.environment, self.args.max_steps)
+        
+    def change_environment(self, environment: EnvironmentWrapperVec):
+        """Change the environment of the agent.
+
+        Args:
+            environment: The new environment wrapper object, used for additional information about the environment.
+        """
+        self.environment = environment
+        self.tf_environment = tf_py_environment.TFPyEnvironment(
+            environment)
+        self.init_replay_buffer()
+        self.init_collector_driver(self.tf_environment, demasked=True)
+        self.tf_env_eval = None
+        self.vec_driver = None
 
     def init_replay_buffer(self, buffer_size=None):
         """Initialize the uniform replay buffer for the agent.
@@ -138,7 +147,7 @@ class FatherAgent(AbstractAgent):
             if self.args.replay_buffer_option == ReplayBufferOptions.OFF_POLICY:
                 buffer_size = self.args.max_steps * OFF_POLICY_BUFFER_SIZE_MULTIPLIER
             elif self.args.replay_buffer_option == ReplayBufferOptions.ON_POLICY:
-                buffer_size = self.args.trajectory_num_steps + 10
+                buffer_size = self.args.trajectory_num_steps + self.args.max_steps + 1
 
         self.replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
             data_spec=self.agent.collect_data_spec,
@@ -161,14 +170,14 @@ class FatherAgent(AbstractAgent):
                 tf_environment,
                 eager,
                 observers=observers,
-                num_steps=(1 + num_steps) * self.args.num_environments,
+                num_steps=(1 + num_steps) * self.environment.num_envs,
                 trajectory_reward_generator=self.collect_policy_wrapper.generate_curiosity_reward)
         else:
             self.vec_driver = DynamicStepDriver(
                 tf_environment,
                 eager,
                 observers=observers,
-                num_steps=(1 + num_steps) * self.args.num_environments
+                num_steps=(1 + num_steps) * self.environment.num_envs
             )
 
     def get_observers(self, alternative_observer):
@@ -244,9 +253,12 @@ class FatherAgent(AbstractAgent):
             self.collect_policy_wrapper = PolicyMaskWrapper(
                 self.agent.collect_policy, observation_and_action_constraint_splitter, tf_environment.time_step_spec(), predicate_automata=predicate_automata)
             if self.args.masked_training:
+                print("Using masked training with policy wrapper.")
                 self.collect_policy_wrapper.set_policy_masker()
             else:
+                print("Using unmasked training with policy wrapper.")
                 self.collect_policy_wrapper.unset_policy_masker()
+            self.collect_policy_wrapper.set_greedy(False)
             eager = py_tf_eager_policy.PyTFEagerPolicy(
                 self.collect_policy_wrapper, use_tf_function=True, batch_time_steps=False)
         else:
@@ -277,8 +289,28 @@ class FatherAgent(AbstractAgent):
             self.driver = DynamicStepDriver(
                 tf_environment,
                 eager,
-                observers=observers,
+                observers=observers, 
                 num_steps=num_steps)
+            
+    def init_pretraining_driver(self, reward_generator: EntropyRewardGenerator = None):
+        """Pretraining driver for the agent. Used for pretraining the agent."""
+        self.run_artificial_reward_buffer = []
+        self.overall_mean_artificial_reward_buffer = []
+        observer_rewarded = self.get_rewarded_observer(
+            reward_function=reward_generator.compute_entropy_reward, environment=self.environment, 
+            artificial_reward_buffer=self.run_artificial_reward_buffer
+            )
+        
+        self.reward_generator = reward_generator
+        policy = self.collect_policy_wrapper
+        policy = py_tf_eager_policy.PyTFEagerPolicy(
+            policy, use_tf_function=True, batch_time_steps=False)
+        self.reward_driver = DynamicStepDriver(
+            self.tf_environment,
+            policy,
+            observers=[observer_rewarded],
+            num_steps= self.args.trajectory_num_steps * self.args.num_environments)
+        
 
     def init_random_collector_driver(self, tf_environment: tf_py_environment.TFPyEnvironment,
                                      alternative_observer: callable = None):
@@ -329,7 +361,7 @@ class FatherAgent(AbstractAgent):
         if self.wrapper is None:
             return self.agent.policy
         else:
-            self.wrapper.set_policy_masker()
+            # self.wrapper.set_policy_masker()
             return self.wrapper
 
     def train_innerest_body(self, experience, train_iteration, randomized=False, vectorized=False):
@@ -338,8 +370,6 @@ class FatherAgent(AbstractAgent):
         Args:
             experience: The experience for training the agent.
         """
-        # print("Training iteration: ", train_iteration)
-        # print("Experience: ", experience)
         train_loss = self.agent.train(experience).loss
         train_loss = train_loss.numpy()
         self.agent.train_step_counter.assign_add(1)
@@ -347,12 +377,17 @@ class FatherAgent(AbstractAgent):
         if train_iteration % 5 == 0:
             logger.info(
                 f"Step: {train_iteration}, Training loss: {train_loss}")
-        if train_iteration % 100 == 0:
+        if train_iteration % 100 == 0 and train_iteration > 0:
             self.environment.set_random_starts_simulation(False)
             self.evaluate_agent(vectorized=vectorized,
                                 max_steps=self.args.max_steps * 2)
+            
             self.environment.set_random_starts_simulation(randomized)
             self.tf_environment.reset()
+        if self.args.shrink_and_perturb and train_iteration % 50 == 0:
+            self.store_percent_of_dormant_neurons()
+        if self.args.shrink_and_perturb and train_iteration % 40 == 0:
+            self.shrink_and_perturb()
 
         return train_loss
 
@@ -403,7 +438,17 @@ class FatherAgent(AbstractAgent):
                 self.perform_jumpstart(self.switch_probability)
                 self.driver.run()
             else:
-                self.driver.run()
+                if hasattr(self, "reward_driver"):
+                    self.reward_driver.run()
+                    self.evaluation_result.add_artificial_reward(
+                        self.run_artificial_reward_buffer)
+                    self.run_artificial_reward_buffer.clear()
+                else:
+                    if i == 0:
+                        for j in range(10):
+                            self.driver.run()
+                            self.replay_buffer.clear()
+                    self.driver.run()
             if i == num_iterations // 4:
                 self.environment.unset_reward_shaper()
             data = self.replay_buffer.gather_all()
@@ -468,9 +513,6 @@ class FatherAgent(AbstractAgent):
             self.agent.train = common.function(self.agent.train)
         if fsc is not None:
             self.evaluate_fsc(fsc)
-        # self.special_agent_pretraining_stuff()
-        # print("during training:", self.environment.vectorized_simulator.simulator.transitions.nr_states)
-        # self.evaluate_agent(vectorized=vectorized)
         if fsc is not None and shaping:
             self.init_reward_shaping(fsc)
         if fsc is not None and not shaping:
@@ -495,9 +537,9 @@ class FatherAgent(AbstractAgent):
         self.evaluate_agent(vectorized=vectorized,
                             max_steps=self.args.max_steps * 2)
         if replay_buffer_option == ReplayBufferOptions.ORIGINAL_OFF_POLICY or replay_buffer_option == ReplayBufferOptions.OFF_POLICY:
-            self.train_body_off_policy(iterations, vectorized)
+            self.train_body_off_policy(iterations, vectorized, randomized=self.args.random_start_simulator)
         if replay_buffer_option == ReplayBufferOptions.ON_POLICY:
-            self.train_body_on_policy(iterations, vectorized)
+            self.train_body_on_policy(iterations, vectorized, randomized=self.args.random_start_simulator)
         logger.info("Training finished.")
         self.environment.set_random_starts_simulation(False)
         self.evaluate_agent(vectorized=vectorized, last=True,
@@ -574,15 +616,18 @@ class FatherAgent(AbstractAgent):
         Args:
             last: Whether this is the last evaluation of the agent.
         """
+        self.environment.set_random_starts_simulation(False)
+        self.environment.temporarily_set_num_envs(512)
+        if not hasattr(self, "tf_env_eval") or self.tf_env_eval is None:
+            self.tf_env_eval = tf_py_environment.TFPyEnvironment(
+                self.environment)
         if self.args.go_explore:
             self.environment.unset_go_explore()
-        if max_steps is None:
-            max_steps = self.args.max_steps
         if self.args.prefer_stochastic:
             self.set_agent_stochastic()
         else:
             self.set_agent_greedy()
-            self.set_policy_masking()
+        self.set_policy_masking()
         if not vectorized:
             if last:
                 evaluation_episodes = self.evaluation_episodes * 2
@@ -591,15 +636,14 @@ class FatherAgent(AbstractAgent):
             compute_average_return(
                 self.get_evaluation_policy(), self.tf_environment, evaluation_episodes, self.environment, self.evaluation_result.update)
         else:
-            if not hasattr(self, "vec_driver"):
+            if not hasattr(self, "vec_driver") or self.vec_driver is None or last:
                 self.init_vec_evaluation_driver(
-                    self.tf_environment, self.environment, num_steps=max_steps)
+                    self.tf_env_eval, self.environment, num_steps=self.args.max_steps + 5)
             if self.args.replay_buffer_option == ReplayBufferOptions.ORIGINAL_OFF_POLICY:
                 self.environment.set_num_envs(
                     self.args.batch_size)
-            self.tf_environment.reset()
+            self.tf_env_eval.reset()
             if last:
-                self.set_agent_greedy()
 
                 logger.info("Evaluating agent with greedy masked policy.")
                 self.set_policy_masking()
@@ -608,67 +652,44 @@ class FatherAgent(AbstractAgent):
             self.vec_driver.run()
             if self.args.replay_buffer_option == ReplayBufferOptions.ORIGINAL_OFF_POLICY:
                 self.environment.set_num_envs(1)
-                self.tf_environment.reset()
+                self.tf_env_eval.reset()
             self.trajectory_buffer.final_update_of_results(
                 self.evaluation_result.update)
             self.trajectory_buffer.clear()
-
-        self.set_agent_stochastic()
-        self.unset_policy_masking()
         if self.evaluation_result.best_updated and self.agent_folder is not None:
             self.save_agent(best=True)
         self.log_evaluation_info()
         if self.args.go_explore:
             self.environment.set_go_explore()
+        self.environment.reset_num_envs()
+        self.set_agent_stochastic()
+        self.unset_policy_masking()
 
     def log_evaluation_info(self):
-        logger.info('Average Return = {0}'.format(
-            self.evaluation_result.returns[-1]))
-        logger.info('Average Virtual Goal Value = {0}'.format(
-            self.evaluation_result.returns_episodic[-1]))
-        logger.info('Goal Reach Probability = {0}'.format(
-            self.evaluation_result.reach_probs[-1]))
-        logger.info('Trap Reach Probability = {0}'.format(
-            self.evaluation_result.trap_reach_probs[-1]))
-        logger.info('Variance of Return = {0}'.format(
-            self.evaluation_result.each_episode_variance[-1]))
-        logger.info('Current Best Return = {0}'.format(
-            self.evaluation_result.best_return))
-        logger.info('Current Best Reach Probability = {0}'.format(
-            self.evaluation_result.best_reach_prob))
+        self.evaluation_result.log_evaluation_info()
 
     def set_agent_greedy(self):
         """Set the agent for to be greedy for evaluation. Used only with PPO agent, where we select greedy evaluation.
         """
-        if self.wrapper is None:
-            pass
-        else:
-            self.wrapper.set_greedy(True)
+        pass
 
     def set_agent_stochastic(self):
         """Set the agent to be stochastic for evaluation. Used only with PPO agent, where we select stochastic evaluation.
         """
-        if self.wrapper is None:
-            pass
-        else:
-            self.wrapper.set_greedy(False)
+        pass
 
-    def action(self, time_step, policy_state=None):
-        """Make a decision based on the policy of the agent."""
-        if policy_state is None:
-            policy_state = self.wrapper.get_initial_state(self.tf_environment.batch_size)
-        if self.wrapper_eager is not None:
-            return self.wrapper_eager.action(
-                time_step, policy_state=policy_state)
-        return self.agent.policy.action(time_step, policy_state=policy_state)
     
-    def get_policy(self, eager=True):
+    def get_policy(self, eager=True, collector=False):
         """Get the policy of the agent."""
         if self.wrapper is not None:
-            if eager:
-                return PyTFEagerPolicy(self.wrapper, use_tf_function=True, batch_time_steps=False)
+            if collector:
+                wrapper = self.collect_policy_wrapper
             else:
-                return self.wrapper
+                wrapper = self.wrapper
+            if eager:
+                return PyTFEagerPolicy(wrapper, use_tf_function=True, batch_time_steps=False)
+            else:
+                return wrapper
         if eager:
             return PyTFEagerPolicy(self.agent.policy, use_tf_function=True, batch_time_steps=False)
         else:
@@ -731,6 +752,23 @@ class FatherAgent(AbstractAgent):
             )
             self.replay_buffer._add_batch(modified_item)
         return _add_batch
+    
+    def get_rewarded_observer(self, reward_function : Callable[[tf.Tensor, tf.Tensor], tf.Tensor] = lambda obs, state: tf.zeros_like(obs[:, 0]), environment: EnvironmentWrapperVec = None,
+                              artificial_reward_buffer: list = []):
+        """Observer for replay buffer. Used to add the curiosity reward to the trajectory. Used with active pre-training."""
+        def _add_batch(item: Trajectory):
+            artificial_reward = reward_function(item.observation["observation"], environment.get_state())
+            modified_item = Trajectory(
+                step_type=item.step_type,
+                observation=item.observation["observation"],
+                action=item.action,
+                policy_info={"dist_params": item.policy_info["dist_params"]},
+                next_step_type=item.next_step_type,
+                reward=artificial_reward + item.reward,
+                discount=item.discount)
+            artificial_reward_buffer.append(artificial_reward.numpy())
+            self.replay_buffer._add_batch(modified_item)
+        return _add_batch
 
     def get_action_handicapped_observer(self):
         def _add_batch(item: Trajectory):
@@ -755,24 +793,33 @@ class FatherAgent(AbstractAgent):
     def evaluate_fsc(self, fsc: FSC):
         fsc_policy = SimpleFSCPolicy(fsc, self.environment.action_keywords, self.tf_environment.time_step_spec(), self.tf_environment.action_spec(),
                                      policy_state_spec=(), info_spec=(), observation_and_action_constraint_splitter=fsc_action_constraint_splitter)
-        eager = py_tf_eager_policy.PyTFEagerPolicy(
-            fsc_policy, use_tf_function=True, batch_time_steps=False)
-        trajectory_buffer = TrajectoryBuffer(self.environment)
-        vec_driver = DynamicStepDriver(
-            self.tf_environment, eager, observers=[trajectory_buffer.add_batched_step], num_steps=self.args.num_environments * (self.args.max_steps + 1))
-        vec_driver.run()
+        evaluate_policy_in_model(
+            fsc_policy, self.args, self.environment, self.tf_environment)
 
-        def print_results(avg_return, avg_episode_return, reach_prob, episode_variance, num_episodes,
-                          trap_reach_prob, virtual_variance, combined_variance):
-            logger.info("Average return: {0}".format(avg_return))
-            logger.info("Average episode return: {0}".format(
-                avg_episode_return))
-            logger.info("Reachability probability: {0}".format(reach_prob))
-            logger.info("Episode variance: {0}".format(episode_variance))
-            logger.info("Number of episodes: {0}".format(num_episodes))
-            logger.info(
-                "Trap reachability probability: {0}".format(trap_reach_prob))
-            logger.info("Virtual variance: {0}".format(virtual_variance))
-            logger.info("Combined variance: {0}".format(combined_variance))
+    def store_percent_of_dormant_neurons(self):
+        """Returns the percentage of dormant neurons in the actor network."""
+        # Check, whether the actor_net has neuron_activations attribute
+        if not hasattr(self.agent.actor_net, "neuron_activations"):
+            logger.info("Actor network does not have neuron activations. Skipping dormant neurons analysis.")
+            return
+        # Run loop for a few steps to gather statistics
+        policy_state = self.agent.actor_net.get_initial_state(self.tf_environment.batch_size)
+        for _ in range(100):
+            time_step = self.tf_environment.current_time_step()
+            action, policy_state = self.agent.actor_net.call(
+                time_step.observation["observation"], time_step.step_type, policy_state, training=False, analyze_dormant_neurons=True
+            )
+            self.tf_environment.step(action.sample())
+        
+        num_neurons = self.agent.actor_net.neuron_activations.shape[1]
+        nominator = np.average(self.agent.actor_net.neuron_activations, axis=0)
+        denominator = (1 / num_neurons) * np.sum(nominator)
+        scores = nominator / denominator
+        dormant_neurons = np.sum(scores < 0.01)
+        percent_dormant_neurons = (dormant_neurons / num_neurons)
+        self.evaluation_result.add_dormant_neurons_percentage(percent_dormant_neurons * 100)
+        logger.info(f"Percentage of dormant neurons in actor network: {percent_dormant_neurons * 100:.2f}%")
+        self.agent.actor_net.neuron_activations = None
 
-        trajectory_buffer.final_update_of_results(print_results)
+    def shrink_and_perturb(self):
+        pass

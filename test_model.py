@@ -19,7 +19,7 @@ from rl_src.interpreters.extracted_fsc.table_based_policy import TableBasedPolic
 from rl_src.tools.evaluators import evaluate_policy_in_model
 from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_agent
 
-from paynt.quotient.fsc import FSC
+from paynt.quotient.fsc import FscFactored
 from paynt.rl_extension.family_extractors.direct_fsc_construction import ConstructorFSC
 
 from paynt.quotient.pomdp import PomdpQuotient
@@ -65,7 +65,7 @@ def verify_model_by_paynt(table_fsc : TableBasedPolicy, prism_model, prism_spec)
     """
     quotient : PomdpQuotient = Sketch.load_sketch(prism_model, prism_spec)
 
-    fsc : FSC = ConstructorFSC.construct_fsc_from_table_based_policy(
+    fsc : FscFactored = ConstructorFSC.construct_fsc_from_table_based_policy(
         table_fsc,
         quotient
     )

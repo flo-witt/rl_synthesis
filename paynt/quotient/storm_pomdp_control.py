@@ -792,7 +792,7 @@ class StormPOMDPControl:
             fsc_nodes += paynt_fsc.num_nodes
             first_fsc_node = belief_mc.nr_states - paynt_cutoff_states + 1
 
-        result_fsc = paynt.quotient.fsc.FSC(
+        result_fsc = paynt.quotient.fsc.FscFactored(
             fsc_nodes, self.quotient.observations, is_deterministic=False)
 
         action_labels = set()

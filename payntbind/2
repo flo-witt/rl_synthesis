@@ -1,0 +1,20 @@
+synthesis
+running develop
+running egg_info
+writing lib/payntbind.egg-info/PKG-INFO
+writing dependency_links to lib/payntbind.egg-info/dependency_links.txt
+writing requirements to lib/payntbind.egg-info/requires.txt
+writing top-level names to lib/payntbind.egg-info/top_level.txt
+reading manifest file 'lib/payntbind.egg-info/SOURCES.txt'
+writing manifest file 'lib/payntbind.egg-info/SOURCES.txt'
+running build_ext
+-- Stormpy - Using shipped version of pybind11 (version 2.10.0).
+-- pybind11 v2.10.0 
+-- Configuring done (0.7s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/davidh/Plocha/synthesis/payntbind/build/temp.linux-x86_64-cpython-310
+[  1%] Building CXX object CMakeFiles/synthesis.dir/src/synthesis/smg/modelchecker/helper/internal/Multiplier.cpp.o
+Stormpy - Building into build/temp.linux-x86_64-cpython-310
+Stormpy - Using storm 1.9.1 from /home/davidh/Plocha/synthesis/prerequisites/storm/build
+Stormpy - Using pybind11 version 2.10.0
+Stormpy - CMake args=['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/home/davidh/Plocha/synthesis/payntbind/lib/payntbind', '-DPython_EXECUTABLE=/home/davidh/Plocha/synthesis/prerequisites/venv/bin/python3', '-DCMAKE_BUILD_TYPE=Release', '-DPYBIND_VERSION=2.10.0', '-DSTORM_DIR_HINT=/home/davidh/Plocha/synthesis/prerequisites/storm/build']

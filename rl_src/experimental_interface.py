@@ -1,12 +1,6 @@
-# File: rl_main.py
-# Description: Main for Reinforcement Learning Approach. If you want to train agents,
-#              you can do it here, or you can use --reinforcement-learning option within PAYNT
-# Author: David Hudak
-# Login: xhudak03
-
 from agents.father_agent import FatherAgent
 from tools.trajectory_buffer import TrajectoryBuffer
-from tools.evaluation_results_class import EvaluationResults, log_evaluation_info
+from tools.evaluation_results_class import EvaluationResults
 from rl_src.agents.policies.parallel_fsc_policy import FSC_Policy, FSC
 from interpreters.tracing_interpret import TracingInterpret
 
@@ -241,7 +235,7 @@ class ExperimentInterface:
         driver.run()
         buffer.final_update_of_results(
             evaluation_result.update)
-        log_evaluation_info(evaluation_result)
+        evaluation_result.log_evaluation_info()
         external_evaluation_result.last_from_interpretation = True
         external_evaluation_result.extracted_fsc_episode_return = evaluation_result.returns_episodic[-1]
         external_evaluation_result.extracted_fsc_return = evaluation_result.returns[-1]

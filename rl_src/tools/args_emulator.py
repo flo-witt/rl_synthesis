@@ -1,5 +1,7 @@
 import enum
 
+import os
+
 
 class ReplayBufferOptions(enum.IntEnum):
     """Enum for replay buffer options. Used for setting replay buffer options."""
@@ -15,8 +17,8 @@ class ArgsEmulator:
                  encoding_method: str = "Valuations", learning_rate: float = 8.6e-4, max_steps: int = 400, evaluation_episodes: int = 20,
                  batch_size: int = 256, trajectory_num_steps: int = 32, nr_runs: int = 4001, evaluation_goal: int = 50,
                  interpretation_method: str = "Tracing", learning_method: str = "PPO",
-                 save_agent: bool = True, seed: int = 123456, evaluation_antigoal: int = -20, experiment_directory: str = "experiments",
-                 buffer_size: int = 500, interpretation_granularity: int = 100, load_agent: bool = False, restart_weights: int = 0,
+                 save_agent: bool = True, seed: int = None, evaluation_antigoal: int = -20, experiment_directory: str = "experiments",
+                 buffer_size: int = 1000, interpretation_granularity: int = 100, load_agent: bool = False, restart_weights: int = 0,
                  agent_name="test", paynt_fsc_imitation=False, paynt_fsc_json=None, fsc_policy_max_iteration=100,
                  interpretation_folder="interpretation", experiment_name="experiment", with_refusing=None,
                  replay_buffer_option=ReplayBufferOptions.ON_POLICY,
@@ -27,7 +29,14 @@ class ArgsEmulator:
                  state_supporting: bool = False, train_state_estimator_continuously=False, completely_greedy=False,
                  render_if_possible : bool = False, model_name = "", 
                  predicate_automata_obs : bool = False, curiosity_automata_reward : bool = False, go_explore : bool = False, 
-                 stacked_observations : bool = False, masked_training : bool = False):
+                 stacked_observations : bool = False, masked_training : bool = False, 
+                 env_see_reward : bool = False, env_see_num_steps : bool = False, env_see_last_action : bool = False,
+                 use_entropy_reward : bool = False, full_observable_entropy_reward: bool = False, 
+                 use_binary_entropy_reward: bool = False, batched_vec_storm : bool = False, enforce_recompilation: bool = False,
+                 width_of_lstm: int = 32, extraction_type: str = "alergia", geometric_batched_vec_storm: bool = False,
+                 without_extraction: bool = False, periodic_restarts: bool = False, noisy_observations: bool = False,
+                 shrink_and_perturb: bool = False, shrink_and_perturb_externally: bool = False, single_pomdp_experiment : bool = False,
+                 with_gru: bool = False):
         """Args emulator for the RL parser. This class is used to emulate the args object from the RL parser for the RL initializer and other stuff.
         Args:
             prism_model (str): The path to the prism model file. Defaults to None -- must be set, if not used inside of Paynt.
@@ -86,6 +95,22 @@ class ArgsEmulator:
             go_explore (bool, optional): Whether to use Go-Explore based on predicate automata. Defaults to False.
             stacked_observations (bool, optional): Whether to use stacked observations. Defaults to False.
             masked_training (bool, optional): Whether to use masking of illegal actions during training. Defaults to False.
+            env_see_reward (bool, optional): Whether the environment provides reward in the observation space. Defaults to False.
+            env_see_num_steps (bool, optional): Whether the environment provides number of steps in the observation space. Defaults to False.
+            env_see_last_action (bool, optional): Whether the environment provides last action in the observation space. Defaults to False.
+            entropy_reward (bool, optional): Whether to provide reward for exploration of the environment. Defaults to False.
+            batched_vec_storm (bool, optional): Whether to use batched vectorized Storm environment. Defaults to False.
+            enforce_recompilation (bool, optional): Whether to enforce recompilation of the environment. Defaults to False.
+            width_of_lstm (int, optional): Width of the LSTM layer in the actor network. Defaults to 32.
+            extraction_type (str, optional): The type of extraction method to use. Defaults to "alergia". Other options are "si-t", "si-g", and "bottleneck".
+            geometric_batched_vec_storm (bool, optional): Whether to use geometric batched vectorized Storm environment. Defaults to False.
+            without_extraction (bool, optional): Whether to run the experiment without extraction. Defaults to False.
+            periodic_restarts (bool, optional): Whether to use periodic restarts of the agent. Defaults to False.
+            noisy_observations (bool, optional): Whether to use noisy observations during training. Defaults to False.
+            shrink_and_perturb (bool, optional): Whether to use shrink and perturb method for exploration. Defaults to False.
+            shrink_and_perturb_externally (bool, optional): Whether to use external shrink and perturb method for exploration. Defaults to False.
+            single_pomdp_experiment (bool, optional): Whether to use a single POMDP for the experiment. Defaults to False.
+            with_gru (bool, optional): Whether to use GRU extraction for the robust RL agent to compare with. Defaults to False.
 
         """
         self.prism_model = prism_model
@@ -105,7 +130,7 @@ class ArgsEmulator:
         self.learning_method = learning_method
         self.save_agent = save_agent
         self.load_agent = load_agent
-        self.seed = seed
+        self.seed = seed if seed is not None else int.from_bytes(os.urandom(4), "big")
         self.evaluation_antigoal = evaluation_antigoal
         self.experiment_directory = experiment_directory
         self.buffer_size = buffer_size
@@ -128,7 +153,6 @@ class ArgsEmulator:
         self.illegal_action_penalty_per_step = illegal_action_penalty_per_step
         self.flag_illegal_action_penalty = flag_illegal_action_penalty
         self.use_rnn_less = use_rnn_less
-        self.model_memory_size = model_memory_size
         self.name_of_experiment = name_of_experiment
         self.continuous_enlargement = continuous_enlargement
         self.continuous_enlargement_step = continuous_enlargement_step
@@ -143,3 +167,21 @@ class ArgsEmulator:
         self.go_explore = go_explore
         self.use_stacked_observations = stacked_observations
         self.masked_training = masked_training
+        self.env_see_reward = env_see_reward
+        self.env_see_num_steps = env_see_num_steps
+        self.env_see_last_action = env_see_last_action
+        self.entropy_reward = use_entropy_reward
+        self.full_observable_entropy_reward = full_observable_entropy_reward
+        self.use_binary_entropy_reward = use_binary_entropy_reward
+        self.batched_vec_storm = batched_vec_storm
+        self.enforce_recompilation = enforce_recompilation
+        self.width_of_lstm = width_of_lstm
+        self.extraction_type = extraction_type
+        self.geometric_batched_vec_storm = geometric_batched_vec_storm
+        self.without_extraction = without_extraction
+        self.periodic_restarts = periodic_restarts
+        self.noisy_observations = noisy_observations
+        self.shrink_and_perturb = shrink_and_perturb
+        self.shrink_and_perturb_externally = shrink_and_perturb_externally
+        self.single_pomdp_experiment = single_pomdp_experiment
+        self.with_gru = with_gru

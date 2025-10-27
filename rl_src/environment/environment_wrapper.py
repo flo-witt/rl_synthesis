@@ -1,15 +1,9 @@
-# Description: This file contains the environment wrapper class that is used to interact with the Storm model and the RL agent.
-# Author: David Hudák
-# Login: xhudak03
-# File: environment_wrapper.py
-
 import logging
 import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
 
 from stormpy import simulator
-from stormpy.storage import storage
 import stormpy
 
 from environment import py_environment
@@ -37,7 +31,7 @@ class Environment_Wrapper(py_environment.PyEnvironment):
     """The most important class in this project. It wraps the Stormpy simulator and provides the interface for the RL agent.
     """
 
-    def __init__(self, stormpy_model: storage.SparsePomdp, args: ArgsEmulator, q_values_table: list[list] = None):
+    def __init__(self, stormpy_model, args: ArgsEmulator, q_values_table: list[list] = None):
         """Initializes the environment wrapper.
 
         Args:

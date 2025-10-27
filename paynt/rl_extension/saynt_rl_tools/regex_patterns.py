@@ -1,7 +1,3 @@
-# Author: David Hudak
-# Filename: regex_patterns.py
-# Description: Implementation of regex patterns for properties parsing via static class.
-
 import re
 
 class RegexPatterns:

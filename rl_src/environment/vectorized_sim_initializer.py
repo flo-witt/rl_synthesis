@@ -6,8 +6,14 @@ import sys
 import pickle as pkl
 import re
 
+from environment.batched_vec_storm import BatchedVecStorm
+
 import logging
 logger = logging.getLogger(__name__)
+
+storm_vec_env_constructor = vec_storm.StormVecEnv
+
+from tools.args_emulator import ArgsEmulator
 
 
 class SimulatorInitializer:
@@ -18,7 +24,12 @@ class SimulatorInitializer:
                                  metalabels : dict = {"goals": "goal"}, 
                                  model_path : str = ".models/mba/", 
                                  compiled_models_path : str ="compiled_models_vec_storm",
-                                 enforce_recompilation : bool = False) -> vec_storm.StormVecEnv:
+                                 enforce_recompilation : bool = False,
+                                 obs_evaluator = None,
+                                 quotient_state_valuations = None,
+                                 observation_to_actions = None,
+                                 batched_vec_storm = False,
+                                 args : ArgsEmulator = None) -> vec_storm.StormVecEnv | BatchedVecStorm:
         """ Load the simulator for the environment. If the model was not compiled previously, the model is compiled from scratch and saved. Otherwise, the model is loaded from the file.
 
         Args:
@@ -29,26 +40,47 @@ class SimulatorInitializer:
             metalabels (list): The metalabels of goal states.
             model_path (str): The path to the model. For loading and saving the model.
             compiled_models_path (str): The path to the compiled models.
+            enforce_recompilation (bool): If True, the model is recompiled even if it was compiled before.
+            obs_evaluator (): An object, that contains valuations for the observations from the quotient instance
+            quotient_state_valuations (dict): The valuations of the quotient states.
+            observation_to_actions (dict): The mapping from observations to actions.
+            batched_vec_storm (bool): If True, use the BatchedVecStorm simulator instead of the StormVecEnv.
 
         Returns:
-            VectorizedSimulator: The simulator.
+            VectorizedSimulator: The vectorized simulator for the environment.
         """
         if not os.path.exists(compiled_models_path):
             os.makedirs(compiled_models_path)
         name = SimulatorInitializer.get_name_from_path(model_path)
+        
+        assert (batched_vec_storm and enforce_recompilation) or not batched_vec_storm, "Batched vectorized storm can only be used with enforced recompilation.\
+            Set enforce_recompilation=True if you want to use BatchedVecStorm."
+        
+        global storm_vec_env_constructor
+        if batched_vec_storm:
+            storm_vec_env_constructor = BatchedVecStorm
 
         if enforce_recompilation or "unknown" in name:
             logger.info(f"Compiling model {name}...")
-            simulator = vec_storm.StormVecEnv(
-                stormpy_model, get_scalarized_reward, num_envs=num_envs, max_steps=max_steps, metalabels=metalabels)
+            print("Hello", quotient_state_valuations)
+            simulator = storm_vec_env_constructor(
+                stormpy_model, get_scalarized_reward, num_envs=num_envs, max_steps=max_steps, metalabels=metalabels,
+                obs_evaluator=obs_evaluator,
+                quotient_state_valuations=quotient_state_valuations,
+                observation_to_actions=observation_to_actions, seed=args.seed if args is not None else int.from_bytes(os.urandom(4), "big"))
+            if batched_vec_storm:
+                simulator.set_args(args)
             return simulator
         
         simulator = SimulatorInitializer.try_load_simulator_by_name_from_pickle(
             name, compiled_models_path)
         if simulator is None:
             logger.info(f"Compiling model {name}...")
-            simulator = vec_storm.StormVecEnv(
-                stormpy_model, get_scalarized_reward, num_envs=num_envs, max_steps=max_steps, metalabels=metalabels)
+            simulator = storm_vec_env_constructor(
+                stormpy_model, get_scalarized_reward, num_envs=num_envs, max_steps=max_steps, metalabels=metalabels,
+                obs_evaluator=obs_evaluator,
+                quotient_state_valuations=quotient_state_valuations,
+                observation_to_actions=observation_to_actions, seed=args.seed if args is not None else int.from_bytes(os.urandom(4), "big"))
             simulator.save(f"{compiled_models_path}/{name}.pkl")
         return simulator
 

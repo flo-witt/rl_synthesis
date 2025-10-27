@@ -1,7 +1,3 @@
-# Description: Recurrent DDQN agent class
-# Author: David Hudák
-# Login: xhudak03
-# File: recurrent_ddqn_agent.py
 
 import tensorflow as tf
 

@@ -1,21 +1,16 @@
-# This file contains the Synthesizer_RL class, which creates interface between RL and PAYNT.
-# Author: David Hudák
-# Login: xhudak03
-# File: synthesizer_rl.py
-
 from rl_src.experimental_interface import ArgsEmulator, ExperimentInterface
 from rl_src.interpreters.tracing_interpret import TracingInterpret
 from rl_src.agents.policies.parallel_fsc_policy import FSC_Policy
 from rl_src.tools.saving_tools import save_statistics_to_new_json
 from rl_src.tools.encoding_methods import *
 from tools.evaluation_results_class import EvaluationResults
-from paynt.quotient.fsc import FSC
+from paynt.quotient.fsc import FscFactored
 from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_agent
 
-from paynt.quotient.fsc import FSC
+from paynt.quotient.fsc import FscFactored
 from paynt.rl_extension.saynt_controller.saynt_driver import SAYNT_Driver
 
-from rl_src.agents.imitation_learning.behavioral_trainers import ActorValuePretrainer
+from rl_src.agents.alternative_training.behavioral_trainers import ActorValuePretrainer
 
 
 import logging
@@ -118,7 +113,7 @@ class AgentsWrapper:
         """
         self.fsc_multiplier *= multiplier
 
-    def train_agent_with_fsc_data(self, iterations: int, fsc: FSC, soft_decision: bool = False):
+    def train_agent_with_fsc_data(self, iterations: int, fsc: FscFactored, soft_decision: bool = False):
         """Train the agent with FSC data.
         Args:
             iterations (int): Number of iterations.
@@ -156,7 +151,7 @@ class AgentsWrapper:
 
         return episodes
         
-    def train_agent_combined_with_fsc_advanced(self, iterations : int = 1000, fsc: FSC = None, condition : float = None):
+    def train_agent_combined_with_fsc_advanced(self, iterations : int = 1000, fsc: FscFactored = None, condition : float = None):
         """_summary_
 
         Args:
@@ -190,7 +185,7 @@ class AgentsWrapper:
         else:
             return EncodingMethods.INTEGER
 
-    def get_saynt_trajectories(self, storm_control, quotient, fsc: FSC = None, q_values=None, model_reward_multiplier=-1.0):
+    def get_saynt_trajectories(self, storm_control, quotient, fsc: FscFactored = None, q_values=None, model_reward_multiplier=-1.0):
         
         args = self.interface.get_args()
         pre_trainer = ActorValuePretrainer(self.interface.environment, self.interface.tf_environment,
@@ -216,7 +211,7 @@ class AgentsWrapper:
             pre_trainer.train_both_networks(200, fsc=fsc, use_best_traj_only=False, offline_data=True)
         # TODO: self.agent.train_agent_off_policy(2000, random_init=False, probab_random_init_state=0.1)
 
-    def generate_saynt_trajectories(self, storm_control, quotient, fsc: FSC = None, 
+    def generate_saynt_trajectories(self, storm_control, quotient, fsc: FscFactored = None, 
                                     model_reward_multiplier = -1.0, tf_action_labels = None,
                                     num_episodes : int = 256*2):
         trajectories = []
@@ -256,9 +251,9 @@ class AgentsWrapper:
     # "only_pretrained", "only_duplex", "only_duplex_critic", "complete", "four_phase"
     # fsc_quality is either minimized or maximized. Condition given quality of FSC is currently used only in the four_phase implementation.
     # Condition can optimize probability (e.g. maximize probability of reaching the goal state) or reward (e.g. minimize number of steps to reach the goal state)
-    def train_with_bc(self, fsc : FSC = None, sub_method = "only_pretrained", nr_of_iterations : int = 1000, trajectories : list = None):
+    def train_with_bc(self, fsc : FscFactored = None, sub_method = "only_pretrained", nr_of_iterations : int = 1000, trajectories : list = None):
         # self.dqn_agent.pre_train_with_fsc(1000, fsc)
-        args = self.interface.args
+        args : ArgsEmulator = self.interface.args
         if sub_method == "longer_trajectories":
             args.trajectory_num_steps = args.trajectory_num_steps * 4
         if not hasattr(self, "pre_trainer"):
@@ -271,7 +266,7 @@ class AgentsWrapper:
                 self.pre_trainer.train_both_networks(201, fsc=fsc, use_best_traj_only=False)
                 self.agent.train_agent(500, vectorized=args.vectorized_envs_flag, replay_buffer_option=args.replay_buffer_option)
         else:
-            self.pre_trainer.train_both_networks(nr_of_iterations // 2, fsc=fsc, use_best_traj_only=False)
+            self.pre_trainer.train_both_networks(nr_of_iterations * 3, fsc=fsc, use_best_traj_only=False)
             self.agent.train_agent(nr_of_iterations, vectorized=args.vectorized_envs_flag, replay_buffer_option=args.replay_buffer_option)
 
         # TODO: Other methods of training with FSC or SAYNT controller.
@@ -283,7 +278,7 @@ class AgentsWrapper:
                                fsc=fsc,
                                jumpstart_fsc=True)
         
-    def train_agent_with_shaping(self, fsc : FSC, iterations : int = 4000):
+    def train_agent_with_shaping(self, fsc : FscFactored, iterations : int = 4000):
         self.agent.train_agent(iterations, 
                                vectorized=self.interface.args.vectorized_envs_flag, 
                                replay_buffer_option=self.interface.args.replay_buffer_option, 

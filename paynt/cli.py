@@ -1,6 +1,8 @@
+import paynt.quotient.mdp_family
 from . import version
 
 import paynt.utils.timer
+import paynt.utils.version_check
 import paynt.parser.sketch
 
 import paynt.quotient.quotient
@@ -231,6 +233,7 @@ def paynt_run(
     paynt.utils.timer.GlobalTimer.start(timeout)
 
     logger.info("This is Paynt version {}.".format(version()))
+    paynt.utils.version_check.check_stormpy_compatibility()
 
     # set CLI parameters
     paynt.quotient.quotient.Quotient.disable_expected_visits = disable_expected_visits
@@ -240,6 +243,8 @@ def paynt_run(
     paynt.quotient.pomdp.PomdpQuotient.posterior_aware = posterior_aware
     paynt.quotient.decpomdp.DecPomdpQuotient.initial_memory_size = fsc_memory_size
     paynt.quotient.posmg.PosmgQuotient.initial_memory_size = fsc_memory_size
+
+    paynt.quotient.mdp_family.MdpFamilyQuotient.initial_memory_size = fsc_memory_size
 
     paynt.synthesizer.policy_tree.SynthesizerPolicyTree.discard_unreachable_choices = mdp_discard_unreachable_choices
 

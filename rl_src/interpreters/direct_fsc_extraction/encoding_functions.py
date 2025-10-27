@@ -25,15 +25,18 @@ def one_hot_encode_memory(memory_size: int, memory_int: int, memory_base=3) -> t
 
 
 def one_hot_decode_memory(memory_size=0, memory_vector: tf.Tensor = None, memory_base=3) -> int:
-    index = tf.argmax(memory_vector, axis=-1).numpy()
+    index = tf.argmax(memory_vector, axis=-1)
     if index.shape == (1,):
         index = index[0]
     return index
 
-def get_encoding_functions(is_one_hot: bool = True) -> tuple[callable, callable]:
+def get_encoding_functions(is_one_hot: bool = True, complete_probs=False) -> tuple[callable, callable]:
     if is_one_hot:
         compute_memory = one_hot_encode_memory
-        decompute_memory = one_hot_decode_memory
+        if complete_probs:
+            decompute_memory = lambda i, memory_vector, k: memory_vector
+        else:
+            decompute_memory = one_hot_decode_memory
     else:
         compute_memory = compute_rounded_memory
         decompute_memory = decompute_rounded_memory

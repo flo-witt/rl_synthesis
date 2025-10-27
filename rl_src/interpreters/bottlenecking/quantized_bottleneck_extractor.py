@@ -20,8 +20,10 @@ from agents.recurrent_ppo_agent import Recurrent_PPO_agent
 from environment.environment_wrapper_vec import EnvironmentWrapperVec
 
 from interpreters.bottlenecking.bottlenecked_actor_network import BottleneckedActor
+from interpreters.bottlenecking.reorganizer import Reorganizer
 
 from interpreters.extracted_fsc.table_based_policy import TableBasedPolicy
+
 
 import sys
 import os
@@ -139,29 +141,43 @@ class BottleneckExtractor:
             memory_vector = np.array([memory_vector])
         for i in range(len(memory_vector)):
             memory_number += (memory_vector[i] + 1) * (base ** i)
-        return memory_number
+        return int(memory_number)
+    
+    
 
-    def extract_fsc(self, policy: TFPolicy, environment: EnvironmentWrapperVec):
+    def extract_fsc(self, policy: TFPolicy, environment: EnvironmentWrapperVec, stochastic_policy: bool = True,
+                    generate_fake_time_step : callable = None, nr_observations = None) -> TableBasedPolicy:
         # Computes the number of potential combinations of latent memory (3 possible values for each latent memory cell, {-1, 0, 1})
         memory_size = 3 ** self.latent_dim
-        nr_observations = environment.stormpy_model.nr_observations
-        fsc_actions = np.zeros((memory_size, nr_observations))
-        fsc_updates = np.zeros((memory_size, nr_observations))
+        nr_observations = environment.stormpy_model.nr_observations if nr_observations is None else nr_observations
+
+        if stochastic_policy:
+            fsc_actions = np.zeros((memory_size, nr_observations, len(environment.action_keywords)), dtype=np.float32)
+            fsc_updates = np.zeros((memory_size, nr_observations, memory_size), dtype=np.float32)
+        else:
+            fsc_actions = np.zeros((memory_size, nr_observations))
+            fsc_updates = np.zeros((memory_size, nr_observations))
         eager = PyTFEagerPolicy(
             policy, use_tf_function=True, batch_time_steps=False)
 
+        distribution = tf.function(policy.distribution)
         decode = tf.function(self.autoencoder.decode)
         encode = tf.function(self.autoencoder.encode)
 
         initial_state = eager.get_initial_state(1)
         state_name = list(initial_state.keys())[0]
 
+        if generate_fake_time_step is None:
+            get_fake_time_step = lambda i, j : environment.create_fake_timestep_from_observation_integer(i)
+        else:
+            get_fake_time_step = lambda i, j : generate_fake_time_step(i, j)[0]
+
         encoded_initial_state = encode(tf.concat(initial_state[state_name], axis=-1))
         initial_memory = BottleneckExtractor.convert_memory_vector_to_number(encoded_initial_state)
+        print(f"Initial memory: {initial_memory}")
         for i in range(nr_observations):
             # Go thrgough all memory permutations
-            fake_time_step = environment.create_fake_timestep_from_observation_integer(
-                i)
+            fake_time_step = get_fake_time_step(i, environment.action_keywords)
             for j in range(memory_size):
                 memory_vector = BottleneckExtractor.convert_memory_number_to_vector(
                     j, self.latent_dim)
@@ -169,23 +185,60 @@ class BottleneckExtractor:
                 decoded_memory = decode(memory_vector)
                 policy_state = {state_name: tf.split(
                     decoded_memory, num_or_size_splits=2, axis=-1)}
-                policy_step = eager.action(
-                    fake_time_step, policy_state=policy_state)
-                
-                fsc_actions[j, i] = policy_step.action.numpy()[0]
+                if stochastic_policy:
+                    policy_step = distribution(
+                        fake_time_step, policy_state=policy_state)
+                    logits = policy_step.action.logits.numpy()[0]
+                    mask = fake_time_step.observation["mask"].numpy()[0]
+                    # Apply mask to logits
+                    logits = np.where(mask, logits, -1e20)
+                    probs = tf.nn.softmax(logits)
+                    probs = np.where(probs < 0.0001, 0.0, probs)
+                    probs += np.where(mask, 0.001, 0.0)
+                    fsc_actions[j, i, :] = probs
+                else:
+                    policy_step = eager.action(
+                        fake_time_step, policy_state=policy_state)
+                    fsc_actions[j, i] = policy_step.action.numpy()[0]
                 
                 concatenated_state = tf.concat(policy_step.state[state_name], axis=-1)
                 encoded_memory = encode(concatenated_state)
-                fsc_updates[j, i] = BottleneckExtractor.convert_memory_vector_to_number(encoded_memory)
-        return TableBasedPolicy(policy, fsc_actions, fsc_updates, initial_memory = initial_memory)
+                if stochastic_policy:
+                    fsc_updates[j, i, BottleneckExtractor.convert_memory_vector_to_number(encoded_memory)] = 1.0
+                else:
+                    fsc_updates[j, i] = BottleneckExtractor.convert_memory_vector_to_number(encoded_memory)
+        fsc_actions, fsc_updates = Reorganizer.reorganize_action_and_update_functions(
+            fsc_actions, fsc_updates, initial_memory)
+        return TableBasedPolicy(policy, fsc_actions, fsc_updates, initial_memory = 0, action_keywords=environment.action_keywords, nr_observations=nr_observations)
     
     def evaluate_extracted_fsc(self, agent: FatherAgent) -> EvaluationResults:
         extracted_policy = self.extract_fsc(agent.wrapper, agent.environment)
         evaluation_result = evaluate_policy_in_model(
             extracted_policy, agent.args, agent.environment, agent.tf_environment)
         return evaluation_result
-        
+    
+    # def get_bottlenecked_action_function(self, original_policy: TFPolicy) -> TFPolicy:
+    #     """Combines original policy with autoencoder to create a bottlenecked TFPolicy"""
+    #     decode = tf.function(self.autoencoder.decode)
+    #     encode = tf.function(self.autoencoder.encode)
+    #     state_name = original_policy.get_initial_state(1).keys()[0]
 
+    #     def _action(time_step, policy_state, seed):
+    #         # Convert discrete policy state to continuous state using autoencoder
+    #         decoded_state = decode(policy_state)
+    #         policy_state = {state_name: tf.split(decoded_state, num_or_size_splits=2, axis=-1)}
+    #         action_step = original_policy.action(time_step, policy_state=policy_state, seed=seed)
+    #         concatenated_state = tf.concat(action_step.state[state_name], axis=-1)
+    #         encoded_state = encode(concatenated_state)
+    #         policy_step = PolicyStep(
+    #             action=action_step.action,
+    #             state=encoded_state,
+    #             action_info=action_step.info
+    #         )
+    #         return policy_step
+        
+        
+    #     return _action
 
 
 def store_results_in_file(model_name, memory_width, agent_evaluation_result: EvaluationResults, bottlenecked_result: EvaluationResults, evaluate_fsc = False):
@@ -242,10 +295,10 @@ if __name__ == '__main__':
     # Load the model and properties from command line arguments
     if len(sys.argv) > 1 and sys.argv[1] == "-f":
         # do other stuff
-        prism_path = "../../models/refuel-10/sketch.templ"
-        properties_path = "../../models/refuel-10/sketch.props"
+        prism_path = "./models/intercept-n7-r1/sketch.templ"
+        properties_path = "./models/intercept-n7-r1/sketch.props"
         run_experiment(prism_path=prism_path, properties_path=properties_path,
-                       latent_memory_width=3, nr_epochs=100, num_training_steps=1000,
+                       latent_memory_width=3, nr_epochs=100, num_training_steps=50,
                        evaluate_fsc = True)
         exit(0)
     
@@ -259,7 +312,7 @@ if __name__ == '__main__':
         else:
             latent_memory_width = 3
     else:
-        path = "../../models/mba"
+        path = "./models/evade"
         template_path = f"{path}/sketch.templ"
         properties_path = f"{path}/sketch.props"
         latent_memory_width = 3

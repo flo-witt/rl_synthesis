@@ -16,6 +16,8 @@ from paynt.synthesizer.synthesizer_rl import SynthesizerRL
 
 import stormpy
 
+from paynt.quotient.fsc import FscFactored
+
 from threading import Thread
 from queue import Queue
 import time
@@ -194,6 +196,24 @@ class SynthesizerPomdp:
         if self.storm_control.is_rl_better:
             self.storm_control.paynt_export = self.storm_control.rl_export
 
+    def assign_rl_export_result(self, rl_export, value, rl_fsc : FscFactored):
+
+        self.storm_control.latest_rl_result = None
+        if self.storm_control.paynt_bounds is None or value > self.storm_control.paynt_bounds:
+            self.storm_control.paynt_bounds = value
+            self.storm_control.paynt_export = rl_export
+            self.storm_control.paynt_fsc_size = len(rl_fsc.action_function)
+            self.storm_control.is_rl_better = True
+        else:
+            self.storm_control.is_rl_better = False
+        self.storm_control.rl_export = rl_export
+        self.storm_control.rl_fsc_size = len(rl_fsc.action_function)
+        self.storm_control.rl_bounds = value
+        self.storm_control.latest_paynt_result_fsc = rl_fsc
+        self.storm_control.latest_rl_result_fsc = rl_fsc
+        self.storm_control.update_data()
+
+
     def is_rl_better(self):
         if self.storm_control.rl_bounds is None:
             return False
@@ -246,7 +266,7 @@ class SynthesizerPomdp:
         iteration_timeout = time.time() + timeout
         timeout_bonus = 0
         self.saynt_timer.start()
-        skip_first = False
+        skip_first = True
         while True:
             if iteration == 1:
                 paynt_thread.start()
@@ -262,13 +282,13 @@ class SynthesizerPomdp:
 
             pre_rl_time = time.time()
             if not skip_first and self.rl_oracle and (self.loop or iteration == 1):
-                fsc = self.get_better_fsc_rl_less()
-                assignment = rl_synthesizer.single_shot_synthesis(agent_wrapper, nr_rl_iterations=1001,
+                # fsc = self.get_better_fsc_rl_less()
+                fsc = self.storm_control.latest_paynt_result_fsc
+
+                rl_export, value, rl_fsc = rl_synthesizer.single_shot_synthesis(agent_wrapper, nr_rl_iterations=601,
                                                                   paynt_timeout=paynt_timeout,
-                                                                  fsc=fsc)
-                if assignment is not None:
-                    print("RL assignment found")
-                    self.assign_rl_result(assignment)
+                                                                  fsc=fsc, self_interpretation=True)
+                self.assign_rl_export_result(rl_export, value, rl_fsc)
             skip_first = False
 
             timeout_bonus += time.time() - pre_rl_time
@@ -298,16 +318,16 @@ class SynthesizerPomdp:
 
         self.saynt_timer.stop()
 
-        if self.storm_control.latest_storm_fsc is not None:
-            # pre_clone_time = time.time()
-            # start_time = time.time()
-            # dtmc = self.quotient.get_induced_dtmc_from_fsc(self.storm_control.latest_storm_fsc)
-            # result = stormpy.model_checking(dtmc, self.quotient.specification.optimality.formula)
-            # print(result.at(0))
-            # start_time = time.time()
-            dtmc_vec = self.quotient.get_induced_dtmc_from_fsc_vec(self.storm_control.latest_storm_fsc)
-            result_vec = stormpy.model_checking(dtmc_vec, self.quotient.specification.optimality.formula)
-            print(result_vec.at(0))
+        # if self.storm_control.latest_storm_fsc is not None:
+        #     # pre_clone_time = time.time()
+        #     # start_time = time.time()
+        #     dtmc = self.quotient.get_induced_dtmc_from_fsc(self.storm_control.latest_storm_fsc)
+        #     result = stormpy.model_checking(dtmc, self.quotient.specification.optimality.formula)
+        #     print(result.at(0))
+        #     # start_time = time.time()
+        #     # dtmc_vec = self.quotient.get_induced_dtmc_from_fsc_vec(self.storm_control.latest_storm_fsc)
+        #     # result_vec = stormpy.model_checking(dtmc_vec, self.quotient.specification.optimality.formula)
+        #     # print(result_vec.at(0))
 
     # run PAYNT POMDP synthesis with a given timeout
     def run_synthesis_timeout(self, timeout):
@@ -420,34 +440,30 @@ class SynthesizerPomdp:
         if self.storm_control is None:
             # Pure PAYNT POMDP synthesis
             self.strategy_iterative(unfold_imperfect_only=True)
-            return
-
-        # SAYNT
-        logger.info("Storm POMDP option enabled")
-        logger.info("Storm settings: iterative - {}, get_storm_result - {}, storm_options - {}, prune_storm - {}, unfold_strategy - {}, use_storm_cutoffs - {}".format(
-                    (self.storm_control.iteration_timeout, self.storm_control.paynt_timeout,
-                     self.storm_control.storm_timeout), self.storm_control.get_result,
-                    self.storm_control.storm_options, self.storm_control.incomplete_exploration, (
-                        self.storm_control.unfold_storm, self.storm_control.unfold_cutoff), self.storm_control.use_cutoffs
-                    ))
-        # start SAYNT
-        if self.storm_control.iteration_timeout is not None:
-            self.iterative_storm_loop(timeout=self.storm_control.iteration_timeout,
-                                      paynt_timeout=self.storm_control.paynt_timeout,
-                                      storm_timeout=self.storm_control.storm_timeout,
-                                      iteration_limit=0)
-        # run PAYNT for a time given by 'self.storm_control.get_result' and then run Storm using the best computed FSC at cut-offs
-        elif self.storm_control.get_result is not None:
-            if self.storm_control.get_result:
-                self.run_synthesis_timeout(self.storm_control.get_result)
-            self.storm_control.run_storm_analysis()
-        # run Storm and then use the obtained result to enhance PAYNT synthesis
         else:
-            self.storm_control.get_storm_result()
-            self.strategy_storm(unfold_imperfect_only=True,
-                                unfold_storm=self.storm_control.unfold_storm)
+            # SAYNT
+            logger.info("Storm POMDP option enabled")
+            logger.info("Storm settings: iterative - {}, get_storm_result - {}, storm_options - {}, prune_storm - {}, unfold_strategy - {}, use_storm_cutoffs - {}".format(
+                        (self.storm_control.iteration_timeout, self.storm_control.paynt_timeout, self.storm_control.storm_timeout), self.storm_control.get_result,
+                        self.storm_control.storm_options, self.storm_control.incomplete_exploration, (self.storm_control.unfold_storm, self.storm_control.unfold_cutoff), self.storm_control.use_cutoffs
+            ))
+            # start SAYNT
+            if self.storm_control.iteration_timeout is not None:
+                self.iterative_storm_loop(timeout=self.storm_control.iteration_timeout,
+                                        paynt_timeout=self.storm_control.paynt_timeout,
+                                        storm_timeout=self.storm_control.storm_timeout,
+                                        iteration_limit=0)
+            # run PAYNT for a time given by 'self.storm_control.get_result' and then run Storm using the best computed FSC at cut-offs
+            elif self.storm_control.get_result is not None:
+                if self.storm_control.get_result:
+                    self.run_synthesis_timeout(self.storm_control.get_result)
+                self.storm_control.run_storm_analysis()
+            # run Storm and then use the obtained result to enhance PAYNT synthesis
+            else:
+                self.storm_control.get_storm_result()
+                self.strategy_storm(unfold_imperfect_only=True, unfold_storm=self.storm_control.unfold_storm)
 
-        self.print_synthesized_controllers()
+            self.print_synthesized_controllers()
 
         if paynt.synthesizer.synthesizer.Synthesizer.export_synthesis_filename_base is not None:
             self.export_fsc(paynt.synthesizer.synthesizer.Synthesizer.export_synthesis_filename_base)

@@ -1,4 +1,0 @@
-//R{"steps"}min=? [F goal]
-//Pmax=? [F goal]
-//Pmin=? [ !trap U goal]
-Pmin=? [F trap]
