@@ -6,9 +6,6 @@ class AbstractAgent(ABC):
     def __init__(self):
         pass
 
-    @abstractmethod
-    def action(self, time_step, policy_state=None):
-        raise NotImplementedError
 
     @abstractmethod
     def train_agent(self, iterations: int, vectorized: bool = True, replay_buffer_option: ReplayBufferOptions = ReplayBufferOptions.ON_POLICY):

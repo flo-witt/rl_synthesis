@@ -361,7 +361,7 @@ class FatherAgent(AbstractAgent):
         if self.wrapper is None:
             return self.agent.policy
         else:
-            self.wrapper.set_policy_masker()
+            # self.wrapper.set_policy_masker()
             return self.wrapper
 
     def train_innerest_body(self, experience, train_iteration, randomized=False, vectorized=False):
@@ -384,7 +384,7 @@ class FatherAgent(AbstractAgent):
             
             self.environment.set_random_starts_simulation(randomized)
             self.tf_environment.reset()
-        if train_iteration % 50 == 0:
+        if self.args.shrink_and_perturb and train_iteration % 50 == 0:
             self.store_percent_of_dormant_neurons()
         if self.args.shrink_and_perturb and train_iteration % 40 == 0:
             self.shrink_and_perturb()
@@ -623,12 +623,11 @@ class FatherAgent(AbstractAgent):
                 self.environment)
         if self.args.go_explore:
             self.environment.unset_go_explore()
-        # if self.args.prefer_stochastic:
-        self.set_agent_stochastic()
+        if self.args.prefer_stochastic:
+            self.set_agent_stochastic()
+        else:
+            self.set_agent_greedy()
         self.set_policy_masking()
-        # else:
-        #     self.set_agent_greedy()
-        #     self.set_policy_masking()
         if not vectorized:
             if last:
                 evaluation_episodes = self.evaluation_episodes * 2
@@ -645,7 +644,6 @@ class FatherAgent(AbstractAgent):
                     self.args.batch_size)
             self.tf_env_eval.reset()
             if last:
-                # self.set_agent_greedy()
 
                 logger.info("Evaluating agent with greedy masked policy.")
                 self.set_policy_masking()
@@ -658,15 +656,14 @@ class FatherAgent(AbstractAgent):
             self.trajectory_buffer.final_update_of_results(
                 self.evaluation_result.update)
             self.trajectory_buffer.clear()
-
-        self.set_agent_stochastic()
-        self.unset_policy_masking()
         if self.evaluation_result.best_updated and self.agent_folder is not None:
             self.save_agent(best=True)
         self.log_evaluation_info()
         if self.args.go_explore:
             self.environment.set_go_explore()
         self.environment.reset_num_envs()
+        self.set_agent_stochastic()
+        self.unset_policy_masking()
 
     def log_evaluation_info(self):
         self.evaluation_result.log_evaluation_info()
@@ -674,27 +671,13 @@ class FatherAgent(AbstractAgent):
     def set_agent_greedy(self):
         """Set the agent for to be greedy for evaluation. Used only with PPO agent, where we select greedy evaluation.
         """
-        if self.wrapper is None:
-            pass
-        else:
-            self.wrapper.set_greedy(True)
+        pass
 
     def set_agent_stochastic(self):
         """Set the agent to be stochastic for evaluation. Used only with PPO agent, where we select stochastic evaluation.
         """
-        if self.wrapper is None:
-            pass
-        else:
-            self.wrapper.set_greedy(False)
+        pass
 
-    def action(self, time_step, policy_state=None):
-        """Make a decision based on the policy of the agent."""
-        if policy_state is None:
-            policy_state = self.wrapper.get_initial_state(self.tf_environment.batch_size)
-        if self.wrapper_eager is not None:
-            return self.wrapper_eager.action(
-                time_step, policy_state=policy_state)
-        return self.agent.policy.action(time_step, policy_state=policy_state)
     
     def get_policy(self, eager=True, collector=False):
         """Get the policy of the agent."""

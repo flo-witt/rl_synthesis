@@ -12,7 +12,7 @@ import os
 from rl_src.environment.environment_wrapper_vec import EnvironmentWrapperVec
 from rl_src.environment.tf_py_environment import TFPyEnvironment
 
-from paynt.rl_extension.self_interpretable_interface.aalpy_and_sig_interface import SelfInterpretableExtractor
+from paynt.rl_extension.self_interpretable_interface.black_box_extraction import BlackBoxExtractor
 
 from paynt.rl_extension.family_extractors.direct_fsc_construction import ConstructorFSC
 
@@ -80,7 +80,7 @@ class RobustTrainer:
 
     def init_extractor(self, latent_dim, autlearn_extraction=False):
         if not self.args.extraction_type == "bottleneck":
-            direct_extractor = SelfInterpretableExtractor(memory_len=latent_dim, is_one_hot=self.use_one_hot_memory,
+            direct_extractor = BlackBoxExtractor(memory_len=latent_dim, is_one_hot=self.use_one_hot_memory,
                                                           use_residual_connection=True, training_epochs=20001,
                                                           num_data_steps=self.args.max_steps * 4, get_best_policy_flag=False, model_name=self.model_name,
                                                           max_episode_len=self.args.max_steps,

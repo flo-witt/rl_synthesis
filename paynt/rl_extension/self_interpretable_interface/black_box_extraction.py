@@ -58,7 +58,7 @@ class AutLearn(Enum):
     MDP = 3
     DET = 4
 
-class SelfInterpretableExtractor:
+class BlackBoxExtractor:
 
     def __init__(self, memory_len = 1, is_one_hot = False, use_residual_connection = False,
                  training_epochs = 100000, num_data_steps = 6000,
@@ -178,9 +178,10 @@ class SelfInterpretableExtractor:
         fsc_actions, fsc_updates, initial_state = self.aalpy_to_fsc(model,env,probs)
         update_shape = None if fsc_updates is None else fsc_updates.shape
         print(f"FSC actions shape: {fsc_actions.shape}, updates shape: {update_shape}, initial state: {initial_state}")
+        nr_observations = len(self.family_quotient_numpy.observation_to_legal_action_mask) if self.family_quotient_numpy is not None else env.stormpy_model.nr_observations
         table_based_policy = TableBasedPolicy(
-            original_policy, fsc_actions, fsc_updates, initial_memory=initial_state, action_keywords=env.action_keywords, 
-            nr_observations=len(self.family_quotient_numpy.observation_to_legal_action_mask))
+            original_policy, fsc_actions, fsc_updates, initial_memory=initial_state, action_keywords=env.action_keywords,
+            nr_observations=nr_observations)
         # print(f"New FSC actions shape: {table_based_policy.tf_observation_to_action_table.shape}, updates shape: {table_based_policy.tf_observation_to_update_table.shape}, initial state: {table_based_policy.initial_memory}")
 
         return table_based_policy,model
@@ -432,7 +433,7 @@ class SelfInterpretableExtractor:
         self.cloned_actor.set_probs_updates()
         # if self.get_best_policy_flag:
         #     self.cloned_actor.load_best_policy()
-        fsc, fsc_actions, fsc_updates = SelfInterpretableExtractor.extract_fsc(self.cloned_actor, env, self.memory_len, 
+        fsc, fsc_actions, fsc_updates = BlackBoxExtractor.extract_fsc(self.cloned_actor, env, self.memory_len, 
                                                                                is_one_hot=self.is_one_hot, non_deterministic=self.non_deterministic,
                                                                                family_quotient_numpy=self.family_quotient_numpy,
                                                                                complete_probs=self.complete_probs)
@@ -497,7 +498,7 @@ class SelfInterpretableExtractor:
         
         logger.info("Computing memory to tensor table")
         compute_memory, decompute_memory = get_encoding_functions(is_one_hot, complete_probs=complete_probs)
-        memory_to_tensor_table = SelfInterpretableExtractor.create_memory_to_tensor_table(
+        memory_to_tensor_table = BlackBoxExtractor.create_memory_to_tensor_table(
             compute_memory, memory_len, max_memory)
         
         logger.info("Starting to extract FSC")
@@ -517,7 +518,7 @@ class SelfInterpretableExtractor:
         memory_states = tf.repeat(memory_states, repeats=nr_observations, axis=1)       # (M, O, L)
         memory_states = tf.reshape(memory_states, (-1, memory_len))                 
         if not non_deterministic:    # (M*O, L)
-           table_based_policy, fsc_actions, fsc_updates = SelfInterpretableExtractor.get_det_action_and_update_function(
+           table_based_policy, fsc_actions, fsc_updates = BlackBoxExtractor.get_det_action_and_update_function(
                 policy, time_steps, memory_states, max_memory, nr_observations, memory_len, base, decompute_memory,
                 environment.action_keywords)
         else:
@@ -610,9 +611,9 @@ class SelfInterpretableExtractor:
             extraction_stats=extraction_stats
         )
         cloned_actor.set_probs_updates()
-        fsc, action_table, update_table = SelfInterpretableExtractor.extract_fsc(cloned_actor, env, memory_size, is_one_hot=use_one_hot)
+        fsc, action_table, update_table = BlackBoxExtractor.extract_fsc(cloned_actor, env, memory_size, is_one_hot=use_one_hot)
         if DEBUG:
-            fsc2, action_table2, update_table2 = SelfInterpretableExtractor.extract_fsc_nonvectorized(cloned_actor, env, memory_size, is_one_hot=use_one_hot)
+            fsc2, action_table2, update_table2 = BlackBoxExtractor.extract_fsc_nonvectorized(cloned_actor, env, memory_size, is_one_hot=use_one_hot)
             # Compare action and update tables (they should be same)
             try:
                 assert np.array_equal(action_table, action_table2)
@@ -633,8 +634,8 @@ class SelfInterpretableExtractor:
         return cloned_actor, buffer, extraction_stats, agent
     
 def test_sameness_of_extracted_fsc(cloned_actor, env, memory_size, is_one_hot=False, tf_env=None, agent=None):
-    fsc, action_table, update_table = SelfInterpretableExtractor.extract_fsc(cloned_actor, env, memory_size, is_one_hot=is_one_hot)
-    fsc2, action_table2, update_table2 = SelfInterpretableExtractor.extract_fsc_nonvectorized(cloned_actor, env, memory_size, is_one_hot=is_one_hot)
+    fsc, action_table, update_table = BlackBoxExtractor.extract_fsc(cloned_actor, env, memory_size, is_one_hot=is_one_hot)
+    fsc2, action_table2, update_table2 = BlackBoxExtractor.extract_fsc_nonvectorized(cloned_actor, env, memory_size, is_one_hot=is_one_hot)
     # Compare action and update tables (they should be same)
     try:
         assert np.array_equal(action_table, action_table2)
@@ -680,12 +681,12 @@ if __name__ == "__main__":
     # test_memory_endoce_and_decode_functions(encode, decode, max_memory, memory_size)
     prism_templ = os.path.join(args.prism_path, "sketch.templ")
     properties_templ = os.path.join(args.prism_path, "sketch.props")
-    _, _, extraction_stats, og_agent = SelfInterpretableExtractor.run_benchmark(prism_templ, properties_templ, args.memory_size, 
+    _, _, extraction_stats, og_agent = BlackBoxExtractor.run_benchmark(prism_templ, properties_templ, args.memory_size, 
                                                                      args.num_data_steps, args.num_training_steps,
                                                                      args.specification_goal, args.optimization_goal, args.use_one_hot,
                                                                      args.extraction_epochs, args.use_residual_connection)
     
     extraction_stats.store_as_json(args.prism_path.split(
         "/")[-1], args.experiments_storage_path_folder)
-    SelfInterpretableExtractor.save_eval_res_to_json(og_agent.evaluation_result, args.prism_path.split(
+    BlackBoxExtractor.save_eval_res_to_json(og_agent.evaluation_result, args.prism_path.split(
         "/")[-1], args.experiments_storage_path_folder)
