@@ -45,8 +45,8 @@ If you performed the experiment (or any other from our benchmark set), you can g
 If you want to run RL for purely single POMDP setting (without the family of size 1), check the readme in the rl_src directory. 
 
 ## Structure
-  - models_robust -- contains all our benchmark models for the HM POMDP setting.
-  - models_single_family -- contains all our benchmark models for the Single POMDP setting.
+  - models/models_robust -- contains all our benchmark models for the HM POMDP setting.
+  - models/models_single_family -- contains all our benchmark models for the Single POMDP setting.
   - paynt/rl_extension/self_interpretable_interface -- calls for both Alergia and SIG extraction methods. 
   - robust_rl/robust_rl_trainer.py -- there is implemented the extraction loop in the extraction_loop() function. The file also contains method extract_fsc(), that calls our extraction methods. 
   - rl_src/environment/environment_wrapper_vec.py -- environment over vectorized simulator. Contains reward function definition that are suggested to adjust modify with new models -- the algorithm runs with any corrent PRISM model with a specification, but it would use default reward function that might not correspond with the proposed task.
@@ -55,16 +55,6 @@ If you want to run RL for purely single POMDP setting (without the family of siz
 
 ## Framework and Sources
 The implementation is primarily based on PAYNT with Stormpy, TensorFlow Agents framework, which implements many important blocks of this project as reinforcement learning algorithms, and the AALpy Automata learning library (https://github.com/DES-Lab/AALpy). We also took some inspiration and in case of .rl_src/environment/pomdp_builder, we took the code from repository: [Shielding](https://github.com/stevencarrau/safe_RL_POMDPs).
-
-## External Data
-  - To get the data from rfPG, take our models and then please follow the instructions in https://zenodo.org/records/15479643.
-  - To get the data from SAYNT, change the line in prerequisites/Stormpy directory as in https://github.com/moves-rwth/stormpy/pull/158/files. Then reinstall stormpy using the original installation script.
-    - To achieve the same SAYNT performance as in our paper, run:
-```shell
-
-      $ source prerequisites/venv/bin/activate
-
-      $ python3.10 paynt.py --iterative-storm 1800 30 2 --storm-pomdp --fsc-synthesis ./path/to/model
 ```
 
 ## Credits
