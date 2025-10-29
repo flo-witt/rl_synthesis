@@ -2,6 +2,8 @@ from robust_rl.robust_rl_tools import load_sketch
 
 import os
 
+from vec_storm import StormVecEnv
+
 import numpy as np
 
 # RL implementation imports
@@ -95,6 +97,7 @@ def fsc_extraction(model, agent: FatherAgent) -> tuple[FscFactored, TableBasedPo
 
 def main():
     project_path = "models/models_pomdp_no_family/network-3-8-20"
+    # project_path = "mdp_obstacles/"
     prism_path = os.path.join(project_path, "sketch.templ")
     properties_path = os.path.join(project_path, "sketch.props")
     args = init_args(prism_path=prism_path, properties_path=properties_path,
@@ -109,17 +112,21 @@ def main():
     # ---------------------------------------------------------
     # This is the learning
     model = sketch.pomdp # If you don't have POMDP, you can switch to quotient mdp or some other MDP/POMDP representations.
+    # model = sketch.quotient_mdp
 
     environment = EnvironmentWrapperVec(
         model, args, num_envs=args.num_environments, enforce_compilation=True)
     tf_env = TFPyEnvironment(environment)
     agent = Recurrent_PPO_agent(
-        environment=environment, tf_environment=tf_env, args=args)
+        environment=environment, tf_environment=tf_env, args=args, load=True, agent_folder="trained_agents")
     agent.train_agent(iterations=500)
+    
     # ---------------------------------------------------------
     
     # This performs the extraction.
-    paynt_fsc, tf_fsc = fsc_extraction(sketch, agent)
+
+    if hasattr(sketch, 'pomdp'): # Ensure, that the sketch has a POMDP representation
+        paynt_fsc, tf_fsc = fsc_extraction(sketch, agent)
 
     # Save the results. Now the results are stored in the same folder as the processed models, but you can change it as needed.
     json_path = create_json_file_name(project_path, seed=args.seed)

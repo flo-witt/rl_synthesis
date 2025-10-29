@@ -9,7 +9,7 @@ setup(
         'tensorflow==2.15.0',
         'numpy',
         'matplotlib',
-        'tf_agents'
+        'tf_agents==0.19.0'
 
     ],
     description='A reinforcement learning project for experiments with Storm models.',

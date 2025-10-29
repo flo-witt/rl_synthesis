@@ -658,6 +658,7 @@ class FatherAgent(AbstractAgent):
             self.trajectory_buffer.clear()
         if self.evaluation_result.best_updated and self.agent_folder is not None:
             self.save_agent(best=True)
+        self.save_agent(best=False)
         self.log_evaluation_info()
         if self.args.go_explore:
             self.environment.set_go_explore()
