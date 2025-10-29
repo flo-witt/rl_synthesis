@@ -153,7 +153,6 @@ class BatchedVecStorm(StormVecEnv):
 
         # Combine results from all simulators
         res = StepInfo.combine(res_list)
-
         self.simulator_states = res.states
         self.simulator_integer_observations = res.integer_observations
         return res.observations, res.rewards, res.done, res.truncated, res.allowed_actions, res.metalabels

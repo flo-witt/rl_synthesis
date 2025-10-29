@@ -15,6 +15,7 @@ from interpreters.extracted_fsc.table_based_policy import TableBasedPolicy
 from tools.args_emulator import ArgsEmulator
 from tools.evaluators import evaluate_policy_in_model
 from tests.general_test_tools import init_args
+from shielding.binary_shield import BinaryShield
 
 # PAYNT implementation imports
 from paynt.parser.sketch import Sketch
@@ -116,6 +117,13 @@ def main():
 
     environment = EnvironmentWrapperVec(
         model, args, num_envs=args.num_environments, enforce_compilation=True)
+    
+    binary_shield = BinaryShield(len(environment.action_keywords), args=args) # The binary shield should be modified.
+    environment.set_shield(binary_shield)
+    environment.turn_shielding_on() # Turns the shielding on.
+    environment.turn_shielding_off() # Turns the shielding off.
+    
+
     tf_env = TFPyEnvironment(environment)
     agent = Recurrent_PPO_agent(
         environment=environment, tf_environment=tf_env, args=args, load=True, agent_folder="trained_agents")
