@@ -8,7 +8,6 @@ import tensorflow as tf
 from stormpy import simulator
 
 from environment import py_environment
-from shielding.binary_shield import BinaryShield
 
 
 from tf_agents.trajectories import time_step as ts
@@ -150,8 +149,6 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         # Default labels mask for the environment given that the number of metalabels is 1 ("goals").
         self.labels_mask = list([False] * self.num_envs)
         self.encoding_method = args.encoding_method
-        self.is_shield_active = False
-        self.shield = None
 
         # Initialization of the penalty for illegal actions.
         self.flag_penalty = args.flag_illegal_action_penalty
@@ -210,26 +207,6 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         self.current_num_steps = tf.constant(
             [0] * self.num_envs, dtype=tf.float32)
         self.noisy_observations = args.noisy_observations
-
-    def set_shield(self, shield: BinaryShield):
-        """Sets the shield for the environment.
-
-        Args:
-            shield: The shield to be used.
-        """
-        self.shield = shield
-
-
-    def turn_shielding_on(self):
-        """Turns the shielding on."""
-        if self.shield is not None:
-            self.is_shield_active = True
-        else:
-            logger.error("Shielding cannot be turned on, as there is no usable shield.")
-
-    def turn_shielding_off(self):
-        """Turns the shielding off."""
-        self.is_shield_active = False
 
     def add_new_pomdp(self, pomdp):
         """Adds a new POMDP to the environment. This is used with BatchedVecStorm to add new POMDPs to the batch of simulators.
@@ -491,22 +468,13 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
                 shape=(), dtype=tf.float32, name="reward"),
         )
         self._action_spec = tensor_spec.BoundedTensorSpec(
-            shape=(),
-            dtype=tf.int32,
-            minimum=0,
-            maximum=len(self.action_keywords) - 1,
-            name="action"
-        )
-        self._output_spec = tensor_spec.BoundedTensorSpec(
-            shape=(len(self.action_keywords),),
-            dtype=tf.int32,
-            minimum=0,
-            maximum=len(self.action_keywords) - 1,
-            name="action"
+                shape=(),
+                dtype=tf.int32,
+                minimum=0,
+                maximum=len(self.action_keywords) - 1,
+                name="action"
         )
 
-    def output_spec(self) -> tensor_spec:
-        return self._output_spec
 
     def time_step_spec(self) -> ts.TimeStep:
         return self._time_step_spec
@@ -546,11 +514,6 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         self.dones = np.array(len(self.last_observation) * [False])
         resets = np.array(len(self.last_observation) * [True])
         actions = np.array(len(self.last_observation) * [0])
-        if self.is_shield_active:
-            permitted_actions = self.shield.compute_new_mask(self.last_observation, 
-                                                             self.vectorized_simulator.simulator_integer_observations.tolist(), 
-                                                             actions.tolist(), resets.tolist())
-            self.allowed_actions = np.logical_and(self.allowed_actions, permitted_actions)
         self.orig_reward = tf.constant(
             np.array(len(self.last_observation) * [0.0]), dtype=tf.float32)
         self.integers = self.vectorized_simulator.simulator_integer_observations
@@ -714,10 +677,6 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
             self.prev_states, actions)
         observations, rewards, done, truncated, allowed_actions, metalabels = self.vectorized_simulator.step(
             actions=actions)
-        if self.is_shield_active:
-            permitted_actions = self.shield.compute_new_mask(observations.tolist(), self.vectorized_simulator.simulator_integer_observations.tolist(), 
-                                                             actions.tolist(), self.prev_dones.tolist())
-            allowed_actions = np.logical_and(allowed_actions, permitted_actions)
         if self.predicate_automata is not None:
             self.predicate_automata_update(observations)
             if self.do_goal_explore:
@@ -786,7 +745,6 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
     def _step(self, action) -> ts.TimeStep:
         """Does the step in the environment. Important for TF-Agents and the TFPyEnvironment."""
         # current_time = time.time()
-
         action, illegals = self.change_illegal_actions_to_random_allowed(
             action, self.allowed_actions, self.dones)
         self._played_illegal_actions = illegals

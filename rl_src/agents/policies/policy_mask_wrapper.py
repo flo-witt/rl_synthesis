@@ -64,7 +64,6 @@ class PolicyMaskWrapper(TFPolicy):
                                                   policy_state_spec=policy_state_spec,
                                                   info_spec=info_spec,
                                                   observation_and_action_constraint_splitter=observation_and_action_constraint_splitter)
-
         self._policy = policy
         self._observation_and_action_constraint_splitter = observation_and_action_constraint_splitter
         self._time_step_spec = time_step_spec
@@ -80,6 +79,7 @@ class PolicyMaskWrapper(TFPolicy):
         self.__policy_dummy_masker = lambda logits, mask: logits
         self.current_masker = self.__policy_dummy_masker
         self.epsilon_greedy_probability = 0.0
+        self.return_real_logits = False
         
 
     def epsilon_greedy_action(self, time_step : TimeStep) -> tf.Tensor:
@@ -108,9 +108,13 @@ class PolicyMaskWrapper(TFPolicy):
         """Set the policy masker to the default one"""
         self.current_masker = self.__policy_masker
     
-    def unset_policy_masker(self):
+    def set_identity_masker(self):
         """Unset the policy masker to the default one"""
         self.current_masker = self.__policy_dummy_masker
+
+    def set_return_real_logits(self, return_real_logits: bool):
+        """Set whether the policy should return the real logits or the masked logits."""
+        self.return_real_logits = return_real_logits
 
     def _get_additional_initial_state(self, batch_size):
         state_number = self.get_initial_automata_state()
@@ -219,6 +223,8 @@ class PolicyMaskWrapper(TFPolicy):
                 info = distribution.info
         else:
             new_policy_state = distribution.state
+            if self.return_real_logits:
+                info = {'dist_params̈́': {'logits': logits}}
             info = distribution.info
 
         if self.epsilon_greedy_probability > 0.0:

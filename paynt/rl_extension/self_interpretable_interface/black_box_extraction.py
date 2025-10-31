@@ -379,7 +379,7 @@ class BlackBoxExtractor:
         # original_policy.set_greedy(False)
         logger.info("Data sampled")
         if isinstance(original_policy, PolicyMaskWrapper):
-            original_policy.unset_policy_masker()
+            original_policy.set_identity_masker()
         logger.info("Learning FSC from original policy")
 
         fsc, aalpy_model = self.learn_fsc(all_trajectories, original_policy, env)

@@ -13,7 +13,7 @@ def init_environment(args : ArgsEmulator) -> tuple[EnvironmentWrapperVec, TFPyEn
     return env, tf_env
 
 def init_args(prism_path, properties_path, nr_runs=101, goal_value_multiplier = 1.0, batched_vec_storm = False, masked_training = False, use_rnn_less=False,
-              seed=None, max_steps=601, prefer_stochastic = True) -> ArgsEmulator:
+              seed=None, max_steps=601, prefer_stochastic = True, stochastic_environment_actions=False) -> ArgsEmulator:
     args = ArgsEmulator(prism_model=prism_path, prism_properties=properties_path, learning_rate=1.6e-4,
                             restart_weights=0, learning_method="PPO", prefer_stochastic=prefer_stochastic,
                             nr_runs=nr_runs, agent_name="Testus", load_agent=False,

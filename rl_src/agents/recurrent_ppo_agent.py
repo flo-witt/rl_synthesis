@@ -141,7 +141,7 @@ class Recurrent_PPO_agent(FatherAgent):
     def unset_policy_masking(self):
         """If PPO, this function sets the masking inactive for agent wrapper."""
         print("Masker unset")
-        self.wrapper.unset_policy_masker()
+        self.wrapper.set_identity_masker()
     
     def set_agent_greedy(self):
         """Set the agent for to be greedy for evaluation. Used only with PPO agent, where we select greedy evaluation.

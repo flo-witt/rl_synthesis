@@ -257,7 +257,7 @@ class FatherAgent(AbstractAgent):
                 self.collect_policy_wrapper.set_policy_masker()
             else:
                 print("Using unmasked training with policy wrapper.")
-                self.collect_policy_wrapper.unset_policy_masker()
+                self.collect_policy_wrapper.set_identity_masker()
             self.collect_policy_wrapper.set_greedy(False)
             eager = py_tf_eager_policy.PyTFEagerPolicy(
                 self.collect_policy_wrapper, use_tf_function=True, batch_time_steps=False)
