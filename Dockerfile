@@ -3,7 +3,8 @@ WORKDIR /app
 
 ENV PAYNT_ROOT=/app \
     PREREQUISITES=${PAYNT_ROOT}/prerequisites \
-    DEBIAN_FRONTEND=noninteractive
+    DEBIAN_FRONTEND=noninteractive \
+    PYTHONPATH="/app/rl_src:/app/VecStorm:/app:$PYTHONPATH"
 
 RUN apt-get update -qq && \
     apt-get install -y --no-install-recommends \
@@ -36,7 +37,7 @@ RUN pip install --upgrade pip && \
     pip install wheel
 
 RUN pip install paynt click z3-solver psutil graphviz && \
-    pip install jax==0.5.3 && \
+    pip install jax==0.5.3 chex && \
     pip install tensorflow==2.15 ml-dtypes==0.2.0 && \
     pip install tf-agents==0.19.0 tqdm dill matplotlib pandas seaborn networkx && \
     pip install aalpy scikit-learn
