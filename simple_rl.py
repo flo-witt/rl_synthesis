@@ -85,7 +85,7 @@ def fsc_extraction(model, agent: FatherAgent) -> tuple[FscFactored, TableBasedPo
                                      update_function=np.array(paynt_fsc.update_function), 
                                      action_keywords=paynt_fsc.action_labels
                                 )
-    evaluate_policy_in_model(tf_fsc_policy, agent.args, agent.environment, agent.tf_environment, shielded=True)
+    evaluate_policy_in_model(tf_fsc_policy, agent.args, agent.environment, agent.tf_environment)
 
     policy.set_greedy(False) # Reset the policy to non-greedy mode
     policy.set_identity_masker() # Unset the policy masker to allow all actions again, TODO: Check if this is necessary
