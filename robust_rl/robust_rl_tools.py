@@ -17,7 +17,7 @@ from paynt.quotient.pomdp import PomdpQuotient
 from paynt.quotient.pomdp_family import PomdpFamilyQuotient
 
 
-from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_agent
+from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_Agent
 
 
 import numpy as np
@@ -46,7 +46,7 @@ def convert_all_fsc_keys_to_int(fsc: FscFactored):
     return fsc
 
 
-def generate_table_based_fsc_from_paynt_fsc(paynt_fsc: FscFactored, original_action_space: str, agent: Recurrent_PPO_agent):
+def generate_table_based_fsc_from_paynt_fsc(paynt_fsc: FscFactored, original_action_space: str, agent: Recurrent_PPO_Agent):
     from rl_src.interpreters.extracted_fsc.table_based_policy import TableBasedPolicy
     # Convert [[{}]] to [[[]]] format
     minusor = 0

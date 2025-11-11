@@ -20,7 +20,7 @@ from paynt.rl_extension.robust_rl.family_quotient_numpy import FamilyQuotientNum
 from paynt.quotient.pomdp_family import PomdpFamilyQuotient
 
 
-from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_agent
+from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_Agent
 from rl_src.tools.args_emulator import ArgsEmulator
 
 import numpy as np
@@ -91,7 +91,7 @@ class RobustTrainer:
         else:
             return None
 
-    def call_si_or_aalpy(self, agent: Recurrent_PPO_agent, environment: EnvironmentWrapperVec, tf_environment: TFPyEnvironment, num_data_steps=4001, training_epochs=10001):
+    def call_si_or_aalpy(self, agent: Recurrent_PPO_Agent, environment: EnvironmentWrapperVec, tf_environment: TFPyEnvironment, num_data_steps=4001, training_epochs=10001):
         policy = agent.get_policy(False, True)
         fsc, extraction_stats = self.direct_extractor.clone_and_generate_fsc_from_policy(
             policy, environment, tf_environment)
@@ -104,7 +104,7 @@ class RobustTrainer:
                 extraction_stats.lstm_extracted_reachability[-1], extraction_stats.lstm_extracted_return[-1])
         return fsc
 
-    def extract_fsc(self, agent: Recurrent_PPO_agent, environment: EnvironmentWrapperVec, quotient, num_data_steps=4001, training_epochs=10001, get_dict=False,
+    def extract_fsc(self, agent: Recurrent_PPO_Agent, environment: EnvironmentWrapperVec, quotient, num_data_steps=4001, training_epochs=10001, get_dict=False,
                     use_masking: bool = True) -> paynt.quotient.fsc.FscFactored:
         if not self.extraction_type == "bottleneck":
             self.direct_extractor.num_data_steps = num_data_steps
@@ -134,7 +134,7 @@ class RobustTrainer:
             }
         return paynt_fsc
 
-    def train_on_new_pomdp(self, pomdp=None, agent: Recurrent_PPO_agent = None, nr_iterations=1500):
+    def train_on_new_pomdp(self, pomdp=None, agent: Recurrent_PPO_Agent = None, nr_iterations=1500):
         # environment = EnvironmentWrapperVec(pomdp, self.args, num_envs=256, enforce_compilation=True,
         #                                     obs_evaluator=self.obs_evaluator,
         #                                     quotient_state_valuations=self.quotient_state_valuations,
@@ -155,17 +155,17 @@ class RobustTrainer:
         self.benchmark_stats.add_rl_performance_reachability(
             np.abs(agent.evaluation_result.reach_probs[-1]))
 
-    def generate_agent(self, pomdp, args: ArgsEmulator) -> Recurrent_PPO_agent:
+    def generate_agent(self, pomdp, args: ArgsEmulator) -> Recurrent_PPO_Agent:
         self.environment = EnvironmentWrapperVec(pomdp, args, num_envs=args.num_environments, enforce_compilation=True,
                                                  obs_evaluator=self.obs_evaluator,
                                                  quotient_state_valuations=self.quotient_state_valuations,
                                                  observation_to_actions=self.pomdp_sketch.observation_to_actions)
         self.tf_env = TFPyEnvironment(self.environment)
-        self.agent = Recurrent_PPO_agent(
+        self.agent = Recurrent_PPO_Agent(
             environment=self.environment, tf_environment=self.tf_env, args=args)
         return self.agent
 
-    def add_new_pomdp(self, pomdp, agent: Recurrent_PPO_agent):
+    def add_new_pomdp(self, pomdp, agent: Recurrent_PPO_Agent):
         """
         Adds a new POMDP to the environment.
         """

@@ -16,7 +16,7 @@ from tools.evaluators import *
 from tools.saving_tools import *
 
 from rl_src.tests.general_test_tools import *
-from agents.recurrent_ppo_agent import Recurrent_PPO_agent
+from agents.recurrent_ppo_agent import Recurrent_PPO_Agent
 from environment.environment_wrapper_vec import EnvironmentWrapperVec
 
 from interpreters.bottlenecking.bottlenecked_actor_network import BottleneckedActor
@@ -265,7 +265,7 @@ def store_results_in_file(model_name, memory_width, agent_evaluation_result: Eva
 def run_experiment(prism_path, properties_path, latent_memory_width, nr_epochs=1, num_data_steps=100, num_training_steps=50, evaluate_fsc = False):
     args = init_args(prism_path=prism_path, properties_path=properties_path)
     env, tf_env = init_environment(args)
-    agent = Recurrent_PPO_agent(env, tf_env, args)
+    agent = Recurrent_PPO_Agent(env, tf_env, args)
     agent.train_agent(num_training_steps)
     split_path = prism_path.split("/")
     model_name = split_path[-2]
@@ -283,7 +283,7 @@ def run_experiment(prism_path, properties_path, latent_memory_width, nr_epochs=1
                                     agent.evaluation_result, evaluation_result, eval_fsc)
         else:
             bottlenecked_actor = BottleneckedActor(agent.agent.actor_net, extractor.autoencoder)
-            bottlenecked_ppo = Recurrent_PPO_agent(env, tf_env, args, actor_net=bottlenecked_actor, critic_net=agent.agent._value_net)
+            bottlenecked_ppo = Recurrent_PPO_Agent(env, tf_env, args, actor_net=bottlenecked_actor, critic_net=agent.agent._value_net)
             bottlenecked_ppo.train_agent(num_training_steps)
             bottlenecked_ppo.evaluate_agent(vectorized = True, max_steps = bottlenecked_ppo.args.max_steps * 2)
             save_statistics_to_new_json("experiments_finetunning", model_name, "bottlenecked_ppo", bottlenecked_ppo.evaluation_result, args, split_iteration = num_training_steps)

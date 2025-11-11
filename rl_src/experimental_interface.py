@@ -4,7 +4,7 @@ from tools.evaluation_results_class import EvaluationResults
 from rl_src.agents.policies.parallel_fsc_policy import FSC_Policy, FSC
 from interpreters.tracing_interpret import TracingInterpret
 
-from agents.recurrent_ppo_agent import Recurrent_PPO_agent
+from agents.recurrent_ppo_agent import Recurrent_PPO_Agent
 from agents.recurrent_ddqn_agent import Recurrent_DDQN_agent
 from agents.recurrent_dqn_agent import Recurrent_DQN_agent
 
@@ -124,11 +124,11 @@ class ExperimentInterface:
             agent = Recurrent_DDQN_agent(
                 self.environment, self.tf_environment, self.args, load=self.args.load_agent, agent_folder=agent_folder)
         elif learning_method == "PPO":
-            agent = Recurrent_PPO_agent(
+            agent = Recurrent_PPO_Agent(
                 self.environment, self.tf_environment, self.args, load=self.args.load_agent, agent_folder=agent_folder)
         elif learning_method == "Stochastic_PPO":
             self.args.prefer_stochastic = True
-            agent = Recurrent_PPO_agent(
+            agent = Recurrent_PPO_Agent(
                 self.environment, self.tf_environment, self.args, load=self.args.load_agent, agent_folder=agent_folder)
         else:
             raise ValueError(

@@ -9,7 +9,7 @@ import random
 # RL implementation imports
 from environment.environment_wrapper_vec import EnvironmentWrapperVec
 from environment.tf_py_environment import TFPyEnvironment
-from agents.recurrent_ppo_agent import Recurrent_PPO_agent
+from agents.recurrent_ppo_agent import Recurrent_PPO_Agent
 from tools.args_emulator import ArgsEmulator
 from tools.evaluators import evaluate_policy_in_model
 from tests.general_test_tools import init_args
@@ -98,7 +98,7 @@ def main():
     shield_processor = ShieldProcessor(len(environment.action_keywords), args=args) # Placeholder for your implementation.
 
     tf_env = TFPyEnvironment(environment)
-    agent = Recurrent_PPO_agent(
+    agent = Recurrent_PPO_Agent(
         environment=environment, tf_environment=tf_env, args=args, load=True, agent_folder="trained_agents")
     # agent.train_agent(iterations=500)
     policy = agent.get_policy(False, True)

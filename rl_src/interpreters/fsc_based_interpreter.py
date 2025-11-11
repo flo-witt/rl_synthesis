@@ -325,10 +325,10 @@ class NaiveFSCPolicyExtraction(ExtractedFSCPolicy):
 if __name__ == '__main__':
     # Test the ExtractedFSCPolicy class on a random Policy
     from rl_src.tests.general_test_tools import *
-    from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_agent
+    from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_Agent
     prism_path = "../models/mba/sketch.templ"
     properties_path = "../models/mba/sketch.props"
     args = init_args(prism_path=prism_path, properties_path=properties_path)
     env, tf_env = init_environment(args)
-    agent_policy = Recurrent_PPO_agent(env, tf_env, args).wrapper
+    agent_policy = Recurrent_PPO_Agent(env, tf_env, args).wrapper
     extracted_fsc_policy = NaiveFSCPolicyExtraction(agent_policy, env, tf_env, args, entropy_extraction=True, greedy=True)

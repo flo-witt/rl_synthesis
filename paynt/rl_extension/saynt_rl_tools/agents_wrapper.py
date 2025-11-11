@@ -5,7 +5,7 @@ from rl_src.tools.saving_tools import save_statistics_to_new_json
 from rl_src.tools.encoding_methods import *
 from tools.evaluation_results_class import EvaluationResults
 from paynt.quotient.fsc import FscFactored
-from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_agent
+from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_Agent
 
 from paynt.quotient.fsc import FscFactored
 from paynt.rl_extension.saynt_controller.saynt_driver import SAYNT_Driver
@@ -193,7 +193,7 @@ class AgentsWrapper:
         agent_folder = f"./trained_agents/{args.agent_name}_{args.learning_method}_{args.encoding_method}"
         actor = pre_trainer.actor_net
         critic = pre_trainer.critic_net
-        self.agent = Recurrent_PPO_agent(self.interface.environment, self.interface.tf_environment, 
+        self.agent = Recurrent_PPO_Agent(self.interface.environment, self.interface.tf_environment, 
                         args, args.load_agent, agent_folder, actor_net=actor, critic_net=critic)
         observer = pre_trainer.replay_buffer._add_batch
         tf_action_labels = self.interface.environment.action_keywords
@@ -244,7 +244,7 @@ class AgentsWrapper:
         actor = self.pre_trainer.actor_net
         critic = self.pre_trainer.critic_net
         agent_folder = f"./trained_agents/{args.agent_name}_{args.learning_method}_{args.encoding_method}"
-        self.agent = Recurrent_PPO_agent(self.interface.environment, self.interface.tf_environment, 
+        self.agent = Recurrent_PPO_Agent(self.interface.environment, self.interface.tf_environment, 
                                          args, args.load_agent, agent_folder, actor_net=actor, critic_net=critic)
         self.pre_trainer.set_normalizer(self.agent.agent._observation_normalizer.normalize, self.agent.agent._observation_normalizer)
 

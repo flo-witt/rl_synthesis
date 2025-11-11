@@ -8,7 +8,7 @@ import numpy as np
 from interpreters.extracted_fsc.extracted_fsc_policy import ExtractedFSCPolicy
 
 from tests.general_test_tools import init_args, init_environment
-from agents.recurrent_ppo_agent import Recurrent_PPO_agent
+from agents.recurrent_ppo_agent import Recurrent_PPO_Agent
 from tools.evaluators import evaluate_policy_in_model
 
 from tf_agents.policies.py_tf_eager_policy import PyTFEagerPolicy
@@ -200,7 +200,7 @@ if __name__ == "__main__":
 
     # action_function, update_function = initialize_random_independent_fsc(action_keywords, nr_observations, num_fsc_states)
 
-    recurrent_ppo = Recurrent_PPO_agent(environment, tf_env, args)
+    recurrent_ppo = Recurrent_PPO_Agent(environment, tf_env, args)
     action_function, update_function = initialize_random_joint_fsc_function(action_keywords, nr_observations, num_fsc_states)
 
     policy = TableBasedPolicy(

@@ -26,7 +26,7 @@ from learn_aut import create_trajectories, create_mealy_learn_traj
 from tools.evaluation_results_class import EvaluationResults
 
 from tests.general_test_tools import init_environment, init_args
-from agents.recurrent_ppo_agent import Recurrent_PPO_agent
+from agents.recurrent_ppo_agent import Recurrent_PPO_Agent
 from tools.evaluators import evaluate_policy_in_model
 
 from interpreters.bottlenecking.quantized_bottleneck_extractor import TableBasedPolicy
@@ -566,14 +566,14 @@ class BlackBoxExtractor:
     def run_benchmark(prism_path : str, properties_path : str, memory_size, num_data_steps=1000, num_training_steps=300,
                        specification_goal="reachability", optimization_goal="max", use_one_hot=False,
                        extraction_epochs=100000, use_residual_connection=False
-                       ) -> tuple[ClonedFSCActorPolicy, TFUniformReplayBuffer, ExtractionStats, Recurrent_PPO_agent]:
+                       ) -> tuple[ClonedFSCActorPolicy, TFUniformReplayBuffer, ExtractionStats, Recurrent_PPO_Agent]:
 
         args = init_args(prism_path=prism_path, properties_path=properties_path,
                         nr_runs=num_training_steps, goal_value_multiplier=1.00)
         args.save_agent = False
         env, tf_env = init_environment(args)
         model_name = prism_path.split("/")[-2]
-        agent = Recurrent_PPO_agent(
+        agent = Recurrent_PPO_Agent(
             env, tf_env, args, agent_folder=f"{args.agent_name}/{model_name}", load=False)
         agent.train_agent(iterations=num_training_steps)
         specification_checker = SpecificationChecker(

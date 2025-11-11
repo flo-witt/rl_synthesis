@@ -9,7 +9,7 @@ from tests.general_test_tools import *
 from paynt.rl_extension.self_interpretable_interface.black_box_extraction import BlackBoxExtractor
 from interpreters.direct_fsc_extraction.cloned_fsc_actor_policy import ClonedFSCActorPolicy
 from tools.specification_check import SpecificationChecker
-from agents.recurrent_ppo_agent import Recurrent_PPO_agent
+from agents.recurrent_ppo_agent import Recurrent_PPO_Agent
 
 from tools.args_emulator import ArgsEmulator
 from tools.encoding_methods import *
@@ -29,7 +29,7 @@ DEBUG = False
 def run_benchmark(prism_path: str, properties_path: str, memory_size, num_data_steps=100, num_training_steps=300,
                   specification_goal="reachability", optimization_goal="max", use_one_hot=False,
                   extraction_epochs=100000, use_residual_connection=False
-                  ) -> tuple[ClonedFSCActorPolicy, TFUniformReplayBuffer, ExtractionStats, Recurrent_PPO_agent]:
+                  ) -> tuple[ClonedFSCActorPolicy, TFUniformReplayBuffer, ExtractionStats, Recurrent_PPO_Agent]:
 
     args = init_args(prism_path=prism_path, properties_path=properties_path,
                      nr_runs=num_training_steps, goal_value_multiplier=1.00)
@@ -37,7 +37,7 @@ def run_benchmark(prism_path: str, properties_path: str, memory_size, num_data_s
     args.save_agent = True
     env, tf_env = init_environment(args)
     model_name = prism_path.split("/")[-2]
-    agent = Recurrent_PPO_agent(
+    agent = Recurrent_PPO_Agent(
         env, tf_env, args, agent_folder=f"{args.agent_name}/{model_name}", load=False)
     agent.train_agent(iterations=num_training_steps)
     specification_checker = SpecificationChecker(

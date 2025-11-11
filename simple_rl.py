@@ -7,7 +7,8 @@ import numpy as np
 # RL implementation imports
 from environment.environment_wrapper_vec import EnvironmentWrapperVec
 from environment.tf_py_environment import TFPyEnvironment
-from agents.recurrent_ppo_agent import Recurrent_PPO_agent
+from agents.recurrent_ppo_agent import Recurrent_PPO_Agent
+from agents.recurrent_sac_agent import Recurrent_SAC_Agent
 from agents.father_agent import FatherAgent
 from interpreters.extracted_fsc.table_based_policy import TableBasedPolicy
 from tools.args_emulator import ArgsEmulator
@@ -116,7 +117,7 @@ def main():
         model, args, num_envs=args.num_environments, enforce_compilation=True)
 
     tf_env = TFPyEnvironment(environment)
-    agent = Recurrent_PPO_agent(
+    agent = Recurrent_SAC_Agent(
         environment=environment, tf_environment=tf_env, args=args, load=False, agent_folder="trained_agents")
     agent.train_agent(iterations=500)
     policy = agent.get_policy(False, True)

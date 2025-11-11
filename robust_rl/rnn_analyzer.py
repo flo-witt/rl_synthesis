@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 
 from rl_src.environment.tf_py_environment import TFPyEnvironment
-from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_agent
+from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_Agent
 
 from rl_src.tools.args_emulator import ArgsEmulator
 
@@ -20,7 +20,7 @@ class RNNAnalyzer:
         """
         self.args = args
 
-    def _collect_rnn_feedbacks(self, agent : Recurrent_PPO_agent, tf_environment : TFPyEnvironment):
+    def _collect_rnn_feedbacks(self, agent : Recurrent_PPO_Agent, tf_environment : TFPyEnvironment):
         """
         Collect RNN feedbacks from the agent on the given tf_environment.
         """
@@ -53,7 +53,7 @@ class RNNAnalyzer:
         
 
     
-    def analyze(self, agent: Recurrent_PPO_agent, tf_environment: TFPyEnvironment):
+    def analyze(self, agent: Recurrent_PPO_Agent, tf_environment: TFPyEnvironment):
         """
         Analyze the agent's RNN memory provided by simulations on tf_environment.
         """

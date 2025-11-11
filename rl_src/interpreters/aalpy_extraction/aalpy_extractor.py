@@ -12,7 +12,7 @@ from environment.environment_wrapper_vec import EnvironmentWrapperVec
 from tools.args_emulator import ArgsEmulator
 from interpreters.extracted_fsc.table_based_policy import TableBasedPolicy
 from tools.evaluators import evaluate_policy_in_model
-from agents.recurrent_ppo_agent import Recurrent_PPO_agent
+from agents.recurrent_ppo_agent import Recurrent_PPO_Agent
 
 from interpreters.aalpy_extraction.mealy_automata_learner import MealyAutomataLearner
 
@@ -238,7 +238,7 @@ if __name__ == "__main__":
 
     args = init_args(prism_model, prism_properties)
     env, tf_env = init_environment(args)
-    agent = Recurrent_PPO_agent(env, tf_env, args)
+    agent = Recurrent_PPO_Agent(env, tf_env, args)
     agent.train_agent(2001)
     agent.set_agent_greedy()
     agent.set_policy_masking()

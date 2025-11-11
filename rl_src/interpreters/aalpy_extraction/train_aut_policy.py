@@ -1,7 +1,7 @@
 import stormpy # import tf_agents # The RL library
 import tensorflow as tf
 
-from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_agent # The recurrent PPO agent
+from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_Agent # The recurrent PPO agent
 from rl_src.tools.args_emulator import ArgsEmulator # The argument emulator (historically I supported command line arguments for all of them)
 from rl_src.environment.environment_wrapper_vec import EnvironmentWrapperVec # The vectorized environment wrapper
 
@@ -44,7 +44,7 @@ print(f"Initial TimeStep: {tf_env.reset()}")
 print(f"TimeStep after some arbitrary step {tf_env.step(tf.zeros((args.num_environments,)))}") # The number of actions is equal to the number of environments
 print(tf_env.time_step_spec())
 
-agent = Recurrent_PPO_agent(
+agent = Recurrent_PPO_Agent(
             env, tf_env, args)
 agent.action(tf_env.reset()) # Example of how to use the policy
 

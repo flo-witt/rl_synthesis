@@ -17,7 +17,7 @@ from rl_src.tests.general_test_tools import initialize_prism_model
 
 from rl_src.interpreters.extracted_fsc.table_based_policy import TableBasedPolicy
 from rl_src.tools.evaluators import evaluate_policy_in_model
-from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_agent
+from rl_src.agents.recurrent_ppo_agent import Recurrent_PPO_Agent
 
 from paynt.quotient.fsc import FscFactored
 from paynt.rl_extension.family_extractors.direct_fsc_construction import ConstructorFSC
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     stormpy_model = initialize_prism_model(prism_template, prism_spec, constants=args.constants)
     env = EnvironmentWrapperVec(stormpy_model, args, num_envs=256)
     tf_env = TFPyEnvironment(env)
-    agent = Recurrent_PPO_agent(
+    agent = Recurrent_PPO_Agent(
         env, tf_env, args
     )
     original_policy = agent.get_policy()
