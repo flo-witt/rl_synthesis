@@ -4,7 +4,7 @@ import stormpy
 import os
 import numpy as np
 
-from learn_aut import learn_automaton
+from paynt.rl_extension.self_interpretable_interface.learn_aut import learn_automaton
 
 import tensorflow as tf
 

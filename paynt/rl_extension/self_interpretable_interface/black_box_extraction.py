@@ -13,7 +13,7 @@ from aalpy.learning_algs.general_passive.ScoreFunctionsGSM import differential_i
     ScoreCalculation, ScoreFunction
 from scipy.stats import chi2
 
-from comp_checker import ChiSquareChecker
+from paynt.rl_extension.self_interpretable_interface.comp_checker import ChiSquareChecker
 from interpreters.direct_fsc_extraction.test_functions import *
 from interpreters.direct_fsc_extraction.encoding_functions import get_encoding_functions
 
@@ -22,7 +22,7 @@ from tf_agents.replay_buffers.tf_uniform_replay_buffer import TFUniformReplayBuf
 from tf_agents.policies.py_tf_eager_policy import PyTFEagerPolicy
 
 from environment.environment_wrapper_vec import EnvironmentWrapperVec
-from learn_aut import create_trajectories, create_mealy_learn_traj
+from paynt.rl_extension.self_interpretable_interface.learn_aut import create_trajectories, create_mealy_learn_traj
 from tools.evaluation_results_class import EvaluationResults
 
 from tests.general_test_tools import init_environment, init_args
