@@ -693,7 +693,6 @@ def generate_convergence_curves_single(benchmark_stats, output_directory, saynt_
             linestyle="--"
         )
 
-        # Saynt jako křížky (bez křivky)
         sns.scatterplot(
             data=df[df["Method"] == "Saynt"],
             x="Time",

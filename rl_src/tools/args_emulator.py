@@ -10,6 +10,16 @@ class ReplayBufferOptions(enum.IntEnum):
     # Performs multiple steps in single environment and adds it to the replay buffer
     ORIGINAL_OFF_POLICY = 3
 
+class EvaluationOptions(enum.IntEnum):
+    "Enum for different policy evaluation options."
+    FULL_STOCHASTIC = 1
+    ARGMAX = 2
+    PRUNING_0DOT1 = 3
+    PRUNING_0DOT05 = 4
+    UNIFORM_TOP_TWO = 5
+    UNIFORM_TOP_THREE = 6
+    UNIFORM_PRUNING_0DOT1 = 7
+
 
 class ArgsEmulator:
 
@@ -36,7 +46,7 @@ class ArgsEmulator:
                  width_of_lstm: int = 32, extraction_type: str = "alergia", geometric_batched_vec_storm: bool = False,
                  without_extraction: bool = False, periodic_restarts: bool = False, noisy_observations: bool = False,
                  shrink_and_perturb: bool = False, shrink_and_perturb_externally: bool = False, single_pomdp_experiment : bool = False,
-                 with_gru: bool = False, stochastic_environment_actions: bool = False):
+                 with_gru: bool = False, stochastic_environment_actions: bool = False, evaluation_options: EvaluationOptions = EvaluationOptions.FULL_STOCHASTIC):
         """Args emulator for the RL parser. This class is used to emulate the args object from the RL parser for the RL initializer and other stuff.
         Args:
             prism_model (str): The path to the prism model file. Defaults to None -- must be set, if not used inside of Paynt.
@@ -112,6 +122,7 @@ class ArgsEmulator:
             single_pomdp_experiment (bool, optional): Whether to use a single POMDP for the experiment. Defaults to False.
             with_gru (bool, optional): Whether to use GRU extraction for the robust RL agent to compare with. Defaults to False.
             stochastic_environment_actions (bool, optional): Whether the environment forces to play stochastic distributions. Defaults to False.
+            evaluation_options (EvaluationOptions, optional): The evaluation option to use. Defaults to EvaluationOptions.FULL_STOCHASTIC.
 
         """
         self.prism_model = prism_model
@@ -187,3 +198,4 @@ class ArgsEmulator:
         self.single_pomdp_experiment = single_pomdp_experiment
         self.with_gru = with_gru
         self.stochastic_environment_actions = stochastic_environment_actions
+        self.evaluation_options = evaluation_options

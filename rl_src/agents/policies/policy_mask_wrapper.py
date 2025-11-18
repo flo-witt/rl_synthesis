@@ -80,6 +80,7 @@ class PolicyMaskWrapper(TFPolicy):
         self.current_masker = self.__policy_dummy_masker
         self.epsilon_greedy_probability = 0.0
         self.return_real_logits = False
+        self.set_random_selector() # sets the default action selector to random categorical sampling
         
 
     def epsilon_greedy_action(self, time_step : TimeStep) -> tf.Tensor:
@@ -111,6 +112,71 @@ class PolicyMaskWrapper(TFPolicy):
     def set_identity_masker(self):
         """Unset the policy masker to the default one"""
         self.current_masker = self.__policy_dummy_masker
+
+    def set_argmax_selector(self):
+        """Set the policy to use argmax action selection."""
+        self.__action_selector = lambda logits: tf.argmax(logits, output_type=tf.int32, axis=-1)
+
+    def set_random_selector(self):
+        """Set the policy to use random action selection."""
+        self.__action_selector = lambda logits: tf.random.categorical(logits, num_samples=1, dtype=tf.int32)
+
+
+    def set_prune_zero_dot_one_probs_selector(self):
+        """Set the policy to prune actions with probability less than 0.1 and sample categorical action."""
+        def prune_logits(logits):
+            probs = tf.nn.softmax(logits, axis=-1)
+            pruned_probs = tf.where(probs < 0.1, tf.constant(logits.dtype.min, dtype=logits.dtype), logits)
+            normalized_probs = tf.nn.softmax(pruned_probs, axis=-1)
+            action = tf.random.categorical(tf.math.log(normalized_probs), num_samples=1, dtype=tf.int32)
+            action = tf.squeeze(action, axis=-1)
+            return action
+        self.__action_selector = prune_logits
+    
+    def set_prune_zero_dot_zero_five_probs_selector(self):
+        """Set the policy to prune actions with probability less than 0.05 and sample categorical action."""
+        def prune_logits(logits):
+            probs = tf.nn.softmax(logits, axis=-1)
+            pruned_probs = tf.where(probs < 0.05, tf.constant(logits.dtype.min, dtype=logits.dtype), logits)
+            normalized_probs = tf.nn.softmax(pruned_probs, axis=-1)
+            action = tf.random.categorical(tf.math.log(normalized_probs), num_samples=1, dtype=tf.int32)
+            action = tf.squeeze(action, axis=-1)
+            return action
+        self.__action_selector = prune_logits
+
+    def set_uniform_top_two_selector(self):
+        """Set the policy to select uniformly from the top two actions."""
+        def top_two_logits(logits):
+            top_two_values, top_two_indices = tf.math.top_k(logits, k=2)
+            probs = tf.ones_like(top_two_values, dtype=tf.float32) / 2.0
+            action = tf.random.categorical(tf.math.log(probs), num_samples=1, dtype=tf.int32)
+            action = tf.squeeze(action, axis=-1)
+            selected_action = tf.gather(top_two_indices, action, batch_dims=1)
+            return selected_action
+        self.__action_selector = top_two_logits
+
+    def set_uniform_top_three_selector(self):
+        """Set the policy to select uniformly from the top three actions."""
+        def top_three_logits(logits):
+            top_three_values, top_three_indices = tf.math.top_k(logits, k=3)
+            probs = tf.ones_like(top_three_values, dtype=tf.float32) / 3.0
+            action = tf.random.categorical(tf.math.log(probs), num_samples=1, dtype=tf.int32)
+            action = tf.squeeze(action, axis=-1)
+            selected_action = tf.gather(top_three_indices, action, batch_dims=1)
+            return selected_action
+        self.__action_selector = top_three_logits
+
+    def set_prune_below_zero_dot_one_uniform_selector(self):
+        """Set the policy to prune actions with probability less than 0.1 and select uniformly from the rest."""
+        def prune_and_uniform_logits(logits):
+            probs = tf.nn.softmax(logits, axis=-1)
+            pruned_probs = tf.where(probs < 0.1, tf.zeros_like(probs), probs)
+            sum_probs = tf.reduce_sum(pruned_probs, axis=-1, keepdims=True)
+            normalized_probs = tf.where(sum_probs > 0, pruned_probs / sum_probs, pruned_probs)
+            action = tf.random.categorical(tf.math.log(normalized_probs), num_samples=1, dtype=tf.int32)
+            action = tf.squeeze(action, axis=-1)
+            return action
+        self.__action_selector = prune_and_uniform_logits
 
     def set_return_real_logits(self, return_real_logits: bool):
         """Set whether the policy should return the real logits or the masked logits."""
@@ -162,7 +228,7 @@ class PolicyMaskWrapper(TFPolicy):
             policy_state["automata_state"] = self.get_initial_automata_state(batch_size)
         return policy_state
 
-    def _distribution(self, time_step, policy_state) -> PolicyStep:
+    def _distribution(self, time_step, policy_state, seed) -> PolicyStep:
         observation, mask = self._observation_and_action_constraint_splitter(
             time_step.observation)
         time_step = time_step._replace(observation=observation)
@@ -173,21 +239,27 @@ class PolicyMaskWrapper(TFPolicy):
     def _action(self, time_step, policy_state, seed) -> PolicyStep:
         """Returns the action for the given time step and policy state."""
         mask = time_step.observation["mask"]
-        distribution = self._real_distribution(time_step, policy_state)
-        if self._is_greedy:
-            # print("Greedy action")
-            logits = distribution.action.logits
-            logits = self.current_masker(logits, mask)
-            action = tf.argmax(logits, output_type=tf.int32, axis=-1)
-        else:
-            # print("Stochastic action")
-            # _, mask = self._observation_and_action_constraint_splitter(time_step.observation)
-            # action = self._get_action_masked(distribution, mask)
-            logits = distribution.action.logits
-            logits = self.current_masker(logits, mask)
-            # action = tf.random.categorical(distribution.action.logits, num_samples=1, dtype=tf.int32)
-            action = tf.random.categorical(logits, num_samples=1, dtype=tf.int32, seed=seed)
-            action = tf.squeeze(action, axis=-1)
+        distribution = self._real_distribution(time_step, policy_state, seed)
+
+        # If distribution.action is "Deterministic" distribution of tfp, the values are probabilities
+        logits = distribution.action.logits
+        logits = self.current_masker(logits, mask)
+        action = self.__action_selector(logits)
+        action = tf.reshape(action, (-1,))
+        # if self._is_greedy:
+        #     # print("Greedy action")
+        #     logits = distribution.action.logits
+        #     logits = self.current_masker(logits, mask)
+        #     action = tf.argmax(logits, output_type=tf.int32, axis=-1)
+        # else:
+        #     # print("Stochastic action")
+        #     # _, mask = self._observation_and_action_constraint_splitter(time_step.observation)
+        #     # action = self._get_action_masked(distribution, mask)
+        #     logits = distribution.action.logits
+        #     logits = self.current_masker(logits, mask)
+        #     # action = tf.random.categorical(distribution.action.logits, num_samples=1, dtype=tf.int32)
+        #     action = tf.random.categorical(logits, num_samples=1, dtype=tf.int32, seed=seed)
+        #     action = tf.squeeze(action, axis=-1)
 
         if self.predicate_automata is not None:
             new_policy_state = distribution.state

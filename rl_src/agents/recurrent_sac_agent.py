@@ -7,7 +7,7 @@ import tensorflow as tf
 
 from environment import tf_py_environment
 # from tf_agents.agents.ppo import ppo_agent
-from tf_agents.agents.sac import sac_agent
+from agents.tf_agents_modif.sac_agent import SacAgent
 
 
 
@@ -23,21 +23,24 @@ from tf_agents.policies.py_tf_eager_policy import PyTFEagerPolicy
 from agents.alternative_training.active_pretraining import EntropyRewardGenerator
 
 from tf_agents.specs.array_spec import BoundedArraySpec
+from tf_agents.specs.tensor_spec import TensorSpec
 
 from tools.args_emulator import ArgsEmulator
 
 from keras.optimizers import Adam
 
-from tf_agents.distributions.gumbel_softmax import GumbelSoftmax
+from agents.networks.gumbel_projection_network import GumbelProjectionNetwork
 
 logger = logging.getLogger(__name__)
 
-
+def generate_gumbel_projection_network(action_spec, logits_init_output_factor=0.1):
+    return GumbelProjectionNetwork(
+        action_spec, logits_init_output_factor=logits_init_output_factor
+    )
 
 def create_recurrent_sac_actor(tf_environment: tf_py_environment.TFPyEnvironment, action_spec):
-    from tf_agents.networks.actor_distribution_rnn_network import ActorDistributionRnnNetwork
     # Actor network with Gumbel-Softmax projection for discrete actions
-    gumbel_layer = lambda logits, outer_rank, training: GumbelSoftmax(logits, temperature=0.5, validate_args=True)
+    # gumbel_layer_generator = generate_gumbel_layer
     
     actor_net = ActorDistributionRnnNetwork(
         tf_environment.observation_spec()["observation"],
@@ -45,17 +48,16 @@ def create_recurrent_sac_actor(tf_environment: tf_py_environment.TFPyEnvironment
         input_fc_layer_params=(128, 128),
         lstm_size=(64,),
         output_fc_layer_params=(64,),
-        continuous_projection_net=gumbel_layer
+        continuous_projection_net=generate_gumbel_projection_network,
     )
     return actor_net
 
 def create_recurrent_sac_critic(tf_environment: tf_py_environment.TFPyEnvironment, action_spec):
-    from tf_agents.agents.ddpg.critic_network import CriticNetwork
-    critic_net = CriticNetwork(
+    from tf_agents.agents.ddpg.critic_rnn_network import CriticRnnNetwork
+    print(tf_environment.observation_spec()["observation"], action_spec)
+    critic_net = CriticRnnNetwork(
         (tf_environment.observation_spec()["observation"], action_spec),
-        input_fc_layer_params=(128, 128),
         lstm_size=(64,),
-        output_fc_layer_params=(64,),
     )
     return critic_net
 
@@ -75,8 +77,10 @@ class Recurrent_SAC_Agent(FatherAgent):
         nr_actions = (tf_environment.action_spec().maximum - tf_environment.action_spec().minimum) + 1
     
         # define stochastic action spec
-        action_spec = BoundedArraySpec(
-            shape=(), dtype=tf.float32, minimum=0, maximum=1.0, name='action')
+        action_spec = TensorSpec(
+            shape=(nr_actions,), dtype=np.float32, name='action')
+        # convert action spec dtype to tf.float32
+        action_spec = tf.nest.map_structure(lambda spec: tf.TensorSpec(spec.shape, tf.float32, spec.name), action_spec)
         self.actor_net = create_recurrent_sac_actor(tf_environment, action_spec)
         self.value_net = create_recurrent_sac_critic(tf_environment, action_spec)
 
@@ -85,18 +89,19 @@ class Recurrent_SAC_Agent(FatherAgent):
         time_step_spec = tf_environment.time_step_spec()
         time_step_spec = time_step_spec._replace(
             observation=tf_environment.observation_spec()["observation"])
-        self.agent = sac_agent.SacAgent(
+        self.agent = SacAgent(
             time_step_spec,
             action_spec,
             actor_network=self.actor_net,
             critic_network=self.value_net,
             actor_optimizer=actor_optimizer,
             critic_optimizer=critic_optimizer,
+            gamma=0.99,
             alpha_optimizer=Adam(learning_rate= args.learning_rate),
+            reward_scale_factor=0.2,
+            alpha_loss_weight=0.1
         )
         self.agent.initialize()
-        print("Agent initialized with actor net:", self.agent.actor_net.summary())
-        print("Agent initialized with value net:", self.agent._value_net.summary())
         logging.info("Agent initialized")
         self.init_replay_buffer()
         logging.info("Replay buffer initialized")
@@ -106,6 +111,7 @@ class Recurrent_SAC_Agent(FatherAgent):
             predicate_automata = self.environment.predicate_automata
         else:
             predicate_automata = None
+
             
         self.wrapper = PolicyMaskWrapper(self.agent.policy, observation_and_action_constraint_splitter, tf_environment.time_step_spec(),
                                            is_greedy=(not self.args.prefer_stochastic), predicate_automata=predicate_automata)

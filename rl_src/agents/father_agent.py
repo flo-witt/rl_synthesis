@@ -370,7 +370,9 @@ class FatherAgent(AbstractAgent):
         Args:
             experience: The experience for training the agent.
         """
-        train_loss = self.agent.train(experience).loss
+        train_loss = self.agent.train(experience)
+        train_loss = train_loss.loss
+        
         train_loss = train_loss.numpy()
         self.agent.train_step_counter.assign_add(1)
         self.evaluation_result.add_loss(train_loss)
@@ -706,6 +708,9 @@ class FatherAgent(AbstractAgent):
             logger.info("No agent for saving.")
             return
         checkpoint = tf.train.Checkpoint(agent=self.agent)
+        if self.agent_folder is None:
+            logger.warning("No agent folder for saving.")
+            return
         if best:
             agent_folder = self.agent_folder + "/best"
         else:
@@ -746,7 +751,8 @@ class FatherAgent(AbstractAgent):
                 step_type=item.step_type,
                 observation=item.observation["observation"],
                 action=item.action,
-                policy_info={"dist_params": item.policy_info["dist_params"]},
+                # policy_info={"dist_params": item.policy_info["dist_params"]},
+                policy_info=item.policy_info,
                 next_step_type=item.next_step_type,
                 reward=item.reward,
                 discount=item.discount,

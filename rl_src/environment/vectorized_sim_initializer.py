@@ -62,7 +62,6 @@ class SimulatorInitializer:
 
         if enforce_recompilation or "unknown" in name:
             logger.info(f"Compiling model {name}...")
-            print("Hello", quotient_state_valuations)
             simulator = storm_vec_env_constructor(
                 stormpy_model, get_scalarized_reward, num_envs=num_envs, max_steps=max_steps, metalabels=metalabels,
                 obs_evaluator=obs_evaluator,

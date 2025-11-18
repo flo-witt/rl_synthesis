@@ -278,7 +278,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         self.antigoal_values_vector = tf.constant(
             [0.0] * self.num_envs, dtype=tf.float32)
         self.goal_values_vector = tf.constant(
-            [100.0] * self.num_envs, dtype=tf.float32)
+            [1.0] * self.num_envs, dtype=tf.float32)
 
     def set_minimizing_rewards(self):
         self.reward_multiplier = -10.0
@@ -745,6 +745,15 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
     def _step(self, action) -> ts.TimeStep:
         """Does the step in the environment. Important for TF-Agents and the TFPyEnvironment."""
         # current_time = time.time()
+        # If the last dimension of action is > 1, we need to sample from the distribution.
+        # compute probabilities through softmax
+        
+        if len(action.shape) > 1 and action.shape[-1] > 1:
+            # action = tf.random.categorical(
+                # logits=action, num_samples=1, dtype=tf.int32)
+            action = tf.argmax(action, axis=-1, output_type=tf.int32)
+            # action = tf.squeeze(action, axis=-1)
+        
         action, illegals = self.change_illegal_actions_to_random_allowed(
             action, self.allowed_actions, self.dones)
         self._played_illegal_actions = illegals
