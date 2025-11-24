@@ -9,7 +9,6 @@ from stormpy import simulator
 
 from environment import py_environment
 
-
 from tf_agents.trajectories import time_step as ts
 import tensorflow as tf
 from tf_agents.specs import tensor_spec
@@ -257,14 +256,11 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         self.predicate_automata_states = new_states
 
     def set_basic_rewards(self):
-        rew_list = list(self.stormpy_model.reward_models.keys())
-        self.reward_multiplier = -1.0 if (len(rew_list) == 0  or not "rew" in rew_list[-1]) else 10.0
-        if "penalty" in rew_list[-1] or "time" in rew_list[-1]:
-            self.reward_multiplier = -1.0
+        self.reward_multiplier = 1.0
         self.antigoal_values_vector = tf.constant(
-            [self.args.evaluation_antigoal] * self.num_envs, dtype=tf.float32)
+            [0.0] * self.num_envs, dtype=tf.float32)
         self.goal_values_vector = tf.constant(
-            [self.args.evaluation_goal] * self.num_envs, dtype=tf.float32)
+            [0.0] * self.num_envs, dtype=tf.float32)
 
     def set_reachability_rewards(self):
         self.reward_multiplier = 0.0
@@ -336,33 +332,34 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
     def set_reward_model(self, model_name):
         self.truncation_values_vector = tf.constant(
             [0.0] * self.num_envs, dtype=tf.float32)
-        self.reward_models = {
-            "network": self.set_minimizing_rewards,
-            "drone": self.set_reachability_rewards,
-            "refuel": self.set_reachability_rewards,
-            "intercept": self.set_obstacle_rewards,
-            "evade": self.set_reachability_rewards,
-            "rocks": self.set_minimizing_rewards,
-            "geo": self.set_reachability_rewards,
-            "mba": self.set_minimizing_rewards,
-            "maze": self.set_maximizing_rewards,
-            "avoid": self.set_avoid_rewards,
-            "grid": self.set_reachability_rewards,
-            "obstacle": self.set_obstacle_rewards,
-            "dpm": self.set_dpm_rewards,
-            "aco": self.set_obstacle_rewards,
-            "rover": self.set_rover_rewards,
-        }
-        key_found = False
-        for key in self.reward_models.keys():
-            if key in model_name:
-                self.reward_models[key]()
-                key_found = True
-                break
-        if not key_found:
-            self.set_basic_rewards()
-        if "packets_sent" in list(self.stormpy_model.reward_models.keys()):
-            self.reward_multiplier = 10.0
+        # self.reward_models = {
+        #     "network": self.set_minimizing_rewards,
+        #     "drone": self.set_reachability_rewards,
+        #     "refuel": self.set_reachability_rewards,
+        #     "intercept": self.set_obstacle_rewards,
+        #     "evade": self.set_reachability_rewards,
+        #     "rocks": self.set_minimizing_rewards,
+        #     "geo": self.set_reachability_rewards,
+        #     "mba": self.set_minimizing_rewards,
+        #     "maze": self.set_maximizing_rewards,
+        #     "avoid": self.set_avoid_rewards,
+        #     "grid": self.set_reachability_rewards,
+        #     "obstacle": self.set_obstacle_rewards,
+        #     "dpm": self.set_dpm_rewards,
+        #     "aco": self.set_obstacle_rewards,
+        #     "rover": self.set_rover_rewards,
+        # }
+        # key_found = False
+        # for key in self.reward_models.keys():
+        #     if key in model_name:
+        #         self.reward_models[key]()
+        #         key_found = True
+        #         break
+        # if not key_found:
+        #     self.set_basic_rewards()
+        # if "packets_sent" in list(self.stormpy_model.reward_models.keys()):
+        #     self.reward_multiplier = 10.0
+        self.set_basic_rewards()
 
         self.reward_signum = tf.sign(
             self.reward_multiplier) if self.reward_multiplier != 0.0 else tf.constant(-1.0)
