@@ -28,7 +28,6 @@ def load_sketch(project_path):
     properties_path = os.path.join(project_path, "sketch.props")
     pomdp_sketch = Sketch.load_sketch(
         sketch_path, properties_path)
-    print("test")
     return pomdp_sketch
 
 
@@ -121,6 +120,7 @@ def main():
         environment=environment, tf_environment=tf_env, args=args, load=False, agent_folder="trained_agents")
     agent.train_agent(iterations=500)
     policy = agent.get_policy(False, True)
+    print(policy.__dict__)
     evaluate_policy_in_model(policy, args, environment, tf_env)
     # ---------------------------------------------------------
     
