@@ -110,6 +110,8 @@ def main():
     # This is the learning
     model = sketch.pomdp # If you don't have POMDP, you can switch to quotient mdp or some other MDP/POMDP representations.
 
+    print(model.observation_valuations.get_json(0))
+
     args.num_environments = 2
 
     environment = EnvironmentWrapperVec(
