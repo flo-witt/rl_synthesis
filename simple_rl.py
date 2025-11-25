@@ -111,7 +111,7 @@ def main():
     model = sketch.pomdp # If you don't have POMDP, you can switch to quotient mdp or some other MDP/POMDP representations.
 
     environment = EnvironmentWrapperVec(
-        model, args, num_envs=args.num_environments, enforce_compilation=True)
+        model, args, num_envs=2, enforce_compilation=True)
 
     tf_env = TFPyEnvironment(environment)
     agent = Recurrent_PPO_agent(
@@ -119,7 +119,7 @@ def main():
     agent.train_agent(iterations=50)
     policy = agent.get_policy(False, True)
     time_step = environment.current_time_step()
-    policy_state = policy.get_initial_state(args.num_environments)
+    policy_state = policy.get_initial_state(2)
     print(time_step)
     print(policy_state)
     print(policy.action(time_step, policy_state=policy_state))
