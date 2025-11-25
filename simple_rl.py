@@ -111,8 +111,9 @@ def main():
     model = sketch.pomdp # If you don't have POMDP, you can switch to quotient mdp or some other MDP/POMDP representations.
 
     print("------------------>>>>", model.observation_valuations.get_json(0))
+    print(model)
 
-    args.num_environments = 2
+    args.num_environments = 32
 
     environment = EnvironmentWrapperVec(
         model, args, num_envs=args.num_environments, enforce_compilation=True)
@@ -122,6 +123,11 @@ def main():
         environment=environment, tf_environment=tf_env, args=args, load=False, agent_folder="trained_agents")
     agent.train_agent(iterations=50)
     policy = agent.get_policy(False, True)
+    args.num_environments = 2
+    environment = EnvironmentWrapperVec(
+        model, args, num_envs=args.num_environments, enforce_compilation=True)
+
+    tf_env = TFPyEnvironment(environment)
     time_step = tf_env.current_time_step()
     policy_state = policy.get_initial_state(args.num_environments)
     print(time_step)
@@ -136,8 +142,8 @@ def main():
         paynt_fsc, tf_fsc = fsc_extraction(sketch, agent)
 
     # Save the results. Now the results are stored in the same folder as the processed models, but you can change it as needed.
-    json_path = create_json_file_name(project_path, seed=args.seed)
-    agent.evaluation_result.save_to_json(json_path, new_pomdp=False)
+    # json_path = create_json_file_name(project_path, seed=args.seed)
+    # agent.evaluation_result.save_to_json(json_path, new_pomdp=False)
 
 
 if __name__ == "__main__":
