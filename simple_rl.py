@@ -118,8 +118,11 @@ def main():
         environment=environment, tf_environment=tf_env, args=args, load=False, agent_folder="trained_agents")
     agent.train_agent(iterations=50)
     policy = agent.get_policy(False, True)
-    print(policy.get_initial_state(1))
-    print(policy.action())
+    time_step = environment.current_time_step()
+    policy_state = policy.get_initial_state(args.num_environments)
+    print(time_step)
+    print(policy_state)
+    print(policy.action(time_step, policy_state=policy_state))
     evaluate_policy_in_model(policy, args, environment, tf_env)
     # ---------------------------------------------------------
     
