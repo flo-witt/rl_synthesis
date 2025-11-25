@@ -28,6 +28,7 @@ def load_sketch(project_path):
     properties_path = os.path.join(project_path, "sketch.props")
     pomdp_sketch = Sketch.load_sketch(
         sketch_path, properties_path)
+    print("test")
     return pomdp_sketch
 
 
