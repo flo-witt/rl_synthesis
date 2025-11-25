@@ -94,7 +94,6 @@ def fsc_extraction(model, agent: FatherAgent) -> tuple[FscFactored, TableBasedPo
 
 def main():
     project_path = "models/models_pomdp_no_family/network-3-8-20"
-    # project_path = "mdp_obstacles/"
     prism_path = os.path.join(project_path, "sketch.templ")
     properties_path = os.path.join(project_path, "sketch.props")
     args = init_args(prism_path=prism_path, properties_path=properties_path,
@@ -110,7 +109,6 @@ def main():
     # ---------------------------------------------------------
     # This is the learning
     model = sketch.pomdp # If you don't have POMDP, you can switch to quotient mdp or some other MDP/POMDP representations.
-    # model = sketch.quotient_mdp
 
     environment = EnvironmentWrapperVec(
         model, args, num_envs=args.num_environments, enforce_compilation=True)
@@ -120,7 +118,8 @@ def main():
         environment=environment, tf_environment=tf_env, args=args, load=False, agent_folder="trained_agents")
     agent.train_agent(iterations=50)
     policy = agent.get_policy(False, True)
-    print(policy.__dict__)
+    print(policy.get_initial_state())
+    print(policy.action())
     evaluate_policy_in_model(policy, args, environment, tf_env)
     # ---------------------------------------------------------
     
