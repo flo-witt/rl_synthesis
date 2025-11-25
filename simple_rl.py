@@ -118,7 +118,7 @@ def main():
     tf_env = TFPyEnvironment(environment)
     agent = Recurrent_PPO_agent(
         environment=environment, tf_environment=tf_env, args=args, load=False, agent_folder="trained_agents")
-    agent.train_agent(iterations=500)
+    agent.train_agent(iterations=50)
     policy = agent.get_policy(False, True)
     print(policy.__dict__)
     evaluate_policy_in_model(policy, args, environment, tf_env)
