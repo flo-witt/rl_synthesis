@@ -484,6 +484,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
 
     def _restart_simulator(self) -> tuple[list, list, list]:
         observations, allowed_actions, metalabels = self.vectorized_simulator.reset()
+        print(observations)
         return observations.tolist(), allowed_actions.tolist(), metalabels.tolist()
 
     def set_num_envs(self, num_envs: int):
