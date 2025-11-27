@@ -93,7 +93,7 @@ def fsc_extraction(model, agent: FatherAgent) -> tuple[FscFactored, TableBasedPo
 
 
 def main():
-    project_path = "models/models_pomdp_no_family/grid-large-10-5"
+    project_path = "models/models_pomdp_no_family/remember"
     prism_path = os.path.join(project_path, "sketch.templ")
     properties_path = os.path.join(project_path, "sketch.props")
     args = init_args(prism_path=prism_path, properties_path=properties_path,
