@@ -348,6 +348,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
             "maze": self.set_maximizing_rewards,
             "avoid": self.set_avoid_rewards,
             "grid": self.set_reachability_rewards,
+            "remember": self.set_reachability_rewards,
             "obstacle": self.set_obstacle_rewards,
             "dpm": self.set_dpm_rewards,
             "aco": self.set_obstacle_rewards,
