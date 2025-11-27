@@ -730,7 +730,6 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         flat_indices = tf.where(masks)
         legal_counts = tf.reduce_sum(tf.cast(masks, tf.int32), axis=1)
         batch_offsets = tf.cumsum(tf.concat([[0], legal_counts[:-1]], axis=0))
-        print(actions, masks, batch_size, legal_counts)
         random_offsets = tf.random.uniform(
             shape=(batch_size,),
             maxval=tf.reduce_max(legal_counts),
@@ -756,6 +755,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         self.last_action = tf.cast(action, dtype=tf.float32)
         self._do_step_in_simulator(action)
         evaluated_step = self.evaluate_simulator()
+        print(evaluated_step)
         return evaluated_step
 
     def get_model_name(self):
