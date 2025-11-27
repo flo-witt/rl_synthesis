@@ -336,6 +336,8 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
     def set_reward_model(self, model_name):
         self.truncation_values_vector = tf.constant(
             [0.0] * self.num_envs, dtype=tf.float32)
+
+        print(model_name)
         self.reward_models = {
             "network": self.set_minimizing_rewards,
             "drone": self.set_reachability_rewards,
