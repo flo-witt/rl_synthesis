@@ -2,17 +2,10 @@ pomdp
 
 const int N = 5;
 
-// Get an environment where the guard is permissive?
-// Get an environment where we have an advantage with the guard (allow more actions)
-// Get an environment where we have a disadvantage with the guard (why do we not need guards?)
-// 
-// TODO add more actions: go left, stay put (noisy actions)
-// increase position
-
-// permissive guard minimal example:
-// - go to one of two different branches and observe which one
-// - walk a bunch of steps with a single observation
-// - afterwards you need to make a decision based on the initial observation
+observable "start" = pos=0;
+observable "aifpos1" = pos=1 ? a : -1;
+observable "decide" = pos=N;
+observable "ended" = pos>N;
 
 module remember
     pos : [0..N+2] init 0;
@@ -29,11 +22,6 @@ module remember
 
     [a] pos>N -> 1 : (pos'=pos);
 endmodule
-
-observable "start" = pos=0;
-observable "aifpos1" = pos=1 ? a : -1;
-observable "decide" = pos=N;
-observable "ended" = pos>N;
 
 label "goal" = pos=N+1;
 label "notbad" = pos!=N+2;
