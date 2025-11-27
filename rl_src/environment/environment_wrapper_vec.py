@@ -484,7 +484,6 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
 
     def _restart_simulator(self) -> tuple[list, list, list]:
         observations, allowed_actions, metalabels = self.vectorized_simulator.reset()
-        print(observations)
         return observations.tolist(), allowed_actions.tolist(), metalabels.tolist()
 
     def set_num_envs(self, num_envs: int):
@@ -756,7 +755,6 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         self.last_action = tf.cast(action, dtype=tf.float32)
         self._do_step_in_simulator(action)
         evaluated_step = self.evaluate_simulator()
-        print(evaluated_step)
         return evaluated_step
 
     def get_model_name(self):
