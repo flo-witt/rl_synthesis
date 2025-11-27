@@ -763,7 +763,10 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         if self.args.model_name != "":
             model_name = self.args.model_name
         elif self.args.prism_model is not None:
-            model_name = self.args.prism_model.split("/")[-1].split(".")[0]
+            if self.args.prism_model.endswith(".sketch"):
+                model_name = self.args.prism_model.split("/")[-2]
+            else:
+                model_name = self.args.prism_model.split("/")[-1].split(".")[0]
         else:
             model_name = "unknown"
         return model_name
