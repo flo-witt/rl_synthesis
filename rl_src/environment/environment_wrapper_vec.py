@@ -759,10 +759,11 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
 
     def get_model_name(self):
         # args.prism_model contains .../model_name/sketch.templ" so we need to extract the model name
+        print(self.args.prism_model, self.args.model_name)
         if self.args.model_name != "":
             model_name = self.args.model_name
         elif self.args.prism_model is not None:
-            model_name = self.args.prism_model.split("/")[-2]
+            model_name = self.args.prism_model.split("/")[-1].split(".")[0]
         else:
             model_name = "unknown"
         return model_name
