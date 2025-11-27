@@ -96,7 +96,7 @@ class SimulatorInitializer:
         """
         if model_path is None:
             return None
-        return re.search(r"([^/]+)\/sketch.templ", model_path).group(1)
+        return model_path.split("/")[-1].split(".")[0]
 
     @staticmethod
     def try_load_simulator_by_name_from_pickle(name, path_to_compiled_models):
