@@ -730,6 +730,7 @@ class EnvironmentWrapperVec(py_environment.PyEnvironment):
         flat_indices = tf.where(masks)
         legal_counts = tf.reduce_sum(tf.cast(masks, tf.int32), axis=1)
         batch_offsets = tf.cumsum(tf.concat([[0], legal_counts[:-1]], axis=0))
+        print(actions, masks, batch_size, legal_counts)
         random_offsets = tf.random.uniform(
             shape=(batch_size,),
             maxval=tf.reduce_max(legal_counts),
