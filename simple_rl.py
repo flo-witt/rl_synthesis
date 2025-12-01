@@ -121,7 +121,7 @@ def main():
     tf_env = TFPyEnvironment(environment)
     agent = Recurrent_PPO_agent(
         environment=environment, tf_environment=tf_env, args=args, load=False, agent_folder="trained_agents")
-    agent.train_agent(iterations=50)
+    agent.train_agent(iterations=5000)
     policy = agent.get_policy(False, True)
     args.num_environments = 2
     environment = EnvironmentWrapperVec(
