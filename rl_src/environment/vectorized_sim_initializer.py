@@ -96,7 +96,7 @@ class SimulatorInitializer:
         """
         if model_path is None:
             return None
-        return model_path.split("/")[-1].split(".")[0]
+        return model_path.split("/")[-2]
 
     @staticmethod
     def try_load_simulator_by_name_from_pickle(name, path_to_compiled_models):
