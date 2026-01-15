@@ -20,6 +20,8 @@ from tools.evaluation_results_class import EvaluationResults
 
 from shielding.shield_processor import ShieldProcessor
 
+from tf_agents.replay_buffers.tf_uniform_replay_buffer import TFUniformReplayBuffer
+
 logger = logging.getLogger(__name__)
 
 
@@ -55,16 +57,18 @@ def compute_average_return(policy: TFPolicy, tf_environment: tf_py_environment.T
 
 
 def get_new_vectorized_evaluation_driver(tf_environment: tf_py_environment.TFPyEnvironment, environment: EnvironmentWrapperVec,
-                                         custom_policy=None, num_steps=1000, shield_processor: ShieldProcessor = None) -> tuple[DynamicStepDriver, TrajectoryBuffer]:
+                                         custom_policy : TFPolicy = None, num_steps=1000, shield_processor: ShieldProcessor = None,
+                                         use_tf_function = True, external_replay_buffer : TFUniformReplayBuffer = None) -> tuple[DynamicStepDriver, TrajectoryBuffer]:
     """Create a new vectorized evaluation driver and buffer."""
     trajectory_buffer = TrajectoryBuffer(environment)
     eager = PyTFEagerPolicy(
-        policy=custom_policy, use_tf_function=True, batch_time_steps=False)
+        policy=custom_policy, use_tf_function=use_tf_function, batch_time_steps=False)
+    observers = [trajectory_buffer.add_batched_step] if external_replay_buffer is None else [trajectory_buffer.add_batched_step, external_replay_buffer.add_batch]
     if shield_processor:
         vec_driver = ShieldedDynamicStepDriver(
             tf_environment,
             eager,
-            observers=[trajectory_buffer.add_batched_step],
+            observers=observers,
             num_steps=(1 + num_steps) * tf_environment.batch_size,
             shield_processor=shield_processor
         )
@@ -72,10 +76,19 @@ def get_new_vectorized_evaluation_driver(tf_environment: tf_py_environment.TFPyE
         vec_driver = DynamicStepDriver(
             tf_environment,
             eager,
-            observers=[trajectory_buffer.add_batched_step],
+            observers=observers,
             num_steps=(1 + num_steps) * tf_environment.batch_size
         )
     return vec_driver, trajectory_buffer
+
+def get_new_replay_buffer(policy: TFPolicy, tf_environment: tf_py_environment.TFPyEnvironment,
+                          max_length=1000) -> TFUniformReplayBuffer:
+    replay_buffer = TFUniformReplayBuffer(
+        data_spec=policy.trajectory_spec,
+        batch_size=tf_environment.batch_size,
+        max_length=max_length
+    )
+    return replay_buffer
 
 
 def evaluate_policy_in_model(policy: TFPolicy, args: ArgsEmulator = None,
